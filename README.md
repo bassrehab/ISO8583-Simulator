@@ -14,8 +14,6 @@ Although this is self contained its functionality can extended by linking to a H
 
 Reports are generated after each run for passed and failed tests.
 
-Version: 0.0.1
-
 
 
 Run
@@ -33,3 +31,9 @@ Or, run directly
 
 
 Enjoy.
+
+
+TODO
+----
+- Convert to a Web App/Service.
+- Add Kafka Integration

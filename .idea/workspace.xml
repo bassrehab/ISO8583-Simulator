@@ -2,17 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="99269c65-c160-4faf-9679-228e2b6d2f38" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/simext.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/simext.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/classes/ISO8583/ISO8583.py" beforeDir="false" afterPath="$PROJECT_DIR$/classes/ISO8583/ISO8583.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/classes/ISO8583/message.py" beforeDir="false" afterPath="$PROJECT_DIR$/classes/ISO8583/message.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/classes/log/logging.py" beforeDir="false" afterPath="$PROJECT_DIR$/classes/log/logging.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/classes/logic/delegate.py" beforeDir="false" afterPath="$PROJECT_DIR$/classes/logic/delegate.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/classes/logic/sale.py" beforeDir="false" afterPath="$PROJECT_DIR$/classes/logic/sale.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/classes/logic/void.py" beforeDir="false" afterPath="$PROJECT_DIR$/classes/logic/void.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/classes/server/server.py" beforeDir="false" afterPath="$PROJECT_DIR$/classes/server/server.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/controllers/core.py" beforeDir="false" afterPath="$PROJECT_DIR$/controllers/core.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -441,7 +432,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1484658667645</updated>
-      <workItem from="1639495357867" duration="873000" />
+      <workItem from="1639495357867" duration="1377000" />
     </task>
     <task id="LOCAL-00001" summary="Added GUI, Re-structured flow.">
       <created>1485004531650</created>
@@ -493,6 +484,17 @@
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Added GUI, Re-structured flow." />
