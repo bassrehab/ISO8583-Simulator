@@ -58,7 +58,7 @@ class Void(object):
 
     def response(self, expected_code, processing_code):
 
-        if processing_code == 0o20000 or processing_code == 220000:  # Normal Sales Void, Refund Sales Void
+        if processing_code == 020000 or processing_code == 220000:  # Normal Sales Void, Refund Sales Void
             # Normal Sales
             for d in self.response_code_map:
                 if expected_code is d['req']:

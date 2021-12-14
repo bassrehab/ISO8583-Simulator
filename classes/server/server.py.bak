@@ -51,8 +51,8 @@ class SimulatorServer(object):
         # Add server socket to the list of readable connections
         self.CONNECTION_LIST.append(server_socket)
 
-        print("[INFO] Simulator TCP Server started on " + str(self.HOST) + ':' + str(self.PORT))
-        print("[INFO] Waiting for connections .. ")
+        print "[INFO] Simulator TCP Server started on " + str(self.HOST) + ':' + str(self.PORT)
+        print "[INFO] Waiting for connections .. "
         while 1:
             # List of all sockets which are ready to be read through select
             read_sockets, write_sockets, error_sockets = select.select(self.CONNECTION_LIST, [], [])
@@ -64,7 +64,7 @@ class SimulatorServer(object):
                     # Handle the case in which there is a new connection received through server_socket
                     sockfd, addr = server_socket.accept() #  Get the Socketfb obj
                     self.CONNECTION_LIST.append(sockfd)
-                    print("[INFO] Client (%s, %s) connected" % addr)  # Print the internal Port the kernel assigned.
+                    print "[INFO] Client (%s, %s) connected" % addr  # Print the internal Port the kernel assigned.
 
                 # If existing client connection and incoming message received
                 else:
@@ -79,23 +79,23 @@ class SimulatorServer(object):
 
                         # echo back the client message
                         if data and len(data) != 0:
-                            print('[INFO] REQ Data Received : ' + data)
+                            print '[INFO] REQ Data Received : ' + data
 
                             # call the controller and send the data for handling here.
                             ctrlObj = Controller(data)
                             # Wait all processing and respond back.
                             response = ctrlObj.handler_core()
-                            print('[INFO] RES Data Sent: ' + response)
+                            print '[INFO] RES Data Sent: ' + response
 
                             # encode
-                            encoded_response = bytearray.fromhex(str(response))
+                            encoded_response = bytearray.fromhex(unicode(response))
                             sock.send(encoded_response)
 
                     # client disconnected, so remove from socket list
                     except:
                         # Handle 'Connection Reset by peer exception" graciously.
                         self.broadcast_data(sock, "[INFO] Client (%s, %s) is offline" % addr)
-                        print("[INFO] Client (%s, %s) is offline" % addr)
+                        print "[INFO] Client (%s, %s) is offline" % addr
                         sock.close()
                         self.CONNECTION_LIST.remove(sock)
                         continue

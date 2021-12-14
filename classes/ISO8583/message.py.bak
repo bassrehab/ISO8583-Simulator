@@ -45,7 +45,7 @@ class Message(object):
         self.get_TPDU()
         # Extract the Header
         self.req_header = self.req_length + self.req_TPDU
-        print(('[INFO][REQ] Header (Len + TPDU):' + self.req_header))
+        print('[INFO][REQ] Header (Len + TPDU):' + self.req_header)
 
 
     def get_body(self):
@@ -74,10 +74,10 @@ class Message(object):
         iso = ISO8583()
         iso.setIsoContent(self.req_ISOPayload)
 
-        print(('[INFO][REQ] ISO Bitmap = %s' % iso.getBitmap()))
+        print ('[INFO][REQ] ISO Bitmap = %s' % iso.getBitmap())
 
         MTI = iso.getMTI()
-        print(('[INFO][REQ] MTI = %s' % MTI))
+        print ('[INFO][REQ] MTI = %s' % MTI)
         print ('[INFO][REQ] Bits .... ')
 
         req_ISO_dict = iso.getBitsAndValues()
@@ -110,7 +110,7 @@ class Message(object):
         transaction_amount = None
 
         for DE in req_ISO_dict:
-            print(('[INFO][REQ](1) Bit %s | Type %s | Value = %s' % (DE['bit'], DE['type'], DE['value'])))
+            print ('[INFO][REQ](1) Bit %s | Type %s | Value = %s' % (DE['bit'], DE['type'], DE['value']))
 
             # Extract some key DE
             if DE['bit'] == '3':
@@ -149,10 +149,10 @@ class Message(object):
     # Indivudal Components
     def set_length(self): # Header
         decimal_length = len(str(self.res_TPDU + self.res_body))
-        print(('[INFO][RES] Msg Length (in Decimal) :' + str(decimal_length)))
+        print('[INFO][RES] Msg Length (in Decimal) :' + str(decimal_length))
         self.res_length = str(hex(decimal_length))[2:].rjust(4, '0')
 
-        print(('[INFO][RES] Msg Length (in Hex):' + self.res_length))
+        print('[INFO][RES] Msg Length (in Hex):' + self.res_length)
 
     def set_TPDU(self): # Header
         self.res_TPDU = '6000000001'
@@ -169,17 +169,17 @@ class Message(object):
                 # Insert before DE 41 --> DE 39
                 if DE['bit'] == '41':
                     packiso.setBit(39, value_DE_39)
-                    print(('[INFO][RES] Set DE Bit No | Value :' + '39' + ' | ' + value_DE_39))
+                    print('[INFO][RES] Set DE Bit No | Value :' + '39' + ' | ' + value_DE_39)
                     packiso.setBit(int(DE['bit']), DE['value'])
                 else:
                     packiso.setBit(int(DE['bit']), DE['value'])
 
-                print(('[INFO][RES] Set DE Bit No | Value :' + DE['bit'] + ' | ' + DE['value']))
+                print('[INFO][RES] Set DE Bit No | Value :' + DE['bit'] + ' | ' + DE['value'])
 
-        except ValueToLarge as e:
-            print(('[ERR] Value too large :( %s' % e))
-        except InvalidMTI as i:
-            print(('[ERR] This MTI is wrong :( %s' % i))
+        except ValueToLarge, e:
+            print ('[ERR] Value too large :( %s' % e)
+        except InvalidMTI, i:
+            print ('[ERR] This MTI is wrong :( %s' % i)
 
         self.res_body = packiso.getRawIso()
 

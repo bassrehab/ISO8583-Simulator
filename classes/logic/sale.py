@@ -73,4 +73,4 @@ class Sale(object):
 #------------------------------
 
 if __name__ =='__main__':
-    print 'Not allowed'
+    print('Not allowed')

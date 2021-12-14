@@ -1,9 +1,8 @@
 '''
-Handles Void Messages
+Handles Sales Messages
 '''
 
-
-class Void(object):
+class Sale(object):
 
     def __init__(self):
         self.res_mti = '0210'
@@ -42,7 +41,7 @@ class Void(object):
             {
                 'req': '94',
                 'res': '94',
-                'desc': 'Duplicate Transation'
+                'desc': 'Duplicate Transaction'
             },
             {
                 'req': '95',
@@ -58,7 +57,7 @@ class Void(object):
 
     def response(self, expected_code, processing_code):
 
-        if processing_code == 0o20000 or processing_code == 220000:  # Normal Sales Void, Refund Sales Void
+        if processing_code == 000000 or processing_code == 200000: # Normal Sales, Refund Sales
             # Normal Sales
             for d in self.response_code_map:
                 if expected_code is d['req']:
@@ -70,3 +69,8 @@ class Void(object):
             return self.res_mti, '99'
 
 
+
+#------------------------------
+
+if __name__ =='__main__':
+    print 'Not allowed'

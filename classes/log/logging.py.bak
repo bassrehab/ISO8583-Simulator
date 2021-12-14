@@ -1,4 +1,4 @@
-from . import logging
+import logging
 
 # This class could be imported from a utility module
 class LogMixin(object):
@@ -30,7 +30,7 @@ def main():
     b = B()
     with open('myapp.log') as f:
         print('Log file contents:')
-        print((f.read()))
+        print(f.read())
 
 if __name__ == '__main__':
     # Configure only in your main program clause

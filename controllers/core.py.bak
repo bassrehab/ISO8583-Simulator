@@ -48,7 +48,7 @@ class Controller(object):
         # TODO: Do a try catch here, or cater for None being retured for default/error
         response_mti, response_DE39 = logicObj.get_response_bit()
         print('\n -------- RESPONSE -------- \n')
-        print(('[INFO][RES] DE 39:' + response_DE39))
+        print('[INFO][RES] DE 39:' + response_DE39)
 
         # Copy the fields from request onto response dict
         res_ISO_dict = req_ISO_dict
@@ -106,4 +106,4 @@ if __name__ == "__main__":
     data = '00F7600001000002003238000101c080801000000000000012001207231505000012231505120711010200000000029876543230350009876543276412858F780AC38E1AC6D446FA103191326CE8316041DBB6F0F18B58EEF445FAD222C91EC8B6E9E343FEA1DCC843A6C899BD9DA3CC15EEA019B6C30A027243FB640C4'
     ctrlObj = Controller(hex_string)
     response = ctrlObj.handler_core()
-    print(('[DEBUG] Response:' + response))
+    print ('[DEBUG] Response:' + response)

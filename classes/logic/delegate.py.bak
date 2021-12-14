@@ -1,11 +1,11 @@
 '''
 Class that delegates the logic depending upon the message type
 '''
-from .auth import *
-from .sale import *
-from .reversal import *
-from .void import *
-from .test import *
+from auth import *
+from sale import *
+from reversal import *
+from void import *
+from test import *
 
 class Delegate(object):
     def __init__(self, req_ISO_dict, mti='', processing_code='', transaction_amount=''):
@@ -15,7 +15,7 @@ class Delegate(object):
 
 
         self.expected_response_code = transaction_amount[-2:]  # get the decimal value of the transaction amount DE4
-        print(('[INFO][REQ]Expected Response code (Decimal Value) of Transaction Amount:' + self.expected_response_code))
+        print('[INFO][REQ]Expected Response code (Decimal Value) of Transaction Amount:' + self.expected_response_code)
         # Get Response Code in Bit 39
         # self.get_response_bit()
 
@@ -78,4 +78,4 @@ class Delegate(object):
 # --------------------------------------
 
 if __name__ == '__main__':
-    print('Not Allowed')
+    print 'Not Allowed'
