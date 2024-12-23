@@ -315,11 +315,11 @@ ISO8583_FIELDS: Dict[int, FieldDefinition] = {
         padding_direction="right"
     ),
     39: FieldDefinition(
-        field_type=FieldType.ALPHANUMERIC,
+        field_type=FieldType.NUMERIC,  # Changed from ALPHANUMERIC to NUMERIC
         max_length=2,
         description="Response Code",
-        padding_char=" ",
-        padding_direction="right"
+        padding_char="0",
+        padding_direction="left"
     ),
 
     # Terminal and Merchant Fields (40-49)
@@ -446,7 +446,9 @@ ISO8583_FIELDS: Dict[int, FieldDefinition] = {
     65: FieldDefinition(
         field_type=FieldType.BINARY,
         max_length=8,
-        description="Extended Bitmap Indicator"
+        description="Extended Bitmap Indicator",
+        padding_char="0",
+        padding_direction="left"
     ),
     66: FieldDefinition(
         field_type=FieldType.NUMERIC,
@@ -573,7 +575,9 @@ ISO8583_FIELDS: Dict[int, FieldDefinition] = {
     90: FieldDefinition(
         field_type=FieldType.NUMERIC,
         max_length=42,
-        description="Original Data Elements"
+        description="Original Data Elements",
+        padding_char="0",
+        padding_direction="left"
     ),
     91: FieldDefinition(
         field_type=FieldType.ALPHANUMERIC,
@@ -603,7 +607,9 @@ ISO8583_FIELDS: Dict[int, FieldDefinition] = {
     96: FieldDefinition(
         field_type=FieldType.BINARY,
         max_length=8,
-        description="Message Security Code"
+        description="Message Security Code",
+        padding_char="0",
+        padding_direction="left"
     ),
     97: FieldDefinition(
         field_type=FieldType.BINARY,
