@@ -21,7 +21,15 @@ class ISO8583Validator:
     """Enhanced validator for ISO 8583 messages with network support"""
 
     def __init__(self):
-        self._load_custom_validators()
+        # Required fields per network
+        self.network_required_fields = {
+            CardNetwork.VISA: [2, 3, 4, 11, 14, 22, 24, 25],
+            CardNetwork.MASTERCARD: [2, 3, 4, 11, 22, 24, 25],
+            CardNetwork.AMEX: [2, 3, 4, 11, 22, 25],
+            CardNetwork.DISCOVER: [2, 3, 4, 11, 22],
+            CardNetwork.JCB: [2, 3, 4, 11, 22, 25],
+            CardNetwork.UNIONPAY: [2, 3, 4, 11, 22, 25, 49]
+        }
 
     def _load_custom_validators(self):
         """Load network-specific validation rules"""
@@ -130,15 +138,7 @@ class ISO8583Validator:
             return False, f"Network-specific validation error: {str(e)}"
 
     def validate_message(self, message: ISO8583Message) -> List[str]:
-        """
-        Validate complete ISO 8583 message including network-specific rules
-
-        Args:
-            message: ISO8583Message to validate
-
-        Returns:
-            List of error messages (empty if valid)
-        """
+        """Validate complete ISO 8583 message"""
         errors = []
 
         # Validate MTI
@@ -152,29 +152,30 @@ class ISO8583Validator:
             if not bitmap_valid:
                 errors.append(bitmap_error)
 
-        # Get network-specific validator if applicable
-        network_validator = self.network_validators.get(message.network) if message.network else None
-
-        # Validate each field
+        # Validate fields
         for field_number, value in message.fields.items():
             if field_number == 0:  # MTI already validated
                 continue
 
             # Get field definition considering network and version
-            field_def = get_field_definition(field_number, message.network, message.version)
+            field_def = get_field_definition(
+                field_number,
+                message.network,
+                message.version
+            )
+
             if not field_def:
                 errors.append(f"Unknown field number: {field_number}")
                 continue
 
-            # Validate field
-            valid, error = self.validate_field(field_number, value, field_def, message.network)
+            valid, error = self.validate_field(field_number, value, field_def)
             if not valid:
                 errors.append(error)
 
-            # Additional network-specific validations
-            if network_validator:
-                network_errors = network_validator(field_number, value)
-                errors.extend(network_errors)
+        # Network-specific validation
+        if message.network:
+            network_errors = self.validate_network_compliance(message)
+            errors.extend(network_errors)
 
         return errors
 
@@ -225,7 +226,6 @@ class ISO8583Validator:
         ss = int(code[4:6])  # Account Type (To)
 
         return all(0 <= x <= 99 for x in (tt, aa, ss))
-
 
     @classmethod
     def validate_mti(cls, mti: str) -> Tuple[bool, Optional[str]]:
@@ -313,42 +313,35 @@ class ISO8583Validator:
 
         return (checksum % 10) == 0
 
+    def _validate_visa_field_44(self, value: str) -> bool:
+        """Validate VISA-specific field 44 format"""
+        if not all(c in "0123456789ABCDEF" for c in value):
+            return False
+        return True
+
     def validate_network_compliance(self, message: ISO8583Message) -> List[str]:
-        """
-        Validate message compliance with network-specific rules
-
-        Args:
-            message: ISO8583Message to validate
-
-        Returns:
-            List of compliance errors
-        """
+        """Validate network-specific requirements"""
         errors = []
+
         if not message.network:
             return errors
 
-        # Network-specific field requirements
-        required_fields = {
-            CardNetwork.VISA: [0, 2, 3, 4, 11, 14, 22, 24, 25],
-            CardNetwork.MASTERCARD: [0, 2, 3, 4, 11, 22, 24, 25, 35],
-            CardNetwork.AMEX: [0, 2, 3, 4, 11, 22, 25],
-            CardNetwork.DISCOVER: [0, 2, 3, 4, 11, 22],
-            CardNetwork.JCB: [0, 2, 3, 4, 11, 22, 25],
-            CardNetwork.UNIONPAY: [0, 2, 3, 4, 11, 22, 25, 49]
-        }
-
         # Check required fields
-        network_fields = required_fields.get(message.network, [])
-        for field in network_fields:
+        required_fields = self.network_required_fields.get(message.network, [])
+        for field in required_fields:
             if field not in message.fields:
                 errors.append(f"Required field {field} missing for {message.network.value}")
 
         # Network-specific validations
         if message.network == CardNetwork.VISA:
-            errors.extend(self._validate_visa_compliance(message))
+            if 44 in message.fields:
+                if not self._validate_visa_field_44(message.fields[44]):
+                    errors.append("Invalid format for VISA field 44")
+
         elif message.network == CardNetwork.MASTERCARD:
-            errors.extend(self._validate_mastercard_compliance(message))
-        # ... Add other network validations
+            if 48 in message.fields:
+                if not message.fields[48].startswith("MC"):
+                    errors.append("Mastercard field 48 must start with 'MC'")
 
         return errors
 
@@ -389,63 +382,102 @@ class ISO8583Validator:
         return errors
 
     def validate_emv_data(self, emv_data: str) -> List[str]:
-        """
-        Validate EMV data format and tags
-
-        Args:
-            emv_data: EMV data string
-
-        Returns:
-            List of validation errors
-        """
+        """Validate EMV data format"""
         errors = []
-
         if not emv_data:
-            return ["EMV data is empty"]
-
-        # Basic format check
-        if not re.match(r'^[0-9A-F]+$', emv_data):
-            return ["Invalid EMV data format"]
+            return ["Empty EMV data"]
 
         try:
-            # Parse and validate EMV tags
             position = 0
             while position < len(emv_data):
-                # Parse tag
-                if position + 2 > len(emv_data):
-                    errors.append("Incomplete EMV tag")
+                if position + 4 > len(emv_data):
+                    errors.append("Incomplete EMV data")
                     break
 
                 tag = emv_data[position:position + 2]
                 position += 2
 
-                # Parse length
-                if position + 2 > len(emv_data):
-                    errors.append(f"Incomplete length for tag {tag}")
+                length_hex = emv_data[position:position + 2]
+                try:
+                    length = int(length_hex, 16)
+                except ValueError:
+                    errors.append(f"Invalid length format for tag {tag}")
                     break
-
-                length = int(emv_data[position:position + 2], 16)
                 position += 2
 
-                # Check value
                 if position + (length * 2) > len(emv_data):
                     errors.append(f"Incomplete value for tag {tag}")
                     break
 
                 position += length * 2
 
-        except ValueError as e:
+        except Exception as e:
             errors.append(f"EMV parsing error: {str(e)}")
 
         return errors
 
-    def validate_field_compatibility(self, field_number: int, value: str,
-                                     version: ISO8583Version) -> List[str]:
+    def validate_field(
+            self,
+            field_number: int,
+            value: str,
+            field_def: FieldDefinition
+    ) -> Tuple[bool, Optional[str]]:
+        """Validate individual field value"""
+        try:
+            # Length validation
+            if field_def.field_type not in [FieldType.LLVAR, FieldType.LLLVAR]:
+                if len(value) != field_def.max_length:
+                    return False, f"Field {field_number} length must be {field_def.max_length}"
+            else:
+                if len(value) > field_def.max_length:
+                    return False, f"Field {field_number} length cannot exceed {field_def.max_length}"
+
+            # Type-specific validation
+            if field_def.field_type == FieldType.NUMERIC:
+                if not value.isdigit():
+                    return False, f"Field {field_number} must contain only digits"
+
+            elif field_def.field_type == FieldType.ALPHA:
+                if not value.isalpha():
+                    return False, f"Field {field_number} must contain only letters"
+
+            elif field_def.field_type == FieldType.ALPHANUMERIC:
+                if not value.isalnum():
+                    return False, f"Field {field_number} must contain only letters and numbers"
+
+            elif field_def.field_type == FieldType.BINARY:
+                try:
+                    int(value, 16)
+                except ValueError:
+                    return False, f"Field {field_number} must be valid hexadecimal"
+
+            # Field-specific validation
+            if field_number == 2:  # PAN
+                if not self.validate_pan(value):
+                    return False, f"Invalid PAN checksum for field {field_number}"
+
+            elif field_number == 55:  # EMV data
+                emv_errors = self.validate_emv_data(value)
+                if emv_errors:
+                    return False, f"Invalid EMV data in field {field_number}: {'; '.join(emv_errors)}"
+
+            return True, None
+
+        except Exception as e:
+            return False, f"Validation error for field {field_number}: {str(e)}"
+
+
+    def validate_field_compatibility(
+            self,
+            field_number: int,
+            value: str,
+            version: ISO8583Version
+    ) -> List[str]:
         """
         Validate field compatibility with ISO version
 
         Args:
-            field_number: Field number
+            field_number: Field number to validate
             value: Field value
             version: ISO8583 version
 
@@ -472,5 +504,16 @@ class ISO8583Validator:
                 f"Field {field_number} must be hexadecimal "
                 f"in version {version.value}"
             )
+
+        # Version-specific validations
+        if version == ISO8583Version.V1987:
+            if field_number == 43 and len(value) > 40:
+                errors.append("Field 43 maximum length is 40 in ISO8583:1987")
+        elif version == ISO8583Version.V1993:
+            if field_number == 43 and len(value) > 99:
+                errors.append("Field 43 maximum length is 99 in ISO8583:1993")
+        elif version == ISO8583Version.V2003:
+            if field_number == 43 and len(value) > 256:
+                errors.append("Field 43 maximum length is 256 in ISO8583:2003")
 
         return errors

@@ -1,94 +1,87 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="18" skipped="0" tests="52" time="0.345" timestamp="2024-12-23T03:22:15.349649-08:00" hostname="subhadipmitra-macbookpro2.roam.internal"><testcase classname="tests.test_builder" name="test_build_bitmap" time="0.001" /><testcase classname="tests.test_builder" name="test_build_field" time="0.000" /><testcase classname="tests.test_builder" name="test_build_with_secondary_bitmap" time="0.000"><failure message="iso8583sim.core.types.BuildError: Failed to build message: Validation failed: Field 65 length must be 8">iso8583sim/core/builder.py:45: in build
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="16" skipped="0" tests="59" time="0.433" timestamp="2024-12-23T04:40:51.896042-08:00" hostname="subhadipmitra-macbookpro2.roam.internal"><testcase classname="tests.test_builder" name="test_build_bitmap" time="0.001" /><testcase classname="tests.test_builder" name="test_build_field" time="0.000"><failure message="iso8583sim.core.types.BuildError: Failed to build field 2: Failed to format field 2: Field 2 length must be 19">iso8583sim/core/builder.py:221: in _format_field_value
+    raise BuildError(f"Field {field_number} length must be {field_def.max_length}")
+E   iso8583sim.core.types.BuildError: Field 2 length must be 19
+
+During handling of the above exception, another exception occurred:
+iso8583sim/core/builder.py:141: in _build_field
+    formatted_value = self._format_field_value(field_number, value, field_def)
+iso8583sim/core/builder.py:226: in _format_field_value
+    raise BuildError(f"Failed to format field {field_number}: {str(e)}")
+E   iso8583sim.core.types.BuildError: Failed to format field 2: Field 2 length must be 19
+
+During handling of the above exception, another exception occurred:
+tests/test_builder.py:129: in test_build_field
+    value = builder._build_field(2, "4111111111111111", field_def)
+iso8583sim/core/builder.py:181: in _build_field
+    raise BuildError(f"Failed to build field {field_number}: {str(e)}")
+E   iso8583sim.core.types.BuildError: Failed to build field 2: Failed to format field 2: Field 2 length must be 19</failure></testcase><testcase classname="tests.test_builder" name="test_build_with_secondary_bitmap" time="0.000"><failure message="iso8583sim.core.types.BuildError: Failed to build message: Validation failed: Field 65 length must be 8">iso8583sim/core/builder.py:46: in build
     raise BuildError(f"Validation failed: {'; '.join(errors)}")
 E   iso8583sim.core.types.BuildError: Validation failed: Field 65 length must be 8
 
 During handling of the above exception, another exception occurred:
-tests/test_builder.py:146: in test_build_with_secondary_bitmap
+tests/test_builder.py:144: in test_build_with_secondary_bitmap
     result = builder.build(message)
-iso8583sim/core/builder.py:76: in build
+iso8583sim/core/builder.py:77: in build
     raise BuildError(f"Failed to build message: {str(e)}")
-E   iso8583sim.core.types.BuildError: Failed to build message: Validation failed: Field 65 length must be 8</failure></testcase><testcase classname="tests.test_builder" name="test_build_network_specific" time="0.001" /><testcase classname="tests.test_builder" name="test_build_response_message" time="0.000"><failure message="iso8583sim.core.types.BuildError: Message validation failed: Field 42 length must be 15">tests/test_builder.py:174: in test_build_response_message
+E   iso8583sim.core.types.BuildError: Failed to build message: Validation failed: Field 65 length must be 8</failure></testcase><testcase classname="tests.test_builder" name="test_build_network_specific" time="0.000"><failure message="iso8583sim.core.types.BuildError: Failed to build message: Validation failed: Required field 11 missing for VISA; Required field 14 missing for VISA; Required field 22 missing for VISA; Required field 24 missing for VISA; Required field 25 missing for VISA">iso8583sim/core/builder.py:46: in build
+    raise BuildError(f"Validation failed: {'; '.join(errors)}")
+E   iso8583sim.core.types.BuildError: Validation failed: Required field 11 missing for VISA; Required field 14 missing for VISA; Required field 22 missing for VISA; Required field 24 missing for VISA; Required field 25 missing for VISA
+
+During handling of the above exception, another exception occurred:
+tests/test_builder.py:163: in test_build_network_specific
+    visa_result = builder.build(visa_message)
+iso8583sim/core/builder.py:77: in build
+    raise BuildError(f"Failed to build message: {str(e)}")
+E   iso8583sim.core.types.BuildError: Failed to build message: Validation failed: Required field 11 missing for VISA; Required field 14 missing for VISA; Required field 22 missing for VISA; Required field 24 missing for VISA; Required field 25 missing for VISA</failure></testcase><testcase classname="tests.test_builder" name="test_build_response_message" time="0.000"><failure message="iso8583sim.core.types.BuildError: Message validation failed: Field 42 length must be 15">tests/test_builder.py:172: in test_build_response_message
     response = builder.create_response(sample_message, response_fields)
-iso8583sim/core/builder.py:300: in create_response
+iso8583sim/core/builder.py:307: in create_response
     return self.create_message(response_mti, response_fields)
-iso8583sim/core/builder.py:263: in create_message
+iso8583sim/core/builder.py:270: in create_message
     raise BuildError(f"Message validation failed: {'; '.join(errors)}")
-E   iso8583sim.core.types.BuildError: Message validation failed: Field 42 length must be 15</failure></testcase><testcase classname="tests.test_builder" name="test_build_reversal_message" time="0.000"><failure message="iso8583sim.core.types.BuildError: Message validation failed: Field 42 length must be 15; Field 39 length must be 2; Field 90 length must be 42">tests/test_builder.py:183: in test_build_reversal_message
-    reversal = builder.create_reversal(sample_message)
-iso8583sim/core/builder.py:336: in create_reversal
+E   iso8583sim.core.types.BuildError: Message validation failed: Field 42 length must be 15</failure></testcase><testcase classname="tests.test_builder" name="test_build_reversal_message" time="0.000"><failure message="iso8583sim.core.types.BuildError: Message validation failed: Field 42 length must be 15">tests/test_builder.py:185: in test_build_reversal_message
+    reversal = builder.create_reversal(sample_message, extra_fields)
+iso8583sim/core/builder.py:334: in create_reversal
     return self.create_message(rev_mti, reversal_fields)
-iso8583sim/core/builder.py:263: in create_message
+iso8583sim/core/builder.py:270: in create_message
     raise BuildError(f"Message validation failed: {'; '.join(errors)}")
-E   iso8583sim.core.types.BuildError: Message validation failed: Field 42 length must be 15; Field 39 length must be 2; Field 90 length must be 42</failure></testcase><testcase classname="tests.test_builder" name="test_build_network_management_message" time="0.000"><failure message="iso8583sim.core.types.BuildError: Message validation failed: Field 96 length must be 8">tests/test_builder.py:195: in test_build_network_management_message
+E   iso8583sim.core.types.BuildError: Message validation failed: Field 42 length must be 15</failure></testcase><testcase classname="tests.test_builder" name="test_build_network_management_message" time="0.000"><failure message="iso8583sim.core.types.BuildError: Message validation failed: Field 96 length must be 8">tests/test_builder.py:193: in test_build_network_management_message
     message = builder.create_network_management_message(
-iso8583sim/core/builder.py:370: in create_network_management_message
+iso8583sim/core/builder.py:358: in create_network_management_message
     return self.create_message("0800", fields)
-iso8583sim/core/builder.py:263: in create_message
+iso8583sim/core/builder.py:270: in create_message
     raise BuildError(f"Message validation failed: {'; '.join(errors)}")
-E   iso8583sim.core.types.BuildError: Message validation failed: Field 96 length must be 8</failure></testcase><testcase classname="tests.test_builder" name="test_build_emv_data" time="0.001" /><testcase classname="tests.test_builder" name="test_build_error_handling" time="0.000" /><testcase classname="tests.test_builder" name="test_build_version_specific" time="0.000" /><testcase classname="tests.test_builder" name="test_message_recreation" time="0.000"><failure message="iso8583sim.core.types.BuildError: Failed to build message: Validation failed: Field 42 length must be 15">iso8583sim/core/builder.py:45: in build
+E   iso8583sim.core.types.BuildError: Message validation failed: Field 96 length must be 8</failure></testcase><testcase classname="tests.test_builder" name="test_build_emv_data" time="0.000" /><testcase classname="tests.test_builder" name="test_build_error_handling" time="0.000" /><testcase classname="tests.test_builder" name="test_build_version_specific" time="0.000" /><testcase classname="tests.test_builder" name="test_message_recreation" time="0.000"><failure message="iso8583sim.core.types.BuildError: Failed to build message: Validation failed: Field 42 length must be 15">iso8583sim/core/builder.py:46: in build
     raise BuildError(f"Validation failed: {'; '.join(errors)}")
 E   iso8583sim.core.types.BuildError: Validation failed: Field 42 length must be 15
 
 During handling of the above exception, another exception occurred:
-tests/test_builder.py:274: in test_message_recreation
+tests/test_builder.py:271: in test_message_recreation
     built = builder.build(sample_message)
-iso8583sim/core/builder.py:76: in build
+iso8583sim/core/builder.py:77: in build
     raise BuildError(f"Failed to build message: {str(e)}")
-E   iso8583sim.core.types.BuildError: Failed to build message: Validation failed: Field 42 length must be 15</failure></testcase><testcase classname="tests.test_builder" name="test_field_padding_handling" time="0.000" /><testcase classname="tests.test_parser" name="test_parse_mti" time="0.000" /><testcase classname="tests.test_parser" name="test_parse_bitmap" time="0.000" /><testcase classname="tests.test_parser" name="test_get_present_fields" time="0.048"><failure message="AssertionError: assert [2, 3, 4] == [2, 3, 4, 7, 11]&#10;  &#10;  Right contains 2 more items, first extra item: #x1B[0m#x1B[94m7#x1B[39;49;00m#x1B[90m#x1B[39;49;00m&#10;  &#10;  Full diff:&#10;  #x1B[0m#x1B[90m #x1B[39;49;00m [#x1B[90m#x1B[39;49;00m&#10;  #x1B[90m #x1B[39;49;00m     2,#x1B[90m#x1B[39;49;00m&#10;  #x1B[90m #x1B[39;49;00m     3,#x1B[90m#x1B[39;49;00m...&#10;  &#10;  ...Full output truncated (4 lines hidden), use '-vv' to show">tests/test_parser.py:69: in test_get_present_fields
-    assert fields == [2, 3, 4, 7, 11]
-E   AssertionError: assert [2, 3, 4] == [2, 3, 4, 7, 11]
-E     
-E     Right contains 2 more items, first extra item: #x1B[0m#x1B[94m7#x1B[39;49;00m#x1B[90m#x1B[39;49;00m
-E     
-E     Full diff:
-E     #x1B[0m#x1B[90m #x1B[39;49;00m [#x1B[90m#x1B[39;49;00m
-E     #x1B[90m #x1B[39;49;00m     2,#x1B[90m#x1B[39;49;00m
-E     #x1B[90m #x1B[39;49;00m     3,#x1B[90m#x1B[39;49;00m...
-E     
-E     ...Full output truncated (4 lines hidden), use '-vv' to show</failure></testcase><testcase classname="tests.test_parser" name="test_network_detection" time="0.000"><failure message="iso8583sim.core.types.ParseError: Failed to parse message: Failed to parse field 4: Message too short for field 4">iso8583sim/core/parser.py:187: in _parse_field
-    raise ParseError(f"Message too short for field {field_number}")
-E   iso8583sim.core.types.ParseError: Message too short for field 4
-
-During handling of the above exception, another exception occurred:
-iso8583sim/core/parser.py:70: in parse
-    value = self._parse_field(field_number, field_def)
-iso8583sim/core/parser.py:200: in _parse_field
-    raise ParseError(f"Failed to parse field {field_number}: {str(e)}")
-E   iso8583sim.core.types.ParseError: Failed to parse field 4: Message too short for field 4
-
-During handling of the above exception, another exception occurred:
-tests/test_parser.py:75: in test_network_detection
-    visa_result = parser.parse(visa_message)
-iso8583sim/core/parser.py:83: in parse
-    raise ParseError(f"Failed to parse message: {str(e)}")
-E   iso8583sim.core.types.ParseError: Failed to parse message: Failed to parse field 4: Message too short for field 4</failure></testcase><testcase classname="tests.test_parser" name="test_parse_network_specific_fields" time="0.000"><failure message="KeyError: 44">tests/test_parser.py:91: in test_parse_network_specific_fields
-    assert message.fields[44] == "123"
-E   KeyError: 44</failure></testcase><testcase classname="tests.test_parser" name="test_parse_variable_length_field" time="0.000" /><testcase classname="tests.test_parser" name="test_parse_binary_fields" time="0.000"><failure message="KeyError: 52">tests/test_parser.py:113: in test_parse_binary_fields
-    assert parsed.fields[52] == "0123456789ABCDEF"
-E   KeyError: 52</failure></testcase><testcase classname="tests.test_parser" name="test_parse_emv_data" time="0.000"><failure message="KeyError: 55">tests/test_parser.py:124: in test_parse_emv_data
-    emv_data = parser.parse_emv_data(parsed.fields[55])
-E   KeyError: 55</failure></testcase><testcase classname="tests.test_parser" name="test_parse_with_different_versions" time="0.000" /><testcase classname="tests.test_parser" name="test_parse_with_extended_bitmap" time="0.000" /><testcase classname="tests.test_parser" name="test_parse_error_handling" time="0.000" /><testcase classname="tests.test_parser" name="test_parse_multiple_messages" time="0.003"><failure message="assert 0 == 2&#10; +  where 0 = len([])">tests/test_parser.py:178: in test_parse_multiple_messages
+E   iso8583sim.core.types.BuildError: Failed to build message: Validation failed: Field 42 length must be 15</failure></testcase><testcase classname="tests.test_builder" name="test_field_padding_handling" time="0.000" /><testcase classname="tests.test_parser" name="test_parse_mti" time="0.000" /><testcase classname="tests.test_parser" name="test_parse_bitmap" time="0.000" /><testcase classname="tests.test_parser" name="test_get_present_fields" time="0.000" /><testcase classname="tests.test_parser" name="test_bitmap_with_secondary" time="0.000" /><testcase classname="tests.test_parser" name="test_field_length_validation" time="0.001" /><testcase classname="tests.test_parser" name="test_variable_length_field_parsing" time="0.000" /><testcase classname="tests.test_parser" name="test_parse_with_padding" time="0.000"><failure message="KeyError: 41">tests/test_parser.py:139: in test_parse_with_padding
+    assert parsed.fields[41] == "TEST1234"
+E   KeyError: 41</failure></testcase><testcase classname="tests.test_parser" name="test_network_detection" time="0.001"><failure message="AssertionError: assert None == &lt;CardNetwork.VISA: 'VISA'&gt;&#10; +  where None = ISO8583Message(mti='0100', fields={0: '0100', 2: '4111111111111111'}, version=&lt;ISO8583Version.V1987: '1987'&gt;, network=None, raw_message='01004000000000000000164111111111111111', bitmap='4000000000000000').network&#10; +  and   &lt;CardNetwork.VISA: 'VISA'&gt; = CardNetwork.VISA">tests/test_parser.py:149: in test_network_detection
+    assert parsed.network == CardNetwork.VISA
+E   AssertionError: assert None == &lt;CardNetwork.VISA: 'VISA'&gt;
+E    +  where None = ISO8583Message(mti='0100', fields={0: '0100', 2: '4111111111111111'}, version=&lt;ISO8583Version.V1987: '1987'&gt;, network=None, raw_message='01004000000000000000164111111111111111', bitmap='4000000000000000').network
+E    +  and   &lt;CardNetwork.VISA: 'VISA'&gt; = CardNetwork.VISA</failure></testcase><testcase classname="tests.test_parser" name="test_parse_network_specific_fields" time="0.001"><failure message="AssertionError: assert '44' in {0: '0100'}&#10; +  where {0: '0100'} = ISO8583Message(mti='0100', fields={0: '0100'}, version=&lt;ISO8583Version.V1987: '1987'&gt;, network=&lt;CardNetwork.VISA: 'VISA'&gt;, raw_message='0100000010000000000003123', bitmap='0000100000000000').fields">tests/test_parser.py:154: in test_parse_network_specific_fields
+    assert '44' in parsed.fields
+E   AssertionError: assert '44' in {0: '0100'}
+E    +  where {0: '0100'} = ISO8583Message(mti='0100', fields={0: '0100'}, version=&lt;ISO8583Version.V1987: '1987'&gt;, network=&lt;CardNetwork.VISA: 'VISA'&gt;, raw_message='0100000010000000000003123', bitmap='0000100000000000').fields</failure></testcase><testcase classname="tests.test_parser" name="test_parse_variable_length_field" time="0.000" /><testcase classname="tests.test_parser" name="test_parse_binary_fields" time="0.001"><failure message="AssertionError: assert '52' in {0: '0100'}&#10; +  where {0: '0100'} = ISO8583Message(mti='0100', fields={0: '0100'}, version=&lt;ISO8583Version.V1987: '1987'&gt;, network=None, raw_message='010000000000010000000123456789ABCDEF', bitmap='0000000001000000').fields">tests/test_parser.py:171: in test_parse_binary_fields
+    assert '52' in parsed.fields
+E   AssertionError: assert '52' in {0: '0100'}
+E    +  where {0: '0100'} = ISO8583Message(mti='0100', fields={0: '0100'}, version=&lt;ISO8583Version.V1987: '1987'&gt;, network=None, raw_message='010000000000010000000123456789ABCDEF', bitmap='0000000001000000').fields</failure></testcase><testcase classname="tests.test_parser" name="test_parse_emv_data" time="0.001"><failure message="AssertionError: assert 55 in {0: '0100', 44: '9F0607A0000000031010'}&#10; +  where {0: '0100', 44: '9F0607A0000000031010'} = ISO8583Message(mti='0100', fields={0: '0100', 44: '9F0607A0000000031010'}, version=&lt;ISO8583Version.V1987: '1987'&gt;, network=None, raw_message='01000000000000100000209F0607A0000000031010', bitmap='0000000000100000').fields">tests/test_parser.py:178: in test_parse_emv_data
+    assert 55 in parsed.fields
+E   AssertionError: assert 55 in {0: '0100', 44: '9F0607A0000000031010'}
+E    +  where {0: '0100', 44: '9F0607A0000000031010'} = ISO8583Message(mti='0100', fields={0: '0100', 44: '9F0607A0000000031010'}, version=&lt;ISO8583Version.V1987: '1987'&gt;, network=None, raw_message='01000000000000100000209F0607A0000000031010', bitmap='0000000000100000').fields</failure></testcase><testcase classname="tests.test_parser" name="test_parse_with_different_versions" time="0.000" /><testcase classname="tests.test_parser" name="test_parse_with_extended_bitmap" time="0.000" /><testcase classname="tests.test_parser" name="test_parse_error_handling" time="0.001" /><testcase classname="tests.test_parser" name="test_parse_multiple_messages" time="0.007"><failure message="assert 0 == 2&#10; +  where 0 = len([])">tests/test_parser.py:233: in test_parse_multiple_messages
     assert len(parsed) == 2
 E   assert 0 == 2
-E    +  where 0 = len([])</failure></testcase><testcase classname="tests.test_parser" name="test_network_specific_formatting" time="0.000"><failure message="KeyError: 44">tests/test_parser.py:191: in test_network_specific_formatting
+E    +  where 0 = len([])</failure></testcase><testcase classname="tests.test_parser" name="test_network_specific_formatting" time="0.001"><failure message="KeyError: 44">tests/test_parser.py:246: in test_network_specific_formatting
     assert visa_parsed.fields[44] == "ABCD"  # Should be uppercase
-E   KeyError: 44</failure></testcase><testcase classname="tests.test_types" name="test_field_definition_creation" time="0.000" /><testcase classname="tests.test_types" name="test_variable_length_field_definition" time="0.000" /><testcase classname="tests.test_types" name="test_message_creation" time="0.000" /><testcase classname="tests.test_types" name="test_message_class_properties" time="0.000" /><testcase classname="tests.test_types" name="test_message_class_enums" time="0.000" /><testcase classname="tests.test_types" name="test_message_function_enums" time="0.000" /><testcase classname="tests.test_types" name="test_message_origin_enums" time="0.000" /><testcase classname="tests.test_types" name="test_network_specific_fields" time="0.000" /><testcase classname="tests.test_types" name="test_version_specific_fields" time="0.000" /><testcase classname="tests.test_types" name="test_field_type_properties" time="0.000"><failure message="AssertionError: assert 'FieldType.NUMERIC' == 'n'&#10;  &#10;  - n&#10;  + FieldType.NUMERIC">tests/test_types.py:123: in test_field_type_properties
-    assert str(field_type) == field_type.value
-E   AssertionError: assert 'FieldType.NUMERIC' == 'n'
-E     
-E     - n
-E     + FieldType.NUMERIC</failure></testcase><testcase classname="tests.test_types" name="test_card_network_properties" time="0.000" /><testcase classname="tests.test_types" name="test_field_definition_validation" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'ValueError'&gt;">tests/test_types.py:137: in test_field_definition_validation
-    with pytest.raises(ValueError):
-E   Failed: DID NOT RAISE &lt;class 'ValueError'&gt;</failure></testcase><testcase classname="tests.test_types" name="test_custom_exceptions" time="0.000" /><testcase classname="tests.test_types" name="test_field_inheritance" time="0.000" /><testcase classname="tests.test_validator" name="test_validate_field_numeric" time="0.000" /><testcase classname="tests.test_validator" name="test_validate_field_alpha" time="0.000" /><testcase classname="tests.test_validator" name="test_validate_field_alphanumeric" time="0.000" /><testcase classname="tests.test_validator" name="test_validate_mti" time="0.000" /><testcase classname="tests.test_validator" name="test_validate_bitmap" time="0.000" /><testcase classname="tests.test_validator" name="test_validate_pan" time="0.000" /><testcase classname="tests.test_validator" name="test_validate_network_specific_fields" time="0.000" /><testcase classname="tests.test_validator" name="test_validate_message_network_compliance" time="0.000"><failure message="assert 0 &gt; 0&#10; +  where 0 = len([])">tests/test_validator.py:212: in test_validate_message_network_compliance
-    assert len(errors) &gt; 0
-E   assert 0 &gt; 0
-E    +  where 0 = len([])</failure></testcase><testcase classname="tests.test_validator" name="test_validate_version_specific_fields" time="0.000" /><testcase classname="tests.test_validator" name="test_validate_emv_data" time="0.000"><failure message="AssertionError: assert 1 == 0&#10; +  where 1 = len(['Incomplete value for tag 10'])">tests/test_validator.py:246: in test_validate_emv_data
+E   KeyError: 44</failure></testcase><testcase classname="tests.test_types" name="test_field_definition_creation" time="0.000" /><testcase classname="tests.test_types" name="test_variable_length_field_definition" time="0.000" /><testcase classname="tests.test_types" name="test_field_type_uniqueness" time="0.000" /><testcase classname="tests.test_types" name="test_field_type_string_representation" time="0.000" /><testcase classname="tests.test_types" name="test_message_creation" time="0.000" /><testcase classname="tests.test_types" name="test_message_class_properties" time="0.000" /><testcase classname="tests.test_types" name="test_message_class_enums" time="0.000" /><testcase classname="tests.test_types" name="test_message_function_enums" time="0.000" /><testcase classname="tests.test_types" name="test_message_origin_enums" time="0.000" /><testcase classname="tests.test_types" name="test_network_specific_fields" time="0.000" /><testcase classname="tests.test_types" name="test_version_specific_fields" time="0.000" /><testcase classname="tests.test_types" name="test_field_type_properties" time="0.000" /><testcase classname="tests.test_types" name="test_field_definition_defaults" time="0.000" /><testcase classname="tests.test_types" name="test_card_network_properties" time="0.000" /><testcase classname="tests.test_types" name="test_field_definition_validation" time="0.001" /><testcase classname="tests.test_types" name="test_custom_exceptions" time="0.000" /><testcase classname="tests.test_types" name="test_field_inheritance" time="0.000" /><testcase classname="tests.test_validator" name="test_validate_field_numeric" time="0.000" /><testcase classname="tests.test_validator" name="test_validate_field_alpha" time="0.000" /><testcase classname="tests.test_validator" name="test_validate_field_alphanumeric" time="0.000" /><testcase classname="tests.test_validator" name="test_validate_mti" time="0.000" /><testcase classname="tests.test_validator" name="test_validate_bitmap" time="0.000" /><testcase classname="tests.test_validator" name="test_validate_pan" time="0.000" /><testcase classname="tests.test_validator" name="test_validate_network_specific_fields" time="0.000"><failure message="TypeError: ISO8583Validator.validate_field() takes 4 positional arguments but 5 were given">tests/test_validator.py:208: in test_validate_network_specific_fields
+    valid, error = validator.validate_field(44, "A5B7", field_def, CardNetwork.VISA)
+E   TypeError: ISO8583Validator.validate_field() takes 4 positional arguments but 5 were given</failure></testcase><testcase classname="tests.test_validator" name="test_validate_message_network_compliance" time="0.000" /><testcase classname="tests.test_validator" name="test_validate_version_specific_fields" time="0.000" /><testcase classname="tests.test_validator" name="test_validate_emv_data" time="0.000"><failure message="AssertionError: assert 1 == 0&#10; +  where 1 = len(['Incomplete value for tag 10'])">tests/test_validator.py:267: in test_validate_emv_data
     assert len(errors) == 0
 E   AssertionError: assert 1 == 0
-E    +  where 1 = len(['Incomplete value for tag 10'])</failure></testcase><testcase classname="tests.test_validator" name="test_validate_network_compliance" time="0.000"><failure message="AssertionError: assert 4 == 0&#10; +  where 4 = len(['Required field 14 missing for VISA', 'Required field 22 missing for VISA', 'Required field 24 missing for VISA', 'Required field 25 missing for VISA'])">tests/test_validator.py:257: in test_validate_network_compliance
-    assert len(errors) == 0
-E   AssertionError: assert 4 == 0
-E    +  where 4 = len(['Required field 14 missing for VISA', 'Required field 22 missing for VISA', 'Required field 24 missing for VISA', 'Required field 25 missing for VISA'])</failure></testcase><testcase classname="tests.test_validator" name="test_validate_field_compatibility" time="0.000" /><testcase classname="tests.test_validator" name="test_validate_message_field_padding" time="0.000"><failure message="AssertionError: assert 1 == 0&#10; +  where 1 = len(['Field 41 must contain only letters and numbers'])">tests/test_validator.py:289: in test_validate_message_field_padding
-    assert len(errors) == 0
-E   AssertionError: assert 1 == 0
-E    +  where 1 = len(['Field 41 must contain only letters and numbers'])</failure></testcase></testsuite></testsuites>
+E    +  where 1 = len(['Incomplete value for tag 10'])</failure></testcase><testcase classname="tests.test_validator" name="test_validate_network_compliance" time="0.000" /><testcase classname="tests.test_validator" name="test_validate_field_compatibility" time="0.000" /><testcase classname="tests.test_validator" name="test_validate_message_field_padding" time="0.000" /></testsuite></testsuites>

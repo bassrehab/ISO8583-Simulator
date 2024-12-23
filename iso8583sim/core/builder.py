@@ -18,6 +18,7 @@ from .types import (
 from .validator import ISO8583Validator
 from .types import FieldDefinition, FieldType, BuildError
 
+
 class ISO8583Builder:
     """Builder for creating ISO 8583 messages with network support"""
 
@@ -179,48 +180,45 @@ class ISO8583Builder:
         except Exception as e:
             raise BuildError(f"Failed to build field {field_number}: {str(e)}")
 
-    def _format_field_value(
-            self,
-            field_number: int,
-            value: str,
-            field_def: FieldDefinition
-    ) -> str:
+    def _format_field_value(self, field_number: int, value: str, field_def: FieldDefinition) -> str:
         """Format field value based on type and rules"""
         try:
-            # Apply padding first if defined
-            if field_def.padding_char:
-                if field_def.padding_direction == 'left':
-                    value = value.rjust(field_def.max_length, field_def.padding_char)
-                else:
-                    value = value.ljust(field_def.max_length, field_def.padding_char)
+            # Strip any existing padding
+            value = value.strip()
 
-            # Handle binary fields
-            if field_def.field_type == FieldType.BINARY:
-                # Ensure proper length and hex format
-                value = value.zfill(field_def.max_length * 2)  # Binary fields need twice the length in hex
-                try:
-                    int(value, 16)
-                    return value.upper()
-                except ValueError:
-                    raise BuildError(f"Invalid binary format for field {field_number}")
-
-            # Apply type-specific formatting
+            # Apply type-specific validation
             if field_def.field_type == FieldType.NUMERIC:
                 if not value.strip('0').isdigit():
                     raise BuildError(f"Field {field_number} must contain only digits")
                 value = value.zfill(field_def.max_length)
 
             elif field_def.field_type == FieldType.ALPHA:
-                if not value.strip().isalpha():
+                if not value.isalpha():
                     raise BuildError(f"Field {field_number} must contain only letters")
 
-            # Special field formatting
-            if field_number == 42:  # Card Acceptor ID
-                value = value.ljust(15)
-            elif field_number == 41:  # Terminal ID
-                value = value.ljust(8)
-            elif field_number == 39:  # Response Code
-                value = value.zfill(2)
+            elif field_def.field_type == FieldType.ALPHANUMERIC:
+                if not value.isalnum():
+                    raise BuildError(f"Field {field_number} must contain only letters and numbers")
+
+            # Handle binary fields
+            if field_def.field_type == FieldType.BINARY:
+                try:
+                    # Ensure proper hex format and length
+                    int(value, 16)  # Validate hex format
+                    value = value.upper().zfill(field_def.max_length * 2)  # Each byte = 2 hex chars
+                except ValueError:
+                    raise BuildError(f"Field {field_number} must be valid hexadecimal")
+
+            # Apply padding if specified
+            if field_def.padding_char:
+                if field_def.padding_direction == 'left':
+                    value = value.rjust(field_def.max_length, field_def.padding_char)
+                else:
+                    value = value.ljust(field_def.max_length, field_def.padding_char)
+
+            # Validate final length
+            if len(value) != field_def.max_length:
+                raise BuildError(f"Field {field_number} length must be {field_def.max_length}")
 
             return value
 
@@ -342,18 +340,18 @@ class ISO8583Builder:
     ) -> ISO8583Message:
         """Create a network management message"""
         fields = {
-            70: message_type.zfill(3),  # Network management type, 3 digits
+            70: message_type.zfill(3),  # Network management type
         }
 
-        # Add network-specific fields with proper lengths
+        # Add network-specific fields
         if network == CardNetwork.VISA:
             fields.update({
-                53: "0" * 16,  # Security Info, 16 hex digits
-                96: "0" * 16  # Message Security Code, 16 hex digits for 8 bytes
+                53: "0" * 16,  # Security Info
+                96: "0" * 16  # Message Security Code (8 bytes = 16 hex chars)
             })
         elif network == CardNetwork.MASTERCARD:
             fields.update({
-                48: "MC00".ljust(4),  # Network specific data
+                48: "MC00",
                 53: "0" * 16
             })
 
