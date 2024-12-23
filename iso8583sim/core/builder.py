@@ -16,7 +16,7 @@ from .types import (
     get_field_definition
 )
 from .validator import ISO8583Validator
-
+from .types import FieldDefinition, FieldType, BuildError
 
 class ISO8583Builder:
     """Builder for creating ISO 8583 messages with network support"""
@@ -183,35 +183,44 @@ class ISO8583Builder:
             self,
             field_number: int,
             value: str,
-            field_def: Dict
+            field_def: FieldDefinition
     ) -> str:
         """Format field value based on type and rules"""
         try:
+            # Apply padding first if defined
+            if field_def.padding_char:
+                if field_def.padding_direction == 'left':
+                    value = value.rjust(field_def.max_length, field_def.padding_char)
+                else:
+                    value = value.ljust(field_def.max_length, field_def.padding_char)
+
             # Handle binary fields
             if field_def.field_type == FieldType.BINARY:
+                # Ensure proper length and hex format
+                value = value.zfill(field_def.max_length * 2)  # Binary fields need twice the length in hex
                 try:
-                    # Ensure valid hex format
                     int(value, 16)
                     return value.upper()
                 except ValueError:
                     raise BuildError(f"Invalid binary format for field {field_number}")
 
-            # Apply basic type formatting
+            # Apply type-specific formatting
             if field_def.field_type == FieldType.NUMERIC:
-                if not value.isdigit():
+                if not value.strip('0').isdigit():
                     raise BuildError(f"Field {field_number} must contain only digits")
+                value = value.zfill(field_def.max_length)
 
             elif field_def.field_type == FieldType.ALPHA:
-                if not value.isalpha():
+                if not value.strip().isalpha():
                     raise BuildError(f"Field {field_number} must contain only letters")
 
             # Special field formatting
-            if field_number == 2:  # PAN
-                return self._format_pan(value)
-            elif field_number == 35:  # Track 2
-                return self._format_track2(value)
-            elif field_number == 55:  # ICC Data
-                return self._format_icc_data(value)
+            if field_number == 42:  # Card Acceptor ID
+                value = value.ljust(15)
+            elif field_number == 41:  # Terminal ID
+                value = value.ljust(8)
+            elif field_number == 39:  # Response Code
+                value = value.zfill(2)
 
             return value
 
@@ -304,17 +313,8 @@ class ISO8583Builder:
             original: ISO8583Message,
             additional_fields: Optional[Dict[int, str]] = None
     ) -> ISO8583Message:
-        """
-        Create a reversal message based on original message
-
-        Args:
-            original: Original message to reverse
-            additional_fields: Optional additional fields for reversal
-
-        Returns:
-            Reversal message
-        """
-        # Create reversal MTI (usually 0400/0420)
+        """Create a reversal message"""
+        # Create reversal MTI
         orig_mti = original.mti
         rev_mti = f"04{orig_mti[2:]}"
 
@@ -325,8 +325,8 @@ class ISO8583Builder:
         now = datetime.now()
         reversal_fields.update({
             7: now.strftime("%m%d%H%M%S"),  # Transmission date and time
-            39: "400",  # Response code (reversal)
-            90: f"{orig_mti}{original.fields.get(11, '')}",  # Original elements
+            39: "00",  # Response code (2 digits)
+            90: f"{orig_mti}{original.fields.get('11', '').zfill(6)}".ljust(42, '0')  # Original elements
         })
 
         # Add any additional fields
@@ -340,31 +340,21 @@ class ISO8583Builder:
             message_type: str,
             network: Optional[CardNetwork] = None
     ) -> ISO8583Message:
-        """
-        Create a network management message
-
-        Args:
-            message_type: Type of network management message
-            network: Optional card network
-
-        Returns:
-            Network management message
-        """
-        # Network management messages use MTI 0800
+        """Create a network management message"""
         fields = {
-            70: message_type,  # Network management type
+            70: message_type.zfill(3),  # Network management type, 3 digits
         }
 
-        # Add network-specific fields
+        # Add network-specific fields with proper lengths
         if network == CardNetwork.VISA:
             fields.update({
-                53: "0000000000000000",  # Security Info
-                96: "0000000000000000"  # Message Security Code
+                53: "0" * 16,  # Security Info, 16 hex digits
+                96: "0" * 16  # Message Security Code, 16 hex digits for 8 bytes
             })
         elif network == CardNetwork.MASTERCARD:
             fields.update({
-                48: "MC00",  # Network specific data
-                53: "0000000000000000"
+                48: "MC00".ljust(4),  # Network specific data
+                53: "0" * 16
             })
 
         return self.create_message("0800", fields)
