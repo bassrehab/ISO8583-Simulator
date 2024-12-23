@@ -1,20 +1,22 @@
 # iso8583sim/core/parser.py
 
-from typing import Dict, Optional, Tuple, List, Any
-import binascii
-from datetime import datetime
-import re
+import logging
+from typing import Dict, Optional, List
+
 from .types import (
     ISO8583Message,
-    ISO8583_FIELDS,
     FieldType,
     FieldDefinition,
     ParseError,
     ISO8583Version,
     CardNetwork,
-    NETWORK_SPECIFIC_FIELDS,
-    VERSION_SPECIFIC_FIELDS,
     get_field_definition
+)
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
 
@@ -27,36 +29,34 @@ class ISO8583Parser:
         self._raw_message = ""
         self._detected_network = None
         self._secondary_bitmap = False
+        # Initialize logger with class-specific name
+        self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
+        self.logger.debug("Initialized ISO8583Parser with version %s", version.value)
 
     def parse(self, message: str, network: Optional[CardNetwork] = None) -> ISO8583Message:
-        """
-        Parse an ISO 8583 message string into an ISO8583Message object
-
-        Args:
-            message: Raw ISO 8583 message string
-            network: Optional card network for specific parsing rules
-
-        Returns:
-            ISO8583Message object
-
-        Raises:
-            ParseError: If message cannot be parsed
-        """
+        """Parse an ISO 8583 message string into an ISO8583Message object"""
         try:
             self._raw_message = message
             self._current_position = 0
             self._detected_network = network or self._detect_network(message)
 
+            # Log parsing attempt
+            self.logger.info("Starting to parse message with network: %s",
+                             self._detected_network.value if self._detected_network else "Unknown")
+            self.logger.debug("Raw message: %s", message)
+
             # Parse MTI
             mti = self._parse_mti()
+            self.logger.debug("Parsed MTI: %s", mti)
 
             # Parse bitmap
             bitmap = self._parse_bitmap()
+            self.logger.debug("Parsed bitmap: %s", bitmap)
             present_fields = self._get_present_fields(bitmap)
+            self.logger.debug("Present fields: %s", present_fields)
 
             # Parse data fields
             fields = {0: mti}  # MTI is field 0
-
             for field_number in present_fields:
                 try:
                     field_def = get_field_definition(
@@ -66,18 +66,19 @@ class ISO8583Parser:
                     )
 
                     if field_def is None:
-                        self.logger.warning(f"No definition found for field {field_number}")
+                        self.logger.warning("No definition found for field %d", field_number)
                         continue
 
                     value = self._parse_field(field_number, field_def)
                     if value is not None:
                         fields[field_number] = value
+                        self.logger.debug("Parsed field %d: %s", field_number, value)
 
                 except Exception as e:
-                    self.logger.error(f"Error parsing field {field_number}: {str(e)}")
+                    self.logger.error("Error parsing field %d: %s", field_number, str(e))
                     raise
 
-            return ISO8583Message(
+            message = ISO8583Message(
                 mti=mti,
                 fields=fields,
                 version=self.version,
@@ -86,9 +87,12 @@ class ISO8583Parser:
                 bitmap=bitmap
             )
 
-        except Exception as e:
-            raise ParseError(f"Failed to parse message: {str(e)}")
+            self.logger.info("Successfully parsed message")
+            return message
 
+        except Exception as e:
+            self.logger.error("Failed to parse message: %s", str(e))
+            raise ParseError(f"Failed to parse message: {str(e)}")
 
     def _parse_mti(self) -> str:
         """
@@ -118,17 +122,17 @@ class ISO8583Parser:
     def _parse_bitmap(self) -> str:
         """
         Parse primary and secondary bitmaps
-        Returns combined bitmap as hexadecimal string
+        Returns bitmap as hexadecimal string
         """
-        if len(self._raw_message) < self._current_position + 16:
-            raise ParseError("Message too short for bitmap")
-
-        # Get primary bitmap
-        primary_bitmap = self._raw_message[self._current_position:self._current_position + 16]
-        self._current_position += 16
-
         try:
-            # Check if secondary bitmap is present (first bit)
+            if len(self._raw_message) < self._current_position + 16:
+                raise ParseError("Message too short for bitmap")
+
+            # Get primary bitmap
+            primary_bitmap = self._raw_message[self._current_position:self._current_position + 16]
+            self._current_position += 16
+
+            # Check if secondary bitmap is present (bit 1)
             bitmap_value = int(primary_bitmap, 16)
             self._secondary_bitmap = bool(bitmap_value & 0x8000000000000000)
 
@@ -145,6 +149,8 @@ class ISO8583Parser:
 
         except ValueError as e:
             raise ParseError(f"Invalid bitmap format: {str(e)}")
+        except Exception as e:
+            raise ParseError(f"Failed to parse bitmap: {str(e)}")
 
     def _get_present_fields(self, bitmap: str) -> List[int]:
         """
@@ -157,7 +163,7 @@ class ISO8583Parser:
             List of field numbers present in message
         """
         try:
-            # Convert hex string to binary string, properly handling length
+            # Convert hex string to binary string
             binary = bin(int(bitmap, 16))[2:].zfill(len(bitmap) * 4)
 
             # Check each bit
@@ -165,14 +171,54 @@ class ISO8583Parser:
             for i in range(len(binary)):
                 if binary[i] == '1':
                     field_number = i + 1  # Bitmap positions start at 1
-                    # Skip secondary bitmap indicator (bit 1)
-                    if i != 0 or len(bitmap) == 32:  # Include field 1 only for secondary bitmap
+                    if field_number != 1 or len(bitmap) == 32:  # Include field 1 only for secondary bitmap
                         present_fields.append(field_number)
 
+            # Sort fields for consistent order
             return sorted(present_fields)
 
         except Exception as e:
+            self.logger.error("Failed to process bitmap: %s", str(e))
             raise ParseError(f"Failed to process bitmap: {str(e)}")
+
+    def _validate_emv_format(self, value: str) -> bool:
+        """Validate basic EMV data format"""
+        try:
+            if not value or len(value) < 4:  # Minimum: 2 chars tag + 2 chars length
+                return False
+
+            position = 0
+            while position < len(value):
+                # Check if enough characters remain for tag and length
+                if position + 4 > len(value):
+                    return False
+
+                # Check tag format (2 characters)
+                tag = value[position:position + 2]
+                if not all(c in '0123456789ABCDEFabcdef' for c in tag):
+                    return False
+
+                position += 2
+
+                # Check length format (2 characters)
+                length_str = value[position:position + 2]
+                if not all(c in '0123456789ABCDEFabcdef' for c in length_str):
+                    return False
+
+                # Convert length from hex to int
+                length = int(length_str, 16) * 2  # Each byte is 2 hex chars
+                position += 2
+
+                # Check if enough data remains
+                if position + length > len(value):
+                    return False
+
+                position += length
+
+            return position == len(value)
+
+        except Exception:
+            return False
 
     def _parse_field(self, field_number: int, field_def: FieldDefinition) -> Optional[str]:
         """
@@ -214,24 +260,24 @@ class ISO8583Parser:
                         ]
                 self._current_position += field_def.max_length
 
-            # Special field handling
-            if field_number == 52 and field_def.field_type == FieldType.BINARY:
-                # Ensure proper hex format for binary data
+                # Handle padding
+                if field_def.padding_char:
+                    if field_def.padding_direction == 'left':
+                        value = value.lstrip(field_def.padding_char)
+                    else:
+                        value = value.rstrip(field_def.padding_char)
+
+            # Special field formatting
+            if field_def.field_type == FieldType.BINARY:
+                # Ensure proper hex format
                 if not all(c in '0123456789ABCDEFabcdef' for c in value):
                     raise ParseError(f"Invalid binary data format in field {field_number}")
                 value = value.upper()
 
             elif field_number == 55:  # EMV data
                 # Validate basic EMV format
-                if len(value) % 2 != 0:
-                    raise ParseError("Invalid EMV data length")
-
-            # Remove padding if specified
-            if field_def.padding_char:
-                if field_def.padding_direction == 'left':
-                    value = value.lstrip(field_def.padding_char)
-                else:
-                    value = value.rstrip(field_def.padding_char)
+                if not self._validate_emv_format(value):
+                    raise ParseError(f"Invalid EMV data format in field {field_number}")
 
             return value
 
@@ -288,109 +334,113 @@ class ISO8583Parser:
 
         return value
 
-    def _detect_network(self, mti: str) -> Optional[CardNetwork]:
+    def _detect_network(self, message: str) -> Optional[CardNetwork]:
         """
-        Attempt to detect card network from message
+        Attempt to detect card network from message contents
 
         Args:
-            mti: Message Type Indicator
+            message: Full message string
 
         Returns:
             Detected CardNetwork or None
         """
-        # Check PAN prefix if present
-        if len(self._raw_message) > 20:  # Minimum length for message with PAN
-            pan_data = self._raw_message[20:35]  # Approximate position after bitmap
+        try:
+            # Check if network was explicitly provided
+            if self._detected_network:
+                return self._detected_network
 
-            # VISA starts with 4
-            if pan_data.startswith('4'):
-                return CardNetwork.VISA
-            # Mastercard starts with 51-55
-            elif pan_data.startswith(('51', '52', '53', '54', '55')):
-                return CardNetwork.MASTERCARD
-            # AMEX starts with 34 or 37
-            elif pan_data.startswith(('34', '37')):
-                return CardNetwork.AMEX
-            # Discover starts with 6011, 644-649, or 65
-            elif pan_data.startswith(('6011', '644', '645', '646', '647', '648', '649', '65')):
-                return CardNetwork.DISCOVER
-            # JCB starts with 35
-            elif pan_data.startswith('35'):
-                return CardNetwork.JCB
-            # UnionPay starts with 62
-            elif pan_data.startswith('62'):
-                return CardNetwork.UNIONPAY
+            # Extract PAN if present (after MTI and bitmap)
+            if len(message) > 36:  # Minimum length for message with PAN
+                potential_pan_start = 20  # After MTI(4) + Primary Bitmap(16)
+                potential_pan = message[potential_pan_start:potential_pan_start + 19]
 
-        return None
+                # Check PAN patterns
+                if potential_pan.startswith('4'):
+                    return CardNetwork.VISA
+                elif any(potential_pan.startswith(prefix) for prefix in ['51', '52', '53', '54', '55']):
+                    return CardNetwork.MASTERCARD
+                elif any(potential_pan.startswith(prefix) for prefix in ['34', '37']):
+                    return CardNetwork.AMEX
+                elif potential_pan.startswith('62'):
+                    return CardNetwork.UNIONPAY
+                elif potential_pan.startswith('35'):
+                    return CardNetwork.JCB
 
-    def parse_file(self, filename: str, network: Optional[CardNetwork] = None) -> List[ISO8583Message]:
-        """
-        Parse multiple messages from a file
+            return None
 
-        Args:
-            filename: Path to file containing messages
-            network: Optional card network for specific parsing rules
+        except Exception as e:
+            self.logger.warning("Failed to detect network: %s", str(e))
+            return None
 
-        Returns:
-            List of parsed ISO8583Message objects
-        """
+    def parse_file(self, filename: str) -> List[ISO8583Message]:
+        """Parse multiple messages from a file"""
+        self.logger.info("Starting to parse messages from file: %s", filename)
         messages = []
-        with open(filename, 'r') as f:
-            for line in f:
-                line = line.strip()
-                if line:  # Skip empty lines
-                    try:
-                        message = self.parse(line, network)
-                        messages.append(message)
-                    except ParseError as e:
-                        # Log error but continue parsing
-                        print(f"Failed to parse message: {str(e)}")
-
-        return messages
-
-
-def parse_emv_data(self, emv_data: str) -> Dict[str, str]:
-    """
-    Parse EMV data field (field 55)
-
-    Args:
-        emv_data: EMV data string
-
-    Returns:
-        Dictionary of EMV tags and values
-    """
-    if not emv_data:
-        return {}
-
-    result = {}
-    position = 0
-
-    while position < len(emv_data):
-        # Parse tag
-        if position + 2 > len(emv_data):
-            break
-
-        tag = emv_data[position:position + 2]
-        position += 2
-
-        # Parse length
-        if position + 2 > len(emv_data):
-            break
 
         try:
-            length = int(emv_data[position:position + 2], 16)
-            position += 2
+            with open(filename, 'r') as f:
+                for line_num, line in enumerate(f, 1):
+                    line = line.strip()
+                    if line:
+                        try:
+                            self.logger.debug("Parsing message from line %d", line_num)
+                            message = self.parse(line)
+                            messages.append(message)
+                        except ParseError as e:
+                            self.logger.error("Failed to parse message at line %d: %s",
+                                              line_num, str(e))
+                            # Continue parsing other messages
+                            continue
 
-            # Parse value
-            if position + (length * 2) > len(emv_data):
+            self.logger.info("Successfully parsed %d messages from file", len(messages))
+            return messages
+
+        except Exception as e:
+            self.logger.error("Error reading file %s: %s", filename, str(e))
+            raise
+
+    def parse_emv_data(self, emv_data: str) -> Dict[str, str]:
+        """
+        Parse EMV data field (field 55)
+
+        Args:
+            emv_data: EMV data string
+
+        Returns:
+            Dictionary of EMV tags and values
+        """
+        if not emv_data:
+            return {}
+
+        result = {}
+        position = 0
+
+        while position < len(emv_data):
+            # Parse tag
+            if position + 2 > len(emv_data):
                 break
 
-            value = emv_data[position:position + (length * 2)]
-            position += length * 2
+            tag = emv_data[position:position + 2]
+            position += 2
 
-            result[tag] = value
+            # Parse length
+            if position + 2 > len(emv_data):
+                break
 
-        except ValueError:
-            break
+            try:
+                length = int(emv_data[position:position + 2], 16)
+                position += 2
 
-    return result
+                # Parse value
+                if position + (length * 2) > len(emv_data):
+                    break
+
+                value = emv_data[position:position + (length * 2)]
+                position += length * 2
+
+                result[tag] = value
+
+            except ValueError:
+                break
+
+        return result
