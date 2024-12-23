@@ -36,15 +36,37 @@ def test_field_definition_creation():
 
 def test_variable_length_field_definition():
     """Test variable length field definitions"""
-    field = FieldDefinition(
+    # LLVAR field
+    llvar = FieldDefinition(
         field_type=FieldType.LLVAR,
         max_length=19,
         description="Test LLVAR",
         min_length=1
     )
-    assert field.min_length == 1
-    assert field.max_length == 19
-    assert field.field_type == FieldType.LLVAR
+    assert llvar.min_length == 1  # min_length should not be modified for LLVAR
+
+    # LLLVAR field
+    lllvar = FieldDefinition(
+        field_type=FieldType.LLLVAR,
+        max_length=999,
+        description="Test LLLVAR",
+        min_length=1
+    )
+    assert lllvar.min_length == 1  # min_length should not be modified for LLLVAR
+
+
+def test_field_type_uniqueness():
+    """Test that field types have unique values"""
+    values = [ft.value for ft in FieldType]
+    assert len(values) == len(set(values))  # All values should be unique
+
+
+def test_field_type_string_representation():
+    """Test field type string representation"""
+    assert str(FieldType.NUMERIC) == "n"
+    assert str(FieldType.ALPHA) == "a"
+    assert str(FieldType.ALPHANUMERIC) == "an"
+    assert str(FieldType.BINARY) == "b"
 
 
 def test_message_creation():
@@ -125,6 +147,20 @@ def test_field_type_properties():
         assert list(FieldType).count(field_type) == 1
 
 
+def test_field_definition_defaults():
+    """Test field definition default values"""
+    field = FieldDefinition(
+        field_type=FieldType.NUMERIC,
+        max_length=6,
+        description="Test"
+    )
+
+    assert field.encoding == "ascii"
+    assert field.padding_direction == "left"
+    assert field.min_length == 6  # Should be set to max_length in post_init
+    assert field.padding_char is None
+
+
 def test_card_network_properties():
     """Test card network properties"""
     assert len(CardNetwork) == 6  # Verify all networks are defined
@@ -134,20 +170,56 @@ def test_card_network_properties():
 
 def test_field_definition_validation():
     """Test field definition validation"""
-    with pytest.raises(ValueError):
-        # Test invalid field type
+    # Test invalid field type
+    with pytest.raises(ValueError, match="Invalid field type"):
         FieldDefinition(
-            field_type="invalid",
+            field_type="invalid",  # Should be FieldType enum
             max_length=6,
             description="Test"
         )
 
-    with pytest.raises(ValueError):
-        # Test invalid max length
+    # Test invalid max length
+    with pytest.raises(ValueError, match="Invalid max length"):
         FieldDefinition(
             field_type=FieldType.NUMERIC,
             max_length=-1,
             description="Test"
+        )
+
+    # Test invalid min length
+    with pytest.raises(ValueError, match="Invalid min length"):
+        FieldDefinition(
+            field_type=FieldType.NUMERIC,
+            max_length=6,
+            min_length=-1,
+            description="Test"
+        )
+
+    # Test min length greater than max length
+    with pytest.raises(ValueError, match="min_length cannot be greater than max_length"):
+        FieldDefinition(
+            field_type=FieldType.NUMERIC,
+            max_length=6,
+            min_length=8,
+            description="Test"
+        )
+
+    # Test invalid padding direction
+    with pytest.raises(ValueError, match="Invalid padding direction"):
+        FieldDefinition(
+            field_type=FieldType.NUMERIC,
+            max_length=6,
+            description="Test",
+            padding_direction="invalid"
+        )
+
+    # Test invalid padding char
+    with pytest.raises(ValueError, match="padding_char must be a single character"):
+        FieldDefinition(
+            field_type=FieldType.NUMERIC,
+            max_length=6,
+            description="Test",
+            padding_char="00"
         )
 
 
