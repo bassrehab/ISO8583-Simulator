@@ -31,28 +31,14 @@ class ISO8583Parser:
     def parse(self, message: str, network: Optional[CardNetwork] = None) -> ISO8583Message:
         """
         Parse an ISO 8583 message string into an ISO8583Message object
-
-        Args:
-            message: Raw ISO 8583 message string
-            network: Optional card network for specific parsing rules
-
-        Returns:
-            ISO8583Message object
-
-        Raises:
-            ParseError: If message cannot be parsed
         """
         try:
             self._raw_message = message
             self._current_position = 0
-            self._detected_network = network
+            self._detected_network = network or self._detect_network(message)
 
             # Parse MTI
             mti = self._parse_mti()
-
-            # Try to detect network if not provided
-            if not self._detected_network:
-                self._detected_network = self._detect_network(mti)
 
             # Parse bitmap
             bitmap = self._parse_bitmap()
@@ -83,21 +69,34 @@ class ISO8583Parser:
             raise ParseError(f"Failed to parse message: {str(e)}")
 
     def _parse_mti(self) -> str:
-        """Parse Message Type Indicator (4 digits)"""
-        if len(self._raw_message) < self._current_position + 4:
-            raise ParseError("Message too short for MTI")
+        """
+        Parse Message Type Indicator (4 digits)
 
-        mti = self._raw_message[self._current_position:self._current_position + 4]
-        if not mti.isdigit():
-            raise ParseError("Invalid MTI format")
+        Returns:
+            str: 4-digit MTI
 
-        self._current_position += 4
-        return mti
+        Raises:
+            ParseError: If MTI is invalid or message is too short
+        """
+        try:
+            if len(self._raw_message) < self._current_position + 4:
+                raise ParseError("Message too short for MTI")
+
+            mti = self._raw_message[self._current_position:self._current_position + 4]
+
+            if not mti.isdigit():
+                raise ParseError("Invalid MTI format - must be numeric")
+
+            self._current_position += 4
+            return mti
+
+        except Exception as e:
+            raise ParseError(f"Failed to parse MTI: {str(e)}")
 
     def _parse_bitmap(self) -> str:
         """
         Parse primary and secondary bitmaps
-        Returns bitmap as hexadecimal string
+        Returns combined bitmap as hexadecimal string
         """
         if len(self._raw_message) < self._current_position + 16:
             raise ParseError("Message too short for bitmap")
@@ -122,8 +121,8 @@ class ISO8583Parser:
 
             return primary_bitmap
 
-        except ValueError:
-            raise ParseError("Invalid bitmap format")
+        except ValueError as e:
+            raise ParseError(f"Invalid bitmap format: {str(e)}")
 
     def _get_present_fields(self, bitmap: str) -> List[int]:
         """
@@ -136,7 +135,7 @@ class ISO8583Parser:
             List of field numbers present in message
         """
         try:
-            # Convert hex string to binary string
+            # Convert hex string to binary string, properly handling length
             binary = bin(int(bitmap, 16))[2:].zfill(len(bitmap) * 4)
 
             # Check each bit
@@ -144,7 +143,8 @@ class ISO8583Parser:
             for i in range(len(binary)):
                 if binary[i] == '1':
                     field_number = i + 1  # Bitmap positions start at 1
-                    if field_number != 1:  # Skip secondary bitmap indicator
+                    # Skip secondary bitmap indicator (bit 1)
+                    if i != 0 or len(bitmap) == 32:  # Include field 1 only for secondary bitmap
                         present_fields.append(field_number)
 
             return sorted(present_fields)
@@ -191,8 +191,12 @@ class ISO8583Parser:
                         ]
                 self._current_position += field_def.max_length
 
-            # Handle field-specific formatting
-            value = self._format_field_value(field_number, value, field_def)
+                # Remove padding if specified
+                if field_def.padding_char:
+                    if field_def.padding_direction == 'left':
+                        value = value.lstrip(field_def.padding_char)
+                    else:
+                        value = value.rstrip(field_def.padding_char)
 
             return value
 

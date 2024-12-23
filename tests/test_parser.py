@@ -62,11 +62,69 @@ def test_parse_bitmap(parser, visa_message):
     assert parser._current_position == 20
 
 
-def test_get_present_fields(parser):
+@pytest.fixture
+def sample_bitmap():
+    """Sample bitmap with fields 2, 3, 4, 7, and 11 set"""
+    # Converting to binary: fields 2,3,4,7,11 are set
+    return "7220000000000000"  # This sets bits for fields 2,3,4,7,11
+
+
+def test_get_present_fields(parser, sample_bitmap):
     """Test present fields detection from bitmap"""
-    bitmap = "7000000000000000"
-    fields = parser._get_present_fields(bitmap)
+    fields = parser._get_present_fields(sample_bitmap)
     assert fields == [2, 3, 4, 7, 11]
+    assert len(fields) == 5  # Exactly 5 fields should be present
+
+
+def test_bitmap_with_secondary(parser):
+    """Test bitmap parsing with secondary bitmap"""
+    # Primary bitmap with first bit set (indicating secondary bitmap)
+    message = ("0100" +  # MTI
+               "C000000000000000" +  # Primary bitmap
+               "0000000000000000" +  # Secondary bitmap
+               "123456")  # Some data
+
+    parser._raw_message = message
+    parser._current_position = 4  # After MTI
+
+    bitmap = parser._parse_bitmap()
+    assert len(bitmap) == 32  # Should have both primary and secondary
+    assert parser._secondary_bitmap == True
+
+
+def test_field_length_validation(parser):
+    """Test field length validation during parsing"""
+    # Message with truncated field
+    message = ("0100" +  # MTI
+               "8220000000000000" +  # Bitmap
+               "1234")  # Truncated data
+
+    with pytest.raises(ParseError) as exc_info:
+        parser.parse(message)
+    assert "Message too short" in str(exc_info.value)
+
+
+def test_variable_length_field_parsing(parser):
+    """Test parsing of LLVAR and LLLVAR fields"""
+    # LLVAR field (field 2 - PAN)
+    message = ("0100" +  # MTI
+               "4000000000000000" +  # Bitmap (only field 2 present)
+               "164111111111111111")  # Field 2 (16 digits PAN with length indicator)
+
+    parsed = parser.parse(message)
+    assert parsed.fields[2] == "4111111111111111"
+    assert len(parsed.fields[2]) == 16
+
+
+def test_parse_with_padding(parser):
+    """Test parsing fields with padding"""
+    # Field 41 (Terminal ID) with right padding
+    message = ("0100" +  # MTI
+               "0000000001000000" +  # Bitmap (field 41)
+               "TEST1234")  # 8-char terminal ID
+
+    parsed = parser.parse(message)
+    assert parsed.fields[41].strip() == "TEST1234"
 
 
 def test_network_detection(parser, visa_message, mastercard_message):
