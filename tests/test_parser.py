@@ -19,16 +19,28 @@ def parser():
 
 
 @pytest.fixture
-def visa_message():
-    """Fixture for VISA message"""
-    # VISA Authorization Request
+def binary_message():
+    """Fixture for message with binary field 52"""
     return ("0100" +  # MTI
-            "7000000000000000" +  # Bitmap
-            "4111111111111111" +  # Field 2 (PAN)
-            "000000" +  # Field 3 (Processing Code)
-            "000000001000" +  # Field 4 (Amount)
-            "0701234567" +  # Field 7 (Date/Time)
-            "123456")  # Field 11 (STAN)
+            "0000000001000000" +  # Bitmap with field 52 set
+            "0123456789ABCDEF")  # Field 52 (binary data)
+
+
+@pytest.fixture
+def emv_message():
+    """Fixture for message with EMV data (field 55)"""
+    emv_data = "9F0607A0000000031010"  # Sample EMV data
+    return ("0100" +  # MTI
+            "0000000000100000" +  # Bitmap with field 55 set
+            f"{len(emv_data):02d}{emv_data}")  # Field 55 with length prefix
+
+
+@pytest.fixture
+def visa_message():
+    """Fixture for VISA test message including field 44"""
+    return ("0100" +  # MTI
+            "0000100000000000" +  # Bitmap with field 44 set
+            "03123")  # Field 44 (LLVAR) with length '03' and data '123'
 
 
 @pytest.fixture
@@ -138,15 +150,10 @@ def test_network_detection(parser, visa_message, mastercard_message):
     assert mc_result.network == CardNetwork.MASTERCARD
 
 
-def test_parse_network_specific_fields(parser):
+def test_parse_network_specific_fields(parser, visa_message):
     """Test parsing network-specific fields"""
-    # VISA specific field 44 (Additional Response Data)
-    visa_message = ("0110" +  # MTI
-                    "0000100000000000" +  # Bitmap (field 44 present)
-                    "03123")  # Field 44 (LLVAR)
-
-    message = parser.parse(visa_message, network=CardNetwork.VISA)
-    assert message.fields[44] == "123"
+    parsed = parser.parse(visa_message, network=CardNetwork.VISA)
+    assert parsed.fields[44] == "123"  # Field 44 should be present and parsed
 
 
 def test_parse_variable_length_field(parser):
@@ -160,27 +167,19 @@ def test_parse_variable_length_field(parser):
     assert parsed.fields[2] == "4111111111111111"
 
 
-def test_parse_binary_fields(parser):
+def test_parse_binary_fields(parser, binary_message):
     """Test parsing binary fields"""
-    # Message with binary field
-    message = ("0100" +  # MTI
-               "0000000001000000" +  # Bitmap (field 52 present)
-               "0123456789ABCDEF")  # Binary data
-
-    parsed = parser.parse(message)
+    parsed = parser.parse(binary_message)
     assert parsed.fields[52] == "0123456789ABCDEF"
+    assert len(parsed.fields[52]) == 16  # 8 bytes = 16 hex chars
 
 
-def test_parse_emv_data(parser):
-    """Test parsing EMV data (field 55)"""
-    # Message with EMV data
-    message = ("0100" +  # MTI
-               "0000000000100000" +  # Bitmap (field 55 present)
-               "0339F0607A0000000031010")  # EMV data with length
-
-    parsed = parser.parse(message)
+def test_parse_emv_data(parser, emv_message):
+    """Test parsing EMV data field"""
+    parsed = parser.parse(emv_message)
+    assert 55 in parsed.fields
     emv_data = parser.parse_emv_data(parsed.fields[55])
-    assert "9F06" in emv_data  # Check EMV tag presence
+    assert "9F06" in emv_data  # EMV tag should be present
 
 
 def test_parse_with_different_versions(parser):
