@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "A hybrid ISO 8583 message simulator with CLI and web interface"
 readme = "README.md"
 authors = [
-    { name = "Your Name", email = "your.email@example.com" }
+    { name = "Subhadip Mitra", email = "contact@subhadipmitra.com" }
 ]
 license = { file = "LICENSE" }
 classifiers = [
@@ -35,22 +35,35 @@ dependencies = [
 requires-python = ">=3.8"
 
 [project.optional-dependencies]
+test = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.1.0",
+    "pytest-html>=4.1.1",
+    "coverage>=7.4.0",
+]
 dev = [
     "pytest>=7.0.0",
+    "pytest-cov>=4.1.0",
+    "pytest-html>=4.1.1",
+    "coverage>=7.4.0",
     "black>=22.0.0",
     "isort>=5.0.0",
     "mypy>=0.900",
     "ruff>=0.0.290",
 ]
 
-[project.urls]
-Homepage = "https://github.com/yourusername/iso8583sim"
-Documentation = "https://iso8583sim.readthedocs.io/"
-Repository = "https://github.com/yourusername/iso8583sim.git"
-Changelog = "https://github.com/yourusername/iso8583sim/blob/main/CHANGELOG.md"
-
-[project.scripts]
-iso8583sim = "iso8583sim.cli.commands:cli"
-
-[tool.hatch.build.targets.wheel]
-packages = ["iso8583sim"]
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--verbose",
+    "--capture=no",
+    "--strict-markers",
+    "--tb=short",
+    "--cov=iso8583sim",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--junitxml=test-results.xml",
+]

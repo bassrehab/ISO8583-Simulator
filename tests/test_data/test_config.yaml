@@ -1,0 +1,56 @@
+# tests/test_data/test_config.yaml
+default:
+  version: "1987"
+  encoding: "ascii"
+  timeout: 30
+
+networks:
+  visa:
+    required_fields: [2, 3, 4, 11, 14, 22, 24, 25]
+    optional_fields: [44, 105]
+    field_formats:
+      44: "^[0-9A-F]+$"
+      105: "^[A-Za-z0-9\\s]+$"
+
+  mastercard:
+    required_fields: [2, 3, 4, 11, 22, 24, 25]
+    optional_fields: [48, 104]
+    field_formats:
+      48: "^MC[0-9]+$"
+      104: "^MC\\s.*$"
+
+  amex:
+    required_fields: [2, 3, 4, 11, 22, 25]
+    optional_fields: [44, 47, 112, 124]
+    field_formats:
+      44: "^[0-9A-F]+$"
+      112: "^AX.*$"
+
+field_validations:
+  pan_ranges:
+    visa: ["4"]
+    mastercard: ["51", "52", "53", "54", "55"]
+    amex: ["34", "37"]
+    discover: ["6011", "644", "645", "646", "647", "648", "649", "65"]
+    jcb: ["35"]
+    unionpay: ["62"]
+
+  response_codes:
+    "00": "Approved"
+    "01": "Refer to card issuer"
+    "05": "Do not honor"
+    "13": "Invalid amount"
+    "14": "Invalid card number"
+    "51": "Insufficient funds"
+    "54": "Expired card"
+    "55": "Invalid PIN"
+    "75": "PIN tries exceeded"
+    "91": "Issuer unavailable"
+
+  merchant_categories:
+    "5411": "Grocery Stores"
+    "5812": "Restaurants"
+    "5399": "Misc. General Merchandise"
+    "4511": "Airlines"
+    "7011": "Hotels"
+    "4814": "Telecom Services"
