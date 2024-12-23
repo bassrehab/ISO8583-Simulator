@@ -31,6 +31,16 @@ class ISO8583Parser:
     def parse(self, message: str, network: Optional[CardNetwork] = None) -> ISO8583Message:
         """
         Parse an ISO 8583 message string into an ISO8583Message object
+
+        Args:
+            message: Raw ISO 8583 message string
+            network: Optional card network for specific parsing rules
+
+        Returns:
+            ISO8583Message object
+
+        Raises:
+            ParseError: If message cannot be parsed
         """
         try:
             self._raw_message = message
@@ -46,15 +56,26 @@ class ISO8583Parser:
 
             # Parse data fields
             fields = {0: mti}  # MTI is field 0
+
             for field_number in present_fields:
-                field_def = get_field_definition(
-                    field_number,
-                    self._detected_network,
-                    self.version
-                )
-                if field_def:
+                try:
+                    field_def = get_field_definition(
+                        field_number,
+                        self._detected_network,
+                        self.version
+                    )
+
+                    if field_def is None:
+                        self.logger.warning(f"No definition found for field {field_number}")
+                        continue
+
                     value = self._parse_field(field_number, field_def)
-                    fields[field_number] = value
+                    if value is not None:
+                        fields[field_number] = value
+
+                except Exception as e:
+                    self.logger.error(f"Error parsing field {field_number}: {str(e)}")
+                    raise
 
             return ISO8583Message(
                 mti=mti,
@@ -67,6 +88,7 @@ class ISO8583Parser:
 
         except Exception as e:
             raise ParseError(f"Failed to parse message: {str(e)}")
+
 
     def _parse_mti(self) -> str:
         """
@@ -152,7 +174,7 @@ class ISO8583Parser:
         except Exception as e:
             raise ParseError(f"Failed to process bitmap: {str(e)}")
 
-    def _parse_field(self, field_number: int, field_def: FieldDefinition) -> str:
+    def _parse_field(self, field_number: int, field_def: FieldDefinition) -> Optional[str]:
         """
         Parse individual field based on its definition
 
@@ -161,12 +183,13 @@ class ISO8583Parser:
             field_def: Field definition
 
         Returns:
-            Parsed field value
+            Parsed field value or None if field should be skipped
         """
         try:
             if field_def.field_type in [FieldType.LLVAR, FieldType.LLLVAR]:
                 # Variable length field
                 length_indicator_size = 2 if field_def.field_type == FieldType.LLVAR else 3
+
                 if len(self._raw_message) < self._current_position + length_indicator_size:
                     raise ParseError(f"Message too short for field {field_number} length indicator")
 
@@ -191,17 +214,30 @@ class ISO8583Parser:
                         ]
                 self._current_position += field_def.max_length
 
-                # Remove padding if specified
-                if field_def.padding_char:
-                    if field_def.padding_direction == 'left':
-                        value = value.lstrip(field_def.padding_char)
-                    else:
-                        value = value.rstrip(field_def.padding_char)
+            # Special field handling
+            if field_number == 52 and field_def.field_type == FieldType.BINARY:
+                # Ensure proper hex format for binary data
+                if not all(c in '0123456789ABCDEFabcdef' for c in value):
+                    raise ParseError(f"Invalid binary data format in field {field_number}")
+                value = value.upper()
+
+            elif field_number == 55:  # EMV data
+                # Validate basic EMV format
+                if len(value) % 2 != 0:
+                    raise ParseError("Invalid EMV data length")
+
+            # Remove padding if specified
+            if field_def.padding_char:
+                if field_def.padding_direction == 'left':
+                    value = value.lstrip(field_def.padding_char)
+                else:
+                    value = value.rstrip(field_def.padding_char)
 
             return value
 
         except Exception as e:
             raise ParseError(f"Failed to parse field {field_number}: {str(e)}")
+
 
     def _format_field_value(self, field_number: int, value: str, field_def: FieldDefinition) -> str:
         """Format field value based on type and rules"""
@@ -312,32 +348,49 @@ class ISO8583Parser:
 
         return messages
 
-    def parse_emv_data(self, data: str) -> Dict[str, str]:
-        """
-        Parse EMV data field (field 55)
 
-        Args:
-            data: EMV data string
+def parse_emv_data(self, emv_data: str) -> Dict[str, str]:
+    """
+    Parse EMV data field (field 55)
 
-        Returns:
-            Dictionary of EMV tags and values
-        """
-        emv_tags = {}
-        position = 0
+    Args:
+        emv_data: EMV data string
 
-        while position < len(data):
-            # Parse tag
-            tag = data[position:position + 2]
-            position += 2
+    Returns:
+        Dictionary of EMV tags and values
+    """
+    if not emv_data:
+        return {}
 
-            # Parse length
-            length = int(data[position:position + 2], 16)
+    result = {}
+    position = 0
+
+    while position < len(emv_data):
+        # Parse tag
+        if position + 2 > len(emv_data):
+            break
+
+        tag = emv_data[position:position + 2]
+        position += 2
+
+        # Parse length
+        if position + 2 > len(emv_data):
+            break
+
+        try:
+            length = int(emv_data[position:position + 2], 16)
             position += 2
 
             # Parse value
-            value = data[position:position + (length * 2)]
+            if position + (length * 2) > len(emv_data):
+                break
+
+            value = emv_data[position:position + (length * 2)]
             position += length * 2
 
-            emv_tags[tag] = value
+            result[tag] = value
 
-        return emv_tags
+        except ValueError:
+            break
+
+    return result
