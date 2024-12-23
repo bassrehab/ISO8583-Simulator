@@ -24,6 +24,10 @@ class FieldType(Enum):
     LLVAR = "ll"  # Variable length (max 99)
     LLLVAR = "lll"  # Variable length (max 999)
 
+    def __str__(self) -> str:
+        """String representation should return the value"""
+        return self.value
+
 
 class CardNetwork(Enum):
     """Card network identifiers"""
@@ -80,9 +84,37 @@ class FieldDefinition:
     padding_direction: str = "left"  # 'left' or 'right'
 
     def __post_init__(self):
-        """Set min_length to max_length if not specified for fixed-length fields"""
+        """Validate field definition attributes"""
+        # Validate field type
+        if not isinstance(self.field_type, FieldType):
+            raise ValueError(f"Invalid field type: {self.field_type}")
+
+        # Validate max_length
+        if not isinstance(self.max_length, int) or self.max_length <= 0:
+            raise ValueError(f"Invalid max length: {self.max_length}")
+
+        # Validate min_length if provided
+        if self.min_length is not None:
+            if not isinstance(self.min_length, int) or self.min_length < 0:
+                raise ValueError(f"Invalid min length: {self.min_length}")
+            if self.min_length > self.max_length:
+                raise ValueError("min_length cannot be greater than max_length")
+
+        # Validate padding_direction
+        if self.padding_direction not in ['left', 'right']:
+            raise ValueError(f"Invalid padding direction: {self.padding_direction}")
+
+        # Set min_length to max_length for fixed-length fields
         if self.min_length is None and self.field_type not in [FieldType.LLVAR, FieldType.LLLVAR]:
             self.min_length = self.max_length
+
+        # Validate padding char length
+        if self.padding_char is not None and len(self.padding_char) != 1:
+            raise ValueError("padding_char must be a single character")
+
+        # Validate encoding
+        if not isinstance(self.encoding, str):
+            raise ValueError("encoding must be a string")
 
 
 @dataclass
@@ -775,7 +807,6 @@ ISO8583_FIELDS: Dict[int, FieldDefinition] = {
     ),
 }
 
-
 # Network-specific field definitions
 NETWORK_SPECIFIC_FIELDS = {
     CardNetwork.VISA: {
@@ -1041,6 +1072,7 @@ def is_valid_mti(mti: str) -> bool:
         return False
 
     return True
+
 
 # Extending network-specific fields in iso8583sim/core/types.py
 
