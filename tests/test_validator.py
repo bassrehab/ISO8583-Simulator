@@ -20,6 +20,7 @@ def validator():
     """Fixture for validator instance"""
     return ISO8583Validator()
 
+
 @pytest.fixture
 def valid_message():
     """Fixture for a valid message"""
@@ -34,6 +35,35 @@ def valid_message():
             11: "123456"
         }
     )
+
+
+@pytest.fixture
+def valid_emv_data():
+    """Valid EMV data samples"""
+    return [
+        # Simple EMV data
+        "9F0607A0000000031010",
+        # Multiple tags
+        "9F0607A00000000310109F15020001",
+        # Complex EMV data
+        "9F33036028C89F3501229F40056000F0A0019F02060000000001009F03060000000000009F1A0208409F3501229F34034203009F3704C6B1A04F9F0902008C9F4104000000019F1E0838323032313435339F0902008C500B56495341204352454449549F120F4352454449542044454249542F"
+    ]
+
+@pytest.fixture
+def invalid_emv_data():
+    """Invalid EMV data samples"""
+    return [
+        # Incomplete tag
+        "9F",
+        # Invalid tag
+        "XX0607A0000000031010",
+        # Invalid length
+        "9F06XX",
+        # Incomplete value
+        "9F0607A0000000",
+        # Invalid value characters
+        "9F0607A00000000310ZZ"
+    ]
 
 
 @pytest.fixture
@@ -203,15 +233,34 @@ def test_validate_pan(validator):
 
 def test_validate_network_specific_fields(validator):
     """Test network-specific field validation"""
-    # VISA Additional Response Data (Field 44)
-    field_def = NETWORK_SPECIFIC_FIELDS[CardNetwork.VISA][44]
-    valid, error = validator.validate_field(44, "A5B7", field_def, CardNetwork.VISA)
+    # VISA field 44
+    field_def = FieldDefinition(
+        field_type=FieldType.ALPHANUMERIC,
+        max_length=4,
+        description="VISA field 44"
+    )
+    valid, error = validator.validate_field(
+        44, "A5B7", field_def, network=CardNetwork.VISA
+    )
     assert valid
     assert error is None
 
-    # Mastercard Private Data (Field 48)
-    field_def = NETWORK_SPECIFIC_FIELDS[CardNetwork.MASTERCARD][48]
-    valid, error = validator.validate_field(48, "MC123", field_def, CardNetwork.MASTERCARD)
+    # Invalid VISA field 44
+    valid, error = validator.validate_field(
+        44, "XYZ@", field_def, network=CardNetwork.VISA
+    )
+    assert not valid
+    assert "Invalid VISA field 44 format" in error
+
+    # Mastercard field 48
+    field_def = FieldDefinition(
+        field_type=FieldType.ALPHANUMERIC,
+        max_length=4,
+        description="MC field 48"
+    )
+    valid, error = validator.validate_field(
+        48, "MC01", field_def, network=CardNetwork.MASTERCARD
+    )
     assert valid
     assert error is None
 
@@ -231,6 +280,7 @@ def test_validate_message_network_compliance(validator, complete_visa_message):
     errors = validator.validate_message(incomplete_message)
     assert len(errors) > 0
     assert any("Required field" in error for error in errors)
+
 
 def test_validate_version_specific_fields(validator):
     """Test version-specific field validation"""
@@ -266,11 +316,54 @@ def test_validate_emv_data(validator):
     errors = validator.validate_emv_data(valid_emv)
     assert len(errors) == 0
 
-    # Invalid EMV data
-    invalid_emv = "9F06"  # Incomplete
+    # Invalid EMV data - incomplete
+    invalid_emv = "9F06"
     errors = validator.validate_emv_data(invalid_emv)
     assert len(errors) > 0
     assert "Incomplete EMV data" in errors[0]
+
+    # Invalid EMV data - wrong length
+    invalid_emv = "9F0607A00000000310"  # Missing last byte
+    errors = validator.validate_emv_data(invalid_emv)
+    assert len(errors) > 0
+    assert "Incomplete value for tag" in errors[0]
+
+    # Invalid EMV data - invalid tag
+    invalid_emv = "XX0607A0000000031010"
+    errors = validator.validate_emv_data(invalid_emv)
+    assert len(errors) > 0
+    assert "Invalid tag format" in errors[0]
+
+
+def test_validate_network_field_format(validator):
+    """Test network-specific field format validation"""
+    # VISA field validation
+    valid, error = validator._validate_network_field(
+        44, "A5B7", CardNetwork.VISA
+    )
+    assert valid
+    assert error is None
+
+    # Invalid VISA field
+    valid, error = validator._validate_network_field(
+        44, "XYZ@", CardNetwork.VISA
+    )
+    assert not valid
+    assert "Invalid VISA field 44 format" in error
+
+    # Mastercard field validation
+    valid, error = validator._validate_network_field(
+        48, "MC01", CardNetwork.MASTERCARD
+    )
+    assert valid
+    assert error is None
+
+    # Invalid Mastercard field
+    valid, error = validator._validate_network_field(
+        48, "XX01", CardNetwork.MASTERCARD
+    )
+    assert not valid
+    assert "Mastercard field 48 must start with 'MC'" in error
 
 
 def test_validate_network_compliance(validator, complete_visa_message):
