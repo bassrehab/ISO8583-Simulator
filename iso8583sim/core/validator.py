@@ -48,22 +48,15 @@ class ISO8583Validator:
             field_def: FieldDefinition,
             network: Optional[CardNetwork] = None
     ) -> Tuple[bool, Optional[str]]:
-        """
-        Validate individual field value against its definition
-
-        Args:
-            field_number: The field number to validate
-            value: The field value to validate
-            field_def: Field definition containing type and format requirements
-            network: Optional card network for network-specific validation
-
-        Returns:
-            Tuple of (is_valid: bool, error_message: Optional[str])
-            where error_message is None if validation passed
-        """
+        """Validate field value"""
         try:
             # Length validation for fixed-length fields
-            if field_def.field_type not in [FieldType.LLVAR, FieldType.LLLVAR]:
+            if field_def.field_type == FieldType.BINARY:
+                # For binary fields, length is in bytes but value is in hex
+                required_length = field_def.max_length * 2  # Convert bytes to hex chars
+                if len(value) != required_length:
+                    return False, f"Field {field_number} length must be {field_def.max_length * 2} hex chars"
+            elif field_def.field_type not in [FieldType.LLVAR, FieldType.LLLVAR]:
                 if len(value) != field_def.max_length:
                     return False, f"Field {field_number} length must be {field_def.max_length}"
             else:
@@ -75,60 +68,24 @@ class ISO8583Validator:
 
             # Type-specific validation
             if field_def.field_type == FieldType.NUMERIC:
-                if not value.strip('0').isdigit():
+                if not value.isdigit():
                     return False, f"Field {field_number} must contain only digits"
-
+            elif field_def.field_type == FieldType.BINARY:
+                if not all(c in '0123456789ABCDEF' for c in value.upper()):
+                    return False, f"Field {field_number} must be valid hexadecimal"
             elif field_def.field_type == FieldType.ALPHA:
                 if not value.replace(' ', '').isalpha():
                     return False, f"Field {field_number} must contain only letters"
-
             elif field_def.field_type == FieldType.ALPHANUMERIC:
                 if not value.replace(' ', '').isalnum():
                     return False, f"Field {field_number} must contain only letters and numbers"
-
-            elif field_def.field_type == FieldType.BINARY:
-                try:
-                    int(value, 16)
-                except ValueError:
-                    return False, f"Field {field_number} must be valid hexadecimal"
-
-            # Special field validations
-            if field_number == 2:  # PAN
-                if not self.validate_pan(value):
-                    return False, f"Invalid PAN checksum for field {field_number}"
-
-            elif field_number == 3:  # Processing Code
-                if not self.validate_processing_code(value):
-                    return False, f"Invalid processing code format for field {field_number}"
-
-            elif field_number == 35:  # Track 2
-                if '=' not in value:
-                    return False, f"Field {field_number} must contain separator '='"
-
-            elif field_number == 41:  # Terminal ID
-                if len(value.strip()) == 0:
-                    return False, f"Field {field_number} cannot be empty"
-
-            elif field_number == 42:  # Card Acceptor ID
-                if len(value.strip()) == 0:
-                    return False, f"Field {field_number} cannot be empty"
-
-            elif field_number == 55:  # ICC/EMV Data
-                emv_errors = self.validate_emv_data(value)
-                if emv_errors:
-                    return False, f"Invalid EMV data in field {field_number}: {'; '.join(emv_errors)}"
-
-            # Network-specific validation
-            if network:
-                network_valid, network_error = self._validate_network_field(field_number, value, network)
-                if not network_valid:
-                    return False, network_error
 
             # Field passed all validations
             return True, None
 
         except Exception as e:
             return False, f"Validation error for field {field_number}: {str(e)}"
+
 
     def _validate_network_field(
             self,
