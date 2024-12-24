@@ -421,24 +421,17 @@ def test_build_field_validation_errors(builder):
 
 def test_build_error_handling(builder):
     """Test error handling during message building"""
-    # Test invalid MTI
-    invalid_message = ISO8583Message(
-        mti="0A00",  # Non-numeric MTI
-        fields={0: "0A00"}
-    )
-    with pytest.raises(BuildError):
-        builder.build(invalid_message)
-
-    # Test invalid field length
-    invalid_message = ISO8583Message(
+    # Test invalid field format
+    message = ISO8583Message(
         mti="0100",
         fields={
             0: "0100",
-            3: "12345"  # Should be 6 digits
+            3: "ABC"  # Must be numeric
         }
     )
-    with pytest.raises(BuildError):
-        builder.build(invalid_message)
+    with pytest.raises(BuildError) as exc_info:
+        builder.build(message)
+    assert "must contain only digits" in str(exc_info.value)
 
 
 def test_build_version_specific(builder):

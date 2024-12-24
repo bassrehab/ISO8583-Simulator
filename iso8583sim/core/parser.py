@@ -219,7 +219,7 @@ class ISO8583Parser:
     def _parse_field(self, field_number: int, field_def: FieldDefinition) -> Optional[str]:
         """Parse individual field"""
         try:
-            # Get field value
+            # Get field value based on type
             value = None
 
             if field_def.field_type in [FieldType.LLVAR, FieldType.LLLVAR]:
@@ -238,32 +238,41 @@ class ISO8583Parser:
 
                 value = self._raw_message[self._current_position:self._current_position + length]
                 self._current_position += length
-
             else:
                 # Fixed length field
                 if self._current_position + field_def.max_length > len(self._raw_message):
                     raise ParseError(f"Message too short for field {field_number}")
 
-                value = self._raw_message[
-                        self._current_position:self._current_position + field_def.max_length
-                        ]
-                self._current_position += field_def.max_length
+                field_length = field_def.max_length
+                if field_def.field_type == FieldType.BINARY:
+                    field_length *= 2  # Double length for hex representation
 
-            # Format field value
+                value = self._raw_message[
+                        self._current_position:self._current_position + field_length
+                        ]
+                self._current_position += field_length
+
+            # Preserve padding based on field definition
             if value is not None:
-                if field_def.padding_char:
+                if field_def.field_type == FieldType.NUMERIC:
+                    # Always preserve numeric field padding
+                    return value
+                elif field_def.field_type == FieldType.BINARY:
+                    # Always preserve binary field as is
+                    return value
+                elif field_def.padding_char:
                     if field_def.padding_direction == 'left':
-                        value = value.lstrip(field_def.padding_char)
+                        return value.lstrip(field_def.padding_char)
                     else:
-                        value = value.rstrip(field_def.padding_char)
+                        return value.rstrip(field_def.padding_char)
 
                 # Handle specific fields
                 if field_number == 41:  # Terminal ID
-                    value = value.rstrip()
+                    return value.rstrip()
                 elif field_number == 42:  # Card Acceptor ID
-                    value = value.rstrip()
+                    return value.rstrip()
                 elif field_number == 44:  # Additional Response Data
-                    value = value.strip()
+                    return value.strip()
 
             return value
 
