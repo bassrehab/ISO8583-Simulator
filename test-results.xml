@@ -1,50 +1,50 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="10" skipped="0" tests="17" time="0.332" timestamp="2024-12-24T02:13:37.627402-08:00" hostname="subhadipmitra-macbookpro2.roam.internal"><testcase classname="tests.test_builder" name="test_build_numeric_fields" time="0.001"><failure message="iso8583sim.core.types.BuildError: Validation failed: Field 3 must contain only digits; Field 39 must contain only digits">tests/test_builder.py:130: in test_build_numeric_fields
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="10" skipped="0" tests="17" time="0.409" timestamp="2024-12-24T02:31:52.700310-08:00" hostname="subhadipmitra-macbookpro2.roam.internal"><testcase classname="tests.test_builder" name="test_build_numeric_fields" time="0.001"><failure message="iso8583sim.core.types.BuildError: Validation failed: Field 3 must contain only digits; Field 39 must contain only digits">tests/test_builder.py:129: in test_build_numeric_fields
     result = builder.build(message)
 iso8583sim/core/builder.py:52: in build
     raise BuildError(f"Validation failed: {'; '.join(errors)}")
-E   iso8583sim.core.types.BuildError: Validation failed: Field 3 must contain only digits; Field 39 must contain only digits</failure></testcase><testcase classname="tests.test_builder" name="test_build_alphanumeric_fields" time="0.000" /><testcase classname="tests.test_builder" name="test_build_bitmap" time="0.000" /><testcase classname="tests.test_builder" name="test_build_field" time="0.000" /><testcase classname="tests.test_builder" name="test_build_binary_fields" time="0.000"><failure message="iso8583sim.core.types.BuildError: Validation failed: Field 52 length must be 8; Field 96 length must be 8">tests/test_builder.py:215: in test_build_binary_fields
+E   iso8583sim.core.types.BuildError: Validation failed: Field 3 must contain only digits; Field 39 must contain only digits</failure></testcase><testcase classname="tests.test_builder" name="test_build_alphanumeric_fields" time="0.000" /><testcase classname="tests.test_builder" name="test_build_bitmap" time="0.000" /><testcase classname="tests.test_builder" name="test_build_field" time="0.000" /><testcase classname="tests.test_builder" name="test_build_binary_fields" time="0.000"><failure message="iso8583sim.core.types.BuildError: Validation failed: Field 52 length must be 8; Field 96 length must be 8">tests/test_builder.py:214: in test_build_binary_fields
     result = builder.build(message)
 iso8583sim/core/builder.py:52: in build
     raise BuildError(f"Validation failed: {'; '.join(errors)}")
-E   iso8583sim.core.types.BuildError: Validation failed: Field 52 length must be 8; Field 96 length must be 8</failure></testcase><testcase classname="tests.test_builder" name="test_build_with_secondary_bitmap" time="0.000"><failure message="iso8583sim.core.types.BuildError: Validation failed: Field 65 length must be 8">tests/test_builder.py:231: in test_build_with_secondary_bitmap
+E   iso8583sim.core.types.BuildError: Validation failed: Field 52 length must be 8; Field 96 length must be 8</failure></testcase><testcase classname="tests.test_builder" name="test_build_with_secondary_bitmap" time="0.000"><failure message="iso8583sim.core.types.BuildError: Validation failed: Field 65 length must be 8">tests/test_builder.py:230: in test_build_with_secondary_bitmap
     result = builder.build(message)
 iso8583sim/core/builder.py:52: in build
     raise BuildError(f"Validation failed: {'; '.join(errors)}")
-E   iso8583sim.core.types.BuildError: Validation failed: Field 65 length must be 8</failure></testcase><testcase classname="tests.test_builder" name="test_build_network_specific" time="0.000"><failure message="iso8583sim.core.types.BuildError: Unknown field definition: 24">tests/test_builder.py:258: in test_build_network_specific
+E   iso8583sim.core.types.BuildError: Validation failed: Field 65 length must be 8</failure></testcase><testcase classname="tests.test_builder" name="test_build_network_specific" time="0.000"><failure message="iso8583sim.core.types.BuildError: Validation failed: Field 3 must contain only digits; Field 25 must contain only digits">tests/test_builder.py:257: in test_build_network_specific
     result = builder.build(visa_message)
-iso8583sim/core/builder.py:40: in build
-    raise BuildError(f"Unknown field definition: {field_number}")
-E   iso8583sim.core.types.BuildError: Unknown field definition: 24</failure></testcase><testcase classname="tests.test_builder" name="test_build_network_specific_fields" time="0.000"><failure message="iso8583sim.core.types.BuildError: Unknown field definition: 24">tests/test_builder.py:283: in test_build_network_specific_fields
+iso8583sim/core/builder.py:52: in build
+    raise BuildError(f"Validation failed: {'; '.join(errors)}")
+E   iso8583sim.core.types.BuildError: Validation failed: Field 3 must contain only digits; Field 25 must contain only digits</failure></testcase><testcase classname="tests.test_builder" name="test_build_network_specific_fields" time="0.000"><failure message="iso8583sim.core.types.BuildError: Validation failed: Field 3 must contain only digits; Field 25 must contain only digits">tests/test_builder.py:283: in test_build_network_specific_fields
     result = builder.build(visa_message)
-iso8583sim/core/builder.py:40: in build
-    raise BuildError(f"Unknown field definition: {field_number}")
-E   iso8583sim.core.types.BuildError: Unknown field definition: 24</failure></testcase><testcase classname="tests.test_builder" name="test_build_response_message" time="0.000"><failure message="iso8583sim.core.types.BuildError: Message validation failed: Field 39 must contain only digits; Field 3 must contain only digits; Field 42 length must be 15">tests/test_builder.py:311: in test_build_response_message
+iso8583sim/core/builder.py:52: in build
+    raise BuildError(f"Validation failed: {'; '.join(errors)}")
+E   iso8583sim.core.types.BuildError: Validation failed: Field 3 must contain only digits; Field 25 must contain only digits</failure></testcase><testcase classname="tests.test_builder" name="test_build_response_message" time="0.000"><failure message="iso8583sim.core.types.BuildError: Message validation failed: Field 39 must contain only digits; Field 3 must contain only digits; Field 42 length must be 15">tests/test_builder.py:311: in test_build_response_message
     response = builder.create_response(request, response_fields)
 iso8583sim/core/builder.py:280: in create_response
     return self.create_message(response_mti, response_fields)
 iso8583sim/core/builder.py:243: in create_message
     raise BuildError(f"Message validation failed: {'; '.join(errors)}")
-E   iso8583sim.core.types.BuildError: Message validation failed: Field 39 must contain only digits; Field 3 must contain only digits; Field 42 length must be 15</failure></testcase><testcase classname="tests.test_builder" name="test_build_reversal_message" time="0.000"><failure message="iso8583sim.core.types.BuildError: Message validation failed: Field 3 must contain only digits; Field 42 length must be 15; Field 39 must contain only digits; Field 90 must contain only digits">tests/test_builder.py:339: in test_build_reversal_message
+E   iso8583sim.core.types.BuildError: Message validation failed: Field 39 must contain only digits; Field 3 must contain only digits; Field 42 length must be 15</failure></testcase><testcase classname="tests.test_builder" name="test_build_reversal_message" time="0.000"><failure message="iso8583sim.core.types.BuildError: Message validation failed: Field 3 must contain only digits; Field 42 length must be 15; Field 39 must contain only digits; Field 90 must contain only digits">tests/test_builder.py:357: in test_build_reversal_message
     reversal = builder.create_reversal(original, extra_fields)
 iso8583sim/core/builder.py:307: in create_reversal
     return self.create_message(rev_mti, reversal_fields)
 iso8583sim/core/builder.py:243: in create_message
     raise BuildError(f"Message validation failed: {'; '.join(errors)}")
-E   iso8583sim.core.types.BuildError: Message validation failed: Field 3 must contain only digits; Field 42 length must be 15; Field 39 must contain only digits; Field 90 must contain only digits</failure></testcase><testcase classname="tests.test_builder" name="test_build_network_management_message" time="0.000"><failure message="iso8583sim.core.types.BuildError: Message validation failed: Field 53 must contain only digits; Field 96 length must be 8">tests/test_builder.py:348: in test_build_network_management_message
+E   iso8583sim.core.types.BuildError: Message validation failed: Field 3 must contain only digits; Field 42 length must be 15; Field 39 must contain only digits; Field 90 must contain only digits</failure></testcase><testcase classname="tests.test_builder" name="test_build_network_management_message" time="0.000"><failure message="iso8583sim.core.types.BuildError: Message validation failed: Field 53 must contain only digits; Field 96 length must be 8">tests/test_builder.py:379: in test_build_network_management_message
     message = builder.create_network_management_message(
 iso8583sim/core/builder.py:328: in create_network_management_message
     return self.create_message("0800", fields)
 iso8583sim/core/builder.py:243: in create_message
     raise BuildError(f"Message validation failed: {'; '.join(errors)}")
-E   iso8583sim.core.types.BuildError: Message validation failed: Field 53 must contain only digits; Field 96 length must be 8</failure></testcase><testcase classname="tests.test_builder" name="test_build_emv_data" time="0.000" /><testcase classname="tests.test_builder" name="test_build_field_validation_errors" time="0.000" /><testcase classname="tests.test_builder" name="test_build_error_handling" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'iso8583sim.core.types.BuildError'&gt;">tests/test_builder.py:408: in test_build_error_handling
+E   iso8583sim.core.types.BuildError: Message validation failed: Field 53 must contain only digits; Field 96 length must be 8</failure></testcase><testcase classname="tests.test_builder" name="test_build_emv_data" time="0.000" /><testcase classname="tests.test_builder" name="test_build_field_validation_errors" time="0.000" /><testcase classname="tests.test_builder" name="test_build_error_handling" time="0.000"><failure message="Failed: DID NOT RAISE &lt;class 'iso8583sim.core.types.BuildError'&gt;">tests/test_builder.py:440: in test_build_error_handling
     with pytest.raises(BuildError):
-E   Failed: DID NOT RAISE &lt;class 'iso8583sim.core.types.BuildError'&gt;</failure></testcase><testcase classname="tests.test_builder" name="test_build_version_specific" time="0.000" /><testcase classname="tests.test_builder" name="test_message_recreation" time="0.000"><failure message="Failed: Message recreation test failed: Validation failed: Field 3 must contain only digits; Field 25 must contain only digits; Field 96 length must be 8">tests/test_builder.py:464: in test_message_recreation
+E   Failed: DID NOT RAISE &lt;class 'iso8583sim.core.types.BuildError'&gt;</failure></testcase><testcase classname="tests.test_builder" name="test_build_version_specific" time="0.000" /><testcase classname="tests.test_builder" name="test_message_recreation" time="0.000"><failure message="Failed: Message recreation test failed: Validation failed: Field 3 must contain only digits; Field 25 must contain only digits; Field 96 length must be 8">tests/test_builder.py:496: in test_message_recreation
     built = builder.build(original)
 iso8583sim/core/builder.py:52: in build
     raise BuildError(f"Validation failed: {'; '.join(errors)}")
 E   iso8583sim.core.types.BuildError: Validation failed: Field 3 must contain only digits; Field 25 must contain only digits; Field 96 length must be 8
 
 During handling of the above exception, another exception occurred:
-tests/test_builder.py:527: in test_message_recreation
+tests/test_builder.py:559: in test_message_recreation
     pytest.fail(f"Message recreation test failed: {str(e)}")
 E   Failed: Message recreation test failed: Validation failed: Field 3 must contain only digits; Field 25 must contain only digits; Field 96 length must be 8</failure></testcase><testcase classname="tests.test_builder" name="test_field_padding_handling" time="0.000" /></testsuite></testsuites>
