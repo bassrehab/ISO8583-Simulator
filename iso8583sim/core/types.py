@@ -1,7 +1,7 @@
 # iso8583sim/core/types.py
 
 from enum import Enum
-from typing import Dict, Optional, Union, Any
+from typing import Dict, Optional, Union, Any, List
 from dataclasses import dataclass
 from datetime import datetime
 
