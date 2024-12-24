@@ -35,12 +35,11 @@ def sample_message():
         fields={
             0: "0100",
             2: "4111111111111111",
-            3: "000000",  # Fixed: properly formatted processing code
+            3: "000000",
             4: "000000001000",
             11: "123456",
-            41: "TEST1234",  # Fixed: 8 characters
-            42: "MERCHANT12345 ",  # Fixed: 15 characters with space padding
-            96: "0000000000000000"  # Fixed: 16 hex digits
+            41: "TEST1234",
+            42: "MERCHANT12345 "  # Exactly 15 chars with space
         }
     )
 
@@ -53,16 +52,16 @@ def visa_message():
         fields={
             0: "0100",
             2: "4111111111111111",
-            3: "000000",  # Fixed: properly formatted
+            3: "000000",
             4: "000000001000",
             11: "123456",
-            14: "2412",  # Required VISA field
-            22: "021",  # Required VISA field
-            24: "001",  # Required VISA field
-            25: "00",  # Required VISA field
+            14: "2412",
+            22: "021",
+            24: "001",  # Added function code
+            25: "00",
             41: "TEST1234",
-            42: "MERCHANT12345 ",
-            44: "A5B7"  # VISA specific field
+            42: "MERCHANT12345 ",  # Exactly 15 chars
+            44: "A5B7"
         },
         network=CardNetwork.VISA
     )
@@ -96,8 +95,8 @@ def binary_message():
         mti="0100",
         fields={
             0: "0100",
-            52: "0123456789ABCDEF",  # Fixed: proper hex format
-            96: "0000000000000000"  # Fixed: proper length
+            52: "0123456789ABCDEF",  # 16 hex chars = 8 bytes
+            96: "0123456789ABCDEF"  # 16 hex chars = 8 bytes
         }
     )
 
@@ -259,6 +258,7 @@ def test_build_network_specific(builder):
     assert result is not None
     assert "A5B7" in result
 
+
 def test_build_network_specific_fields(builder):
     """Test building network-specific fields"""
     # VISA message with required fields
@@ -316,6 +316,24 @@ def test_build_response_message(builder):
     assert "000000001000" in result
 
 
+@pytest.fixture
+def reversal_message():
+    """Sample reversal message"""
+    return ISO8583Message(
+        mti="0400",
+        fields={
+            0: "0400",
+            2: "4111111111111111",
+            3: "000000",
+            4: "000000001000",
+            11: "123456",
+            39: "00",  # Numeric response code
+            90: "000000000000000000000000000000000000000000",  # 42 digits
+            96: "0123456789ABCDEF"  # 16 hex chars = 8 bytes
+        }
+    )
+
+
 def test_build_reversal_message(builder):
     """Test building reversal message"""
     original = ISO8583Message(
@@ -343,6 +361,19 @@ def test_build_reversal_message(builder):
     assert len(reversal.fields[90]) == 42
 
 
+@pytest.fixture
+def network_management_message():
+    """Sample network management message"""
+    return ISO8583Message(
+        mti="0800",
+        fields={
+            0: "0800",
+            53: "0000000000000000",  # 16 digits
+            96: "0123456789ABCDEF"  # 16 hex chars = 8 bytes
+        }
+    )
+
+
 def test_build_network_management_message(builder):
     """Test building network management message"""
     message = builder.create_network_management_message(
@@ -355,6 +386,7 @@ def test_build_network_management_message(builder):
     assert message.fields[70] == "301"
     # Updated length check for field 96
     assert len(message.fields[96]) == 16
+
 
 def test_build_emv_data(builder):
     """Test building EMV data"""
