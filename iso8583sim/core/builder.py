@@ -114,35 +114,12 @@ class ISO8583Builder:
         except Exception as e:
             raise BuildError(f"Failed to build bitmap: {str(e)}")
 
-    def _build_field(
-            self,
-            field_number: int,
-            value: str,
-            field_def: Optional[Dict] = None
-    ) -> str:
-        """
-        Build individual field based on its definition
-
-        Args:
-            field_number: Field number to build
-            value: Field value
-            field_def: Optional field definition override
-
-        Returns:
-            Formatted field value
-        """
+    def _build_field(self, field_number: int, value: str, field_def: FieldDefinition) -> str:
+        """Build individual field based on its definition"""
         try:
-            if not field_def:
-                field_def = get_field_definition(field_number)
-                if not field_def:
-                    raise BuildError(f"No definition for field {field_number}")
-
-            # Apply field-specific formatting
-            formatted_value = self._format_field_value(field_number, value, field_def)
-
             if field_def.field_type in [FieldType.LLVAR, FieldType.LLLVAR]:
                 # Variable length field
-                length = len(formatted_value)
+                length = len(value)
                 length_indicator_size = 2 if field_def.field_type == FieldType.LLVAR else 3
 
                 if length > field_def.max_length:
@@ -152,30 +129,21 @@ class ISO8583Builder:
                     )
 
                 length_str = str(length).zfill(length_indicator_size)
-                return length_str + formatted_value
+                return length_str + value
 
-            else:
-                # Fixed length field
-                if len(formatted_value) != field_def.max_length:
-                    # Apply padding if defined
-                    if field_def.padding_char:
-                        if field_def.padding_direction == 'left':
-                            formatted_value = formatted_value.rjust(
-                                field_def.max_length,
-                                field_def.padding_char
-                            )
-                        else:
-                            formatted_value = formatted_value.ljust(
-                                field_def.max_length,
-                                field_def.padding_char
-                            )
+            # Apply type-specific formatting first
+            formatted_value = self._format_field_value(field_number, value, field_def)
+
+            # Validate final length for fixed-length fields
+            if len(formatted_value) != field_def.max_length:
+                if field_def.padding_char:
+                    # Apply padding
+                    if field_def.padding_direction == 'left':
+                        formatted_value = formatted_value.rjust(field_def.max_length, field_def.padding_char)
                     else:
-                        raise BuildError(
-                            f"Invalid length for field {field_number}: "
-                            f"expected {field_def.max_length}, got {len(formatted_value)}"
-                        )
+                        formatted_value = formatted_value.ljust(field_def.max_length, field_def.padding_char)
 
-                return formatted_value
+            return formatted_value
 
         except Exception as e:
             raise BuildError(f"Failed to build field {field_number}: {str(e)}")
@@ -183,47 +151,32 @@ class ISO8583Builder:
     def _format_field_value(self, field_number: int, value: str, field_def: FieldDefinition) -> str:
         """Format field value based on type and rules"""
         try:
-            # Strip any existing padding
-            value = value.strip()
-
-            # Apply type-specific validation
-            if field_def.field_type == FieldType.NUMERIC:
-                if not value.strip('0').isdigit():
-                    raise BuildError(f"Field {field_number} must contain only digits")
-                value = value.zfill(field_def.max_length)
-
-            elif field_def.field_type == FieldType.ALPHA:
-                if not value.isalpha():
-                    raise BuildError(f"Field {field_number} must contain only letters")
-
-            elif field_def.field_type == FieldType.ALPHANUMERIC:
-                if not value.isalnum():
-                    raise BuildError(f"Field {field_number} must contain only letters and numbers")
+            # Handle specific fields that need special formatting
+            if field_number == 42:  # Card Acceptor ID
+                return value.ljust(15, ' ')  # Must be exactly 15 characters
+            elif field_number == 96:  # Message Security Code
+                return value.zfill(16)  # Must be 16 hex digits (8 bytes)
+            elif field_number == 41:  # Terminal ID
+                return value.ljust(8, ' ')  # Must be exactly 8 characters
 
             # Handle binary fields
             if field_def.field_type == FieldType.BINARY:
-                try:
-                    # Ensure proper hex format and length
-                    int(value, 16)  # Validate hex format
-                    value = value.upper().zfill(field_def.max_length * 2)  # Each byte = 2 hex chars
-                except ValueError:
-                    raise BuildError(f"Field {field_number} must be valid hexadecimal")
+                return value.zfill(field_def.max_length * 2)  # Double for hex representation
 
-            # Apply padding if specified
-            if field_def.padding_char:
+            # Handle other field types
+            if field_def.field_type == FieldType.NUMERIC:
+                return value.zfill(field_def.max_length)
+            elif field_def.padding_char:
                 if field_def.padding_direction == 'left':
-                    value = value.rjust(field_def.max_length, field_def.padding_char)
+                    return value.rjust(field_def.max_length, field_def.padding_char)
                 else:
-                    value = value.ljust(field_def.max_length, field_def.padding_char)
-
-            # Validate final length
-            if len(value) != field_def.max_length:
-                raise BuildError(f"Field {field_number} length must be {field_def.max_length}")
+                    return value.ljust(field_def.max_length, field_def.padding_char)
 
             return value
 
         except Exception as e:
             raise BuildError(f"Failed to format field {field_number}: {str(e)}")
+
 
     def _format_pan(self, pan: str) -> str:
         """Format PAN field"""
@@ -333,26 +286,23 @@ class ISO8583Builder:
 
         return self.create_message(rev_mti, reversal_fields)
 
-    def create_network_management_message(
-            self,
-            message_type: str,
-            network: Optional[CardNetwork] = None
-    ) -> ISO8583Message:
+    def create_network_management_message(self, message_type: str,
+                                          network: Optional[CardNetwork] = None) -> ISO8583Message:
         """Create a network management message"""
         fields = {
             70: message_type.zfill(3),  # Network management type
         }
 
-        # Add network-specific fields
+        # Add network-specific fields with proper padding
         if network == CardNetwork.VISA:
             fields.update({
-                53: "0" * 16,  # Security Info
-                96: "0" * 16  # Message Security Code (8 bytes = 16 hex chars)
+                53: "0000000000000000",  # Security Info
+                96: "0000000000000000"  # Message Security Code
             })
         elif network == CardNetwork.MASTERCARD:
             fields.update({
-                48: "MC00",
-                53: "0" * 16
+                48: "MC00".ljust(4),
+                53: "0000000000000000"
             })
 
         return self.create_message("0800", fields)

@@ -21,7 +21,6 @@ class ISO8583Validator:
     """Enhanced validator for ISO 8583 messages with network support"""
 
     def __init__(self):
-        # Required fields per network
         self.network_required_fields = {
             CardNetwork.VISA: [2, 3, 4, 11, 14, 22, 24, 25],
             CardNetwork.MASTERCARD: [2, 3, 4, 11, 22, 24, 25],
@@ -42,47 +41,49 @@ class ISO8583Validator:
             CardNetwork.UNIONPAY: self._validate_unionpay_specific
         }
 
-    @staticmethod
     def validate_field(
+            self,
             field_number: int,
             value: str,
             field_def: FieldDefinition,
             network: Optional[CardNetwork] = None
     ) -> Tuple[bool, Optional[str]]:
         """
-        Validate a single field value against its definition
+        Validate individual field value against its definition
 
         Args:
-            field_number: Field number
-            value: Field value
-            field_def: Field definition
-            network: Optional card network for specific validation
+            field_number: The field number to validate
+            value: The field value to validate
+            field_def: Field definition containing type and format requirements
+            network: Optional card network for network-specific validation
 
         Returns:
-            (is_valid, error_message)
+            Tuple of (is_valid: bool, error_message: Optional[str])
+            where error_message is None if validation passed
         """
         try:
-            # Check length constraints
+            # Length validation for fixed-length fields
             if field_def.field_type not in [FieldType.LLVAR, FieldType.LLLVAR]:
                 if len(value) != field_def.max_length:
                     return False, f"Field {field_number} length must be {field_def.max_length}"
             else:
+                # Variable length field validation
                 if len(value) > field_def.max_length:
                     return False, f"Field {field_number} length cannot exceed {field_def.max_length}"
                 if field_def.min_length and len(value) < field_def.min_length:
                     return False, f"Field {field_number} length cannot be less than {field_def.min_length}"
 
-            # Validate based on field type
+            # Type-specific validation
             if field_def.field_type == FieldType.NUMERIC:
-                if not value.isdigit():
+                if not value.strip('0').isdigit():
                     return False, f"Field {field_number} must contain only digits"
 
             elif field_def.field_type == FieldType.ALPHA:
-                if not value.isalpha():
+                if not value.replace(' ', '').isalpha():
                     return False, f"Field {field_number} must contain only letters"
 
             elif field_def.field_type == FieldType.ALPHANUMERIC:
-                if not value.isalnum():
+                if not value.replace(' ', '').isalnum():
                     return False, f"Field {field_number} must contain only letters and numbers"
 
             elif field_def.field_type == FieldType.BINARY:
@@ -91,51 +92,66 @@ class ISO8583Validator:
                 except ValueError:
                     return False, f"Field {field_number} must be valid hexadecimal"
 
-            elif field_def.field_type == FieldType.TRACK2:
-                track2_pattern = r"^[0-9]{1,19}=[0-9]{4}[0-9]*$"
-                if not re.match(track2_pattern, value):
-                    return False, f"Field {field_number} invalid Track2 format"
+            # Special field validations
+            if field_number == 2:  # PAN
+                if not self.validate_pan(value):
+                    return False, f"Invalid PAN checksum for field {field_number}"
 
-            # Network-specific field validations
+            elif field_number == 3:  # Processing Code
+                if not self.validate_processing_code(value):
+                    return False, f"Invalid processing code format for field {field_number}"
+
+            elif field_number == 35:  # Track 2
+                if '=' not in value:
+                    return False, f"Field {field_number} must contain separator '='"
+
+            elif field_number == 41:  # Terminal ID
+                if len(value.strip()) == 0:
+                    return False, f"Field {field_number} cannot be empty"
+
+            elif field_number == 42:  # Card Acceptor ID
+                if len(value.strip()) == 0:
+                    return False, f"Field {field_number} cannot be empty"
+
+            elif field_number == 55:  # ICC/EMV Data
+                emv_errors = self.validate_emv_data(value)
+                if emv_errors:
+                    return False, f"Invalid EMV data in field {field_number}: {'; '.join(emv_errors)}"
+
+            # Network-specific validation
             if network:
-                valid, error = ISO8583Validator._validate_network_field(field_number, value, network)
-                if not valid:
-                    return False, error
+                network_valid, network_error = self._validate_network_field(field_number, value, network)
+                if not network_valid:
+                    return False, network_error
 
+            # Field passed all validations
             return True, None
 
         except Exception as e:
             return False, f"Validation error for field {field_number}: {str(e)}"
 
-    @staticmethod
-    def _validate_network_field(field_number: int, value: str, network: CardNetwork) -> Tuple[bool, Optional[str]]:
-        """Validate network-specific field formats"""
-        try:
-            if network == CardNetwork.VISA:
-                if field_number == 44:  # VISA Additional Response Data
-                    if not re.match(r'^[0-9A-F]+$', value):
-                        return False, "Invalid VISA Additional Response Data format"
-                elif field_number == 46:  # VISA Fee Amounts
-                    if not re.match(r'^[0-9]{1,12}$', value):
-                        return False, "Invalid VISA Fee Amount format"
+    def _validate_network_field(
+            self,
+            field_number: int,
+            value: str,
+            network: CardNetwork
+    ) -> Tuple[bool, Optional[str]]:
+        """Validate network-specific field format"""
+        if network == CardNetwork.VISA:
+            if field_number == 44:
+                if not all(c in '0123456789ABCDEF' for c in value):
+                    return False, "Invalid VISA field 44 format"
 
-            elif network == CardNetwork.MASTERCARD:
-                if field_number == 48:  # MC Private Data
-                    if not value.startswith('MC'):
-                        return False, "Invalid MC Private Data format"
-                elif field_number == 55:  # MC EMV Data
-                    if not re.match(r'^[0-9A-F]+$', value):
-                        return False, "Invalid MC EMV Data format"
+            elif field_number == 48:
+                if not value.startswith('VISA'):
+                    return False, "VISA field 48 must start with 'VISA'"
 
-            elif network == CardNetwork.AMEX:
-                if field_number == 112:  # AMEX Additional Data
-                    if not value.startswith('AX'):
-                        return False, "Invalid AMEX Additional Data format"
+        elif network == CardNetwork.MASTERCARD:
+            if field_number == 48:
+                if not value.startswith('MC'):
+                    return False, "Mastercard field 48 must start with 'MC'"
 
-            return True, None
-
-        except Exception as e:
-            return False, f"Network-specific validation error: {str(e)}"
+        return True, None
 
     def validate_message(self, message: ISO8583Message) -> List[str]:
         """Validate complete ISO 8583 message"""
@@ -382,21 +398,35 @@ class ISO8583Validator:
         return errors
 
     def validate_emv_data(self, emv_data: str) -> List[str]:
-        """Validate EMV data format"""
+        """
+        Validate EMV data format
+        Returns list of validation errors (empty if valid)
+        """
         errors = []
-        if not emv_data:
-            return ["Empty EMV data"]
 
         try:
+            if not emv_data:
+                return ["Empty EMV data"]
+
+            # Data length must be even (hex representation)
+            if len(emv_data) % 2 != 0:
+                return ["Invalid EMV data length"]
+
             position = 0
             while position < len(emv_data):
+                # Need at least 4 chars for tag and length
                 if position + 4 > len(emv_data):
                     errors.append("Incomplete EMV data")
                     break
 
+                # Validate tag (2 bytes)
                 tag = emv_data[position:position + 2]
+                if not all(c in '0123456789ABCDEF' for c in tag.upper()):
+                    errors.append(f"Invalid tag format: {tag}")
+                    break
                 position += 2
 
+                # Validate length (1 byte)
                 length_hex = emv_data[position:position + 2]
                 try:
                     length = int(length_hex, 16)
@@ -405,67 +435,28 @@ class ISO8583Validator:
                     break
                 position += 2
 
-                if position + (length * 2) > len(emv_data):
+                # Validate value
+                value_length = length * 2  # Each byte is 2 hex chars
+                if position + value_length > len(emv_data):
                     errors.append(f"Incomplete value for tag {tag}")
                     break
 
-                position += length * 2
+                # Validate value format
+                value = emv_data[position:position + value_length]
+                if not all(c in '0123456789ABCDEF' for c in value.upper()):
+                    errors.append(f"Invalid value format for tag {tag}")
+                    break
+
+                position += value_length
+
+            # Check if all data was consumed
+            if position != len(emv_data):
+                errors.append("Extra data after EMV structure")
+
+            return errors
 
         except Exception as e:
-            errors.append(f"EMV parsing error: {str(e)}")
-
-        return errors
-
-    def validate_field(
-            self,
-            field_number: int,
-            value: str,
-            field_def: FieldDefinition
-    ) -> Tuple[bool, Optional[str]]:
-        """Validate individual field value"""
-        try:
-            # Length validation
-            if field_def.field_type not in [FieldType.LLVAR, FieldType.LLLVAR]:
-                if len(value) != field_def.max_length:
-                    return False, f"Field {field_number} length must be {field_def.max_length}"
-            else:
-                if len(value) > field_def.max_length:
-                    return False, f"Field {field_number} length cannot exceed {field_def.max_length}"
-
-            # Type-specific validation
-            if field_def.field_type == FieldType.NUMERIC:
-                if not value.isdigit():
-                    return False, f"Field {field_number} must contain only digits"
-
-            elif field_def.field_type == FieldType.ALPHA:
-                if not value.isalpha():
-                    return False, f"Field {field_number} must contain only letters"
-
-            elif field_def.field_type == FieldType.ALPHANUMERIC:
-                if not value.isalnum():
-                    return False, f"Field {field_number} must contain only letters and numbers"
-
-            elif field_def.field_type == FieldType.BINARY:
-                try:
-                    int(value, 16)
-                except ValueError:
-                    return False, f"Field {field_number} must be valid hexadecimal"
-
-            # Field-specific validation
-            if field_number == 2:  # PAN
-                if not self.validate_pan(value):
-                    return False, f"Invalid PAN checksum for field {field_number}"
-
-            elif field_number == 55:  # EMV data
-                emv_errors = self.validate_emv_data(value)
-                if emv_errors:
-                    return False, f"Invalid EMV data in field {field_number}: {'; '.join(emv_errors)}"
-
-            return True, None
-
-        except Exception as e:
-            return False, f"Validation error for field {field_number}: {str(e)}"
-
+            return [f"EMV validation error: {str(e)}"]
 
     def validate_field_compatibility(
             self,

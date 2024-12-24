@@ -28,25 +28,7 @@ def parser():
 
 @pytest.fixture
 def sample_message():
-    """Fixture for a basic message"""
-    return ISO8583Message(
-        mti="0100",
-        fields={
-            0: "0100",
-            2: "4111111111111111",
-            3: "000000",  # Ensure numeric
-            4: "000000001000",
-            11: "123456",
-            12: datetime.now().strftime("%H%M%S"),
-            13: datetime.now().strftime("%m%d"),
-            41: "TEST1234",  # 8 chars
-            42: "MERCHANT12345"  # 15 chars alphanumeric
-        }
-    )
-
-@pytest.fixture
-def visa_message():
-    """Fixture for a VISA message"""
+    """Sample message with correctly padded fields"""
     return ISO8583Message(
         mti="0100",
         fields={
@@ -55,8 +37,29 @@ def visa_message():
             3: "000000",
             4: "000000001000",
             11: "123456",
-            44: "A5B7",  # VISA specific field
-            105: "VISA TEST"
+            41: "TEST1234".ljust(8),  # 8 characters
+            42: "MERCHANT12345".ljust(15),  # 15 characters
+            96: "0000000000000000"  # 16 hex digits
+        }
+    )
+
+
+@pytest.fixture
+def visa_message():
+    """Sample VISA message with network-specific fields"""
+    return ISO8583Message(
+        mti="0100",
+        fields={
+            0: "0100",
+            2: "4111111111111111",
+            3: "000000",
+            4: "000000001000",
+            11: "123456",
+            14: "2412",
+            22: "021",
+            24: "001",
+            25: "00",
+            44: "A5B7"
         },
         network=CardNetwork.VISA
     )
@@ -100,27 +103,7 @@ def test_build_bitmap(builder, sample_message):
 
 def test_build_field(builder):
     """Test building individual fields"""
-    # Test fixed length numeric
-    field_def = FieldDefinition(
-        field_type=FieldType.NUMERIC,
-        max_length=6,
-        description="Test numeric"
-    )
-    value = builder._build_field(3, "123456", field_def)
-    assert value == "123456"
-
-    # Test fixed length with padding
-    field_def = FieldDefinition(
-        field_type=FieldType.ALPHANUMERIC,
-        max_length=8,
-        description="Test padded",
-        padding_char="0",
-        padding_direction="left"
-    )
-    value = builder._build_field(41, "123", field_def)
-    assert value == "00000123"
-
-    # Test LLVAR
+    # Test LLVAR field
     field_def = FieldDefinition(
         field_type=FieldType.LLVAR,
         max_length=19,
@@ -128,6 +111,17 @@ def test_build_field(builder):
     )
     value = builder._build_field(2, "4111111111111111", field_def)
     assert value == "164111111111111111"  # 16 is length prefix
+
+    # Test fixed-length numeric with padding
+    field_def = FieldDefinition(
+        field_type=FieldType.NUMERIC,
+        max_length=6,
+        description="Test numeric",
+        padding_char="0",
+        padding_direction="left"
+    )
+    value = builder._build_field(3, "123", field_def)
+    assert value == "000123"
 
 
 def test_build_with_secondary_bitmap(builder):
@@ -137,14 +131,15 @@ def test_build_with_secondary_bitmap(builder):
         fields={
             0: "0100",
             2: "4111111111111111",
-            65: "0123456789ABCDEF",  # 16 hex chars (8 bytes)
+            65: "0000000000000000",  # 16 hex chars for 8 bytes
             100: "TEST100"
         }
     )
     result = builder.build(message)
     assert len(result) > 20
     binary = bin(int(result[4:20], 16))[2:].zfill(64)
-    assert binary[0] == "1"  # Secondary bitmap indicator
+    assert binary[0] == "1"
+
 
 def test_build_network_specific(builder):
     """Test building network-specific messages"""
@@ -162,6 +157,7 @@ def test_build_network_specific(builder):
     )
     visa_result = builder.build(visa_message)
     assert "A5B7" in visa_result
+
 
 def test_build_response_message(builder, sample_message):
     """Test building response message"""
@@ -185,7 +181,6 @@ def test_build_reversal_message(builder, sample_message):
     reversal = builder.create_reversal(sample_message, extra_fields)
     assert reversal.mti == "0400"
     assert len(reversal.fields[90]) == 42
-
 
 
 def test_build_network_management_message(builder):

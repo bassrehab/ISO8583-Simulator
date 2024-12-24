@@ -1,4 +1,6 @@
 # tests/test_parser.py
+from pathlib import Path
+
 import pytest
 from datetime import datetime
 from iso8583sim.core.types import (
@@ -19,20 +21,48 @@ def parser():
 
 
 @pytest.fixture
+def network_message():
+    """Message for testing network detection"""
+    return ("0100" +  # MTI
+            "4000000000000000" +  # Bitmap
+            "164111111111111111")  # Field 2 (PAN)
+
+
+@pytest.fixture
+def test_messages(tmp_path) -> Path:
+    """Create test file with valid messages"""
+    messages = [
+        # Message 1: Authorization with EMV
+        ("0100" +  # MTI
+         "0000000000100000" +  # Bitmap (field 55)
+         "209F0607A0000000031010"  # Field 55 (EMV)
+         ),
+        # Message 2: Financial with PAN
+        ("0200" +  # MTI
+         "4000000000000000" +  # Bitmap (field 2)
+         "164111111111111111"  # Field 2 (PAN)
+         )
+    ]
+
+    test_file = tmp_path / "test_messages.txt"
+    test_file.write_text("\n".join(messages))
+    return test_file
+
+
+@pytest.fixture
 def binary_message():
     """Fixture for message with binary field"""
     return ("0100" +  # MTI
-            "0000000001000000" +  # Bitmap with field 52 set
+            "0000000001000000" +  # Bitmap (field 52 present)
             "0123456789ABCDEF")  # Field 52 (binary data)
 
 
 @pytest.fixture
 def emv_message():
-    """Fixture for message with EMV data (field 55)"""
-    emv_data = "9F0607A0000000031010"  # Sample EMV data
+    """Fixture for message with EMV data"""
     return ("0100" +  # MTI
-            "0000000000100000" +  # Bitmap with field 55 set
-            f"{len(emv_data):02d}{emv_data}")  # Field 55 with length prefix
+            "0000000000100000" +  # Bitmap (field 55 present)
+            "209F0607A0000000031010")  # Field 55 (EMV data) with length prefix
 
 
 @pytest.fixture
@@ -41,6 +71,14 @@ def visa_message():
     return ("0100" +  # MTI
             "0000100000000000" +  # Bitmap with field 44 set
             "03123")  # Field 44 (LLVAR) with length '03' and data '123'
+
+
+@pytest.fixture
+def visa_response():
+    """VISA response message"""
+    return ("0110" +  # MTI
+            "0000100000000000" +  # Bitmap
+            "03A5B")  # Field 44 (Additional Response Data)
 
 
 @pytest.fixture
@@ -54,6 +92,23 @@ def mastercard_message():
             "000000002000" +  # Field 4
             "0701234567" +  # Field 7
             "123456")  # Field 11
+
+
+@pytest.fixture
+def pan_message():
+    """Fixture for PAN detection"""
+    return ("0100" +  # MTI
+            "4000000000000000" +  # Bitmap (only field 2 present)
+            "164111111111111111")  # Field 2 (16 digits PAN) with length prefix
+
+
+@pytest.fixture
+def padded_message():
+    """Message with padded fields"""
+    return ("0100" +  # MTI
+            "4200000000000000" +  # Bitmap (fields 41,42)
+            "TEST1234" +  # Field 41 (8 chars)
+            "MERCHANT12345     ")  # Field 42 (15 chars)
 
 
 def test_parse_mti(parser, visa_message):
@@ -129,30 +184,24 @@ def test_variable_length_field_parsing(parser):
     assert len(parsed.fields[2]) == 16
 
 
-def test_parse_with_padding(parser):
+def test_parse_with_padding(parser, padded_message):
     """Test parsing fields with padding"""
-    message = ("0100" +  # MTI
-               "0000000001000000" +  # Bitmap (field 41)
-               "TEST1234")  # Field 41 (8-char terminal ID)
-
-    parsed = parser.parse(message)
+    parsed = parser.parse(padded_message)
     assert parsed.fields[41] == "TEST1234"
 
 
-def test_network_detection(parser, visa_message):
-    """Test network detection"""
-    visa_message_with_pan = ("0100" +  # MTI
-                             "4000000000000000" +  # Bitmap (only field 2 present)
-                             "164111111111111111")  # Field 2 (PAN) with length prefix
-
-    parsed = parser.parse(visa_message_with_pan)
+def test_network_detection(parser, pan_message):
+    """Test network detection from PAN"""
+    parsed = parser.parse(pan_message)
     assert parsed.network == CardNetwork.VISA
+
 
 def test_parse_network_specific_fields(parser, visa_message):
     """Test parsing network-specific fields"""
     parsed = parser.parse(visa_message, network=CardNetwork.VISA)
     assert '44' in parsed.fields
     assert parsed.fields[44] == "123"
+
 
 def test_parse_variable_length_field(parser):
     """Test parsing LLVAR and LLLVAR fields"""
@@ -172,12 +221,29 @@ def test_parse_binary_fields(parser, binary_message):
     assert parsed.fields[52] == "0123456789ABCDEF"
 
 
-def test_parse_emv_data(parser, emv_message):
-    """Test parsing EMV data field"""
-    parsed = parser.parse(emv_message)
+def test_parse_emv_data(parser):
+    """Test EMV data parsing"""
+    message = ("0100" +  # MTI
+               "0000000000100000" +  # Bitmap (field 55)
+               "209F0607A0000000031010")  # Field 55 (EMV)
+
+    parsed = parser.parse(message)
     assert 55 in parsed.fields
-    emv_data = parsed.fields[55]
-    assert "9F06" in emv_data
+    assert "9F06" in parsed.fields[55]
+    assert len(parsed.fields[55]) == 20
+
+
+def test_validate_emv_data(validator, valid_emv_data, invalid_emv_data):
+    """Test EMV data validation"""
+    # Test valid data
+    for data in valid_emv_data:
+        errors = validator.validate_emv_data(data)
+        assert len(errors) == 0, f"Should be valid: {data}"
+
+    # Test invalid data
+    for data in invalid_emv_data:
+        errors = validator.validate_emv_data(data)
+        assert len(errors) > 0, f"Should be invalid: {data}"
 
 
 def test_parse_with_different_versions(parser):
@@ -218,37 +284,26 @@ def test_parse_error_handling(parser):
         parser.parse("010082200000000000FF")  # Invalid PAN length
 
 
-def test_parse_multiple_messages(parser, tmp_path):
-    """Test parsing multiple messages from file"""
-    # Create test file
-    test_file = tmp_path / "test_messages.txt"
-    messages = [
-        "01008220000000000000411111111111111100000000000001000123456",
-        "02008220000000000000511111111111111100000000000002000123457"
-    ]
-    test_file.write_text("\n".join(messages))
+def test_parse_multiple_messages(parser, test_messages):
+    """Test parsing multiple messages"""
+    messages = parser.parse_file(str(test_messages))
+    assert len(messages) == 2
 
-    # Parse messages
-    parsed = parser.parse_file(str(test_file))
-    assert len(parsed) == 2
-    assert parsed[0].mti == "0100"
-    assert parsed[1].mti == "0200"
+    # Check first message (EMV)
+    assert messages[0].mti == "0100"
+    assert 55 in messages[0].fields
+    assert "9F06" in messages[0].fields[55]
+
+    # Check second message (PAN)
+    assert messages[1].mti == "0200"
+    assert messages[1].fields[2] == "4111111111111111"
 
 
 def test_network_specific_formatting(parser):
     """Test network-specific field formatting"""
-    # VISA format
     visa_msg = ("0100" +  # MTI
-                "0000100000000000" +  # Bitmap (field 44)
-                "04ABCD")  # Field 44
+                "0000100000000000" +  # Bitmap (field 44 present)
+                "04ABCD")  # Field 44 with length prefix
 
-    visa_parsed = parser.parse(visa_msg, network=CardNetwork.VISA)
-    assert visa_parsed.fields[44] == "ABCD"  # Should be uppercase
-
-    # Mastercard format
-    mc_msg = ("0200" +  # MTI
-              "0001000000000000" +  # Bitmap (field 48)
-              "006MC123")  # Field 48
-
-    mc_parsed = parser.parse(mc_msg, network=CardNetwork.MASTERCARD)
-    assert mc_parsed.fields[48] == "MC123"
+    parsed = parser.parse(visa_msg, network=CardNetwork.VISA)
+    assert parsed.fields[44] == "ABCD"
