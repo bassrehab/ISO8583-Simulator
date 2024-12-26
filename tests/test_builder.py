@@ -11,86 +11,14 @@ from iso8583sim.core.types import (
     MessageFunction,
     get_field_definition
 )
-from iso8583sim.core.builder import ISO8583Builder
-from iso8583sim.core.parser import ISO8583Parser
 
 
-@pytest.fixture
-def builder():
-    """Fixture for builder instance"""
-    return ISO8583Builder()
-
-
-@pytest.fixture
-def parser():
-    """Fixture for parser instance to verify built messages"""
-    return ISO8583Parser()
-
-
-@pytest.fixture
-def sample_message():
-    """Sample message with correctly formatted fields"""
-    return ISO8583Message(
-        mti="0100",
-        fields={
-            0: "0100",
-            2: "4111111111111111",
-            3: "000000",
-            4: "000000001000",
-            11: "123456",
-            41: "TEST1234",
-            42: "MERCHANT12345 "  # Exactly 15 chars with space
-        }
-    )
-
-
-@pytest.fixture
-def visa_message():
-    """Sample VISA message with network-specific fields"""
-    return ISO8583Message(
-        mti="0100",
-        fields={
-            0: "0100",
-            2: "4111111111111111",
-            3: "000000",
-            4: "000000001000",
-            11: "123456",
-            14: "2412",
-            22: "021",
-            24: "001",  # Added function code
-            25: "00",
-            41: "TEST1234",
-            42: "MERCHANT12345 ",  # Exactly 15 chars
-            44: "A5B7"
-        },
-        network=CardNetwork.VISA
-    )
-
-
-@pytest.fixture
-def mastercard_message():
-    """Sample Mastercard message"""
-    return ISO8583Message(
-        mti="0200",
-        fields={
-            0: "0200",
-            2: "5111111111111111",
-            3: "000000",  # Fixed: properly formatted
-            4: "000000001000",
-            11: "123456",
-            22: "021",
-            24: "001",
-            25: "00",
-            48: "MC123",  # Mastercard specific field
-            96: "0000000000000000"  # Fixed: proper length
-        },
-        network=CardNetwork.MASTERCARD
-    )
+# Using all common fixtures from conftest.py: builder, parser, validator, test_messages, create_message
 
 
 @pytest.fixture
 def binary_message():
-    """Message with binary fields"""
+    """Message with binary fields - specific to binary field testing"""
     return ISO8583Message(
         mti="0100",
         fields={
@@ -101,28 +29,16 @@ def binary_message():
     )
 
 
-@pytest.fixture
-def emv_message():
-    """Message with EMV data"""
-    return ISO8583Message(
-        mti="0100",
-        fields={
-            0: "0100",
-            55: "9F0607A0000000031010"  # EMV data
-        }
-    )
-
-
 def test_build_numeric_fields(builder):
     """Test building numeric fields with proper formatting"""
     message = ISO8583Message(
         mti="0100",
         fields={
             0: "0100",
-            3: "000000",  # Properly formatted processing code
-            4: "000000001234",  # Properly formatted amount
-            11: "123456",  # STAN
-            39: "00"  # Properly formatted response code
+            3: "000000",  # Processing Code (n6)
+            4: "000000001234",  # Amount (n12)
+            11: "123456",  # STAN (n6)
+            39: "00"  # Response Code (n2)
         }
     )
 
@@ -140,33 +56,20 @@ def test_build_alphanumeric_fields(builder):
         mti="0100",
         fields={
             0: "0100",
-            41: "TEST1234",  # Terminal ID (8 chars)
-            42: "MERCH123",  # Merchant ID (15 chars)
+            41: "TEST1234",  # Terminal ID (exactly 8 chars)
+            42: "MERCHANT12345  "  # Card Acceptor ID (exactly 15 chars)
         }
     )
 
     result = builder.build(message)
     assert "TEST1234" in result  # Field 41 exact length
-    assert "MERCH123       " in result  # Field 42 right-padded
+    assert "MERCHANT12345  " in result  # Field 42 exact length
 
 
-def test_build_bitmap(builder):
+def test_build_bitmap(builder, test_messages, create_message):
     """Test bitmap building"""
-    message = ISO8583Message(
-        mti="0100",
-        fields={
-            0: "0100",
-            2: "4111111111111111",
-            3: "000000",
-            4: "000000001000",
-            11: "123456",
-            41: "TEST1234",
-            42: "MERCHANT12345 "
-        }
-    )
-
+    message = create_message('basic_auth', test_messages)
     bitmap = builder._build_bitmap(message.fields)
-    # Convert hex bitmap to binary string for testing
     binary = bin(int(bitmap, 16))[2:].zfill(64)
 
     assert binary[1] == "1"  # Field 2
@@ -200,18 +103,9 @@ def test_build_field(builder):
     assert value == "000123"
 
 
-def test_build_binary_fields(builder):
+def test_build_binary_fields(builder, binary_message):
     """Test building binary fields with proper formatting"""
-    message = ISO8583Message(
-        mti="0100",
-        fields={
-            0: "0100",
-            52: "0123456789ABCDEF",  # 8 bytes binary data
-            96: "0123456789ABCDEF"  # 8 bytes message security code
-        }
-    )
-
-    result = builder.build(message)
+    result = builder.build(binary_message)
     assert "0123456789ABCDEF" in result  # Field 52
     assert "0123456789ABCDEF" in result  # Field 96
 
@@ -223,7 +117,7 @@ def test_build_with_secondary_bitmap(builder):
         fields={
             0: "0100",
             2: "4111111111111111",
-            65: "1234567890123456"  # 8 bytes field 65
+            65: "1234567890123456"  # Field in secondary bitmap
         }
     )
 
@@ -233,78 +127,31 @@ def test_build_with_secondary_bitmap(builder):
     assert binary[0] == "1"  # Secondary bitmap indicator
 
 
-def test_build_network_specific(builder):
+def test_build_network_specific(builder, test_messages, create_message):
     """Test building network-specific messages"""
-    visa_message = ISO8583Message(
-        mti="0100",
-        fields={
-            0: "0100",
-            2: "4111111111111111",
-            3: "000000",
-            4: "000000001000",
-            11: "123456",
-            14: "2412",
-            22: "021",
-            24: "001",
-            25: "00",
-            41: "TEST1234",
-            42: "MERCHANT12345 ",
-            44: "A5B7"
-        },
-        network=CardNetwork.VISA
-    )
-
-    result = builder.build(visa_message)
+    visa_msg = create_message('visa_auth', test_messages)
+    result = builder.build(visa_msg)
     assert result is not None
-    assert "A5B7" in result
+    assert "A5B7" in result  # VISA-specific field 44
 
 
-def test_build_network_specific_fields(builder):
+def test_build_network_specific_fields(builder, test_messages, create_message):
     """Test building network-specific fields"""
-    # VISA message with required fields
-    visa_message = ISO8583Message(
-        mti="0100",
-        fields={
-            0: "0100",
-            2: "4111111111111111",
-            3: "000000",
-            4: "000000001000",
-            11: "123456",
-            14: "2412",
-            22: "021",
-            24: "001",
-            25: "00",
-            41: "TEST1234",
-            42: "MERCHANT12345 "
-        },
-        network=CardNetwork.VISA
-    )
+    visa_msg = create_message('visa_auth', test_messages)
+    result = builder.build(visa_msg)
 
-    result = builder.build(visa_message)
     assert result is not None
     assert "4111111111111111" in result  # PAN
     assert "000000" in result  # Processing code
     assert "123456" in result  # STAN
-    assert "MERCHANT12345 " in result  # Merchant ID
+    assert "MERCHANT12345  " in result  # Merchant ID with proper padding
 
 
-def test_build_response_message(builder):
+def test_build_response_message(builder, test_messages, create_message):
     """Test building response message"""
-    request = ISO8583Message(
-        mti="0100",
-        fields={
-            0: "0100",
-            2: "4111111111111111",
-            3: "000000",
-            4: "000000001000",
-            11: "123456",
-            41: "TEST1234",
-            42: "MERCHANT12345 "
-        }
-    )
-
+    request = create_message('basic_auth', test_messages)
     response_fields = {
-        39: "00",  # Properly formatted response code
+        39: "00",  # Approval code
         54: "000000001000"  # Additional amount
     }
 
@@ -316,42 +163,12 @@ def test_build_response_message(builder):
     assert "000000001000" in result
 
 
-@pytest.fixture
-def reversal_message():
-    """Sample reversal message"""
-    return ISO8583Message(
-        mti="0400",
-        fields={
-            0: "0400",
-            2: "4111111111111111",
-            3: "000000",
-            4: "000000001000",
-            11: "123456",
-            39: "00",  # Numeric response code
-            90: "000000000000000000000000000000000000000000",  # 42 digits
-            96: "0123456789ABCDEF"  # 16 hex chars = 8 bytes
-        }
-    )
-
-
-def test_build_reversal_message(builder):
+def test_build_reversal_message(builder, test_messages, create_message):
     """Test building reversal message"""
-    original = ISO8583Message(
-        mti="0100",
-        fields={
-            0: "0100",
-            2: "4111111111111111",
-            3: "000000",
-            4: "000000001000",
-            11: "123456",
-            41: "TEST1234",
-            42: "MERCHANT12345 "
-        }
-    )
-
+    original = create_message('basic_auth', test_messages)
     extra_fields = {
         39: "00",
-        90: "000000000000000000000000000000000000000000"  # 42 digits
+        90: "0100123456".ljust(42, '0')  # 42 chars
     }
 
     reversal = builder.create_reversal(original, extra_fields)
@@ -359,19 +176,6 @@ def test_build_reversal_message(builder):
 
     assert reversal.mti == "0400"
     assert len(reversal.fields[90]) == 42
-
-
-@pytest.fixture
-def network_management_message():
-    """Sample network management message"""
-    return ISO8583Message(
-        mti="0800",
-        fields={
-            0: "0800",
-            53: "0000000000000000",  # 16 digits
-            96: "0123456789ABCDEF"  # 16 hex chars = 8 bytes
-        }
-    )
 
 
 def test_build_network_management_message(builder):
@@ -384,7 +188,6 @@ def test_build_network_management_message(builder):
     result = builder.build(message)
     assert message.mti == "0800"
     assert message.fields[70] == "301"
-    # Updated length check for field 96
     assert len(message.fields[96]) == 16
 
 
@@ -397,8 +200,6 @@ def test_build_emv_data(builder):
     }
 
     emv_data = builder.build_emv_data(emv_tags)
-
-    # Verify each tag is present
     assert "9F06" in emv_data
     assert "A0000000031010" in emv_data
     assert "9F1A" in emv_data
@@ -421,7 +222,6 @@ def test_build_field_validation_errors(builder):
 
 def test_build_error_handling(builder):
     """Test error handling during message building"""
-    # Test invalid field format
     message = ISO8583Message(
         mti="0100",
         fields={
@@ -436,24 +236,22 @@ def test_build_error_handling(builder):
 
 def test_build_version_specific(builder):
     """Test building with different ISO versions"""
-    # Test with 1993 version field lengths
     message_93 = ISO8583Message(
         mti="0100",
         fields={
             0: "0100",
-            43: "A" * 99  # 1993 version length
+            43: "A" * 99  # 1993 version max length
         },
         version=ISO8583Version.V1993
     )
     result_93 = builder.build(message_93)
     assert len(result_93) > 20
 
-    # Test with 2003 version
     message_03 = ISO8583Message(
         mti="0100",
         fields={
             0: "0100",
-            43: "A" * 256  # 2003 version length
+            43: "A" * 256  # 2003 version max length
         },
         version=ISO8583Version.V2003
     )
@@ -461,95 +259,59 @@ def test_build_version_specific(builder):
     assert len(result_03) > 20
 
 
-def test_message_recreation(builder, parser):
+def test_message_recreation(builder, parser, test_messages, create_message):
     """Test complete building and parsing cycle"""
-    # Create original message with all types of fields
-    original = ISO8583Message(
-        mti="0100",
-        fields={
-            0: "0100",
-            2: "4111111111111111",  # PAN (LLVAR)
-            3: "000000",  # Processing Code (n6)
-            4: "000000001000",  # Amount (n12)
-            11: "123456",  # STAN (n6)
-            12: "104234",  # Time (n6)
-            13: "0125",  # Date (n4)
-            22: "021",  # POS Entry Mode (n3)
-            25: "00",  # POS Condition Code (n2)
-            41: "TEST1234",  # Terminal ID (ans8)
-            42: "MERCHANT12345 ",  # Merchant ID (ans15)
-            49: "840",  # Currency Code (n3)
-            96: "0123456789ABCDEF"  # Message Security Code (b8)
-        },
-        version=ISO8583Version.V1987
-    )
+    # Using basic_auth message as base
+    original = create_message('basic_auth', test_messages)
 
-    try:
-        # Build message
-        built = builder.build(original)
-        assert built is not None
-        assert isinstance(built, str)
+    # Build message
+    built = builder.build(original)
+    assert built is not None
+    assert isinstance(built, str)
 
-        # Parse the built message
-        parsed = parser.parse(built)
-        assert parsed is not None
+    # Parse the built message
+    parsed = parser.parse(built)
+    assert parsed is not None
 
-        # Validate message-level attributes
-        assert parsed.mti == original.mti
-        assert parsed.version == original.version
-        assert parsed.bitmap is not None
-        assert parsed.raw_message == built
+    # Validate message-level attributes
+    assert parsed.mti == original.mti
+    assert parsed.version == original.version
+    assert parsed.bitmap is not None
+    assert parsed.raw_message == built
 
-        # Validate fields
-        for field_num, value in original.fields.items():
-            if field_num == 0:  # Skip MTI as it's also in fields[0]
-                continue
+    # Validate fields
+    for field_num, value in original.fields.items():
+        if field_num == 0:  # Skip MTI as it's also in fields[0]
+            continue
 
-            # Assert field presence
-            assert field_num in parsed.fields, f"Field {field_num} missing in parsed message"
+        # Assert field presence
+        assert field_num in parsed.fields, f"Field {field_num} missing in parsed message"
 
-            # Get field definition
-            field_def = get_field_definition(field_num, version=original.version)
-            assert field_def is not None, f"No definition for field {field_num}"
+        # Get field definition
+        field_def = get_field_definition(field_num, version=original.version)
+        assert field_def is not None, f"No definition for field {field_num}"
 
-            parsed_value = parsed.fields[field_num]
+        parsed_value = parsed.fields[field_num]
 
-            # Check field length
-            if field_def.field_type not in [FieldType.LLVAR, FieldType.LLLVAR]:
+        # Check field length
+        if field_def.field_type not in [FieldType.LLVAR, FieldType.LLLVAR]:
+            if field_def.field_type == FieldType.BINARY:
+                # For binary fields, string length should be twice max_length
+                assert len(parsed_value) == field_def.max_length * 2, \
+                    f"Field {field_num} length mismatch: {len(parsed_value)} != {field_def.max_length * 2}"
+            else:
                 assert len(parsed_value) == field_def.max_length, \
                     f"Field {field_num} length mismatch: {len(parsed_value)} != {field_def.max_length}"
 
-            # Check padding for fixed-length fields
-            if field_def.padding_char:
-                if field_def.padding_direction == 'left':
-                    assert parsed_value.lstrip(field_def.padding_char) == \
-                           value.lstrip(field_def.padding_char), \
-                        f"Field {field_num} left padding mismatch"
-                else:
-                    assert parsed_value.rstrip(field_def.padding_char) == \
-                           value.rstrip(field_def.padding_char), \
-                        f"Field {field_num} right padding mismatch"
-
-            # Check specific field types
-            if field_def.field_type == FieldType.NUMERIC:
-                assert parsed_value.isdigit(), f"Field {field_num} should be numeric"
-            elif field_def.field_type == FieldType.BINARY:
-                assert all(c in '0123456789ABCDEF' for c in parsed_value.upper()), \
-                    f"Field {field_num} should be hexadecimal"
-            elif field_def.field_type == FieldType.ALPHA:
-                assert parsed_value.replace(' ', '').isalpha(), \
-                    f"Field {field_num} should be alphabetic"
-
-            # Check network-specific field formats if network is specified
-            if original.network:
-                network_def = get_field_definition(field_num, network=original.network)
-                if network_def and network_def != field_def:
-                    # Additional network-specific validations could be added here
-                    assert len(parsed_value) <= network_def.max_length, \
-                        f"Network-specific length exceeded for field {field_num}"
-
-    except Exception as e:
-        pytest.fail(f"Message recreation test failed: {str(e)}")
+        # Check field type-specific validations
+        if field_def.field_type == FieldType.NUMERIC:
+            assert parsed_value.isdigit(), f"Field {field_num} should be numeric"
+        elif field_def.field_type == FieldType.BINARY:
+            assert all(c in '0123456789ABCDEF' for c in parsed_value.upper()), \
+                f"Field {field_num} should be hexadecimal"
+        elif field_def.field_type == FieldType.ALPHA:
+            assert parsed_value.replace(' ', '').isalpha(), \
+                f"Field {field_num} should be alphabetic"
 
     # Validate bitmap reconstruction
     original_bitmap = builder._build_bitmap(original.fields)

@@ -1,59 +1,16 @@
 # tests/test_integration.py
 
-import pytest
 from iso8583sim.core.types import (
-    ISO8583Message,
-    ISO8583Version,
-    CardNetwork,
-    FieldType,
-    FieldDefinition
+    CardNetwork
 )
-from iso8583sim.core.parser import ISO8583Parser
-from iso8583sim.core.builder import ISO8583Builder
-from iso8583sim.core.validator import ISO8583Validator
 
 
-@pytest.fixture
-def parser():
-    return ISO8583Parser()
+def test_build_parse_cycle(builder, parser, validator, test_messages, create_message):
 
-
-@pytest.fixture
-def builder():
-    return ISO8583Builder()
-
-
-@pytest.fixture
-def validator():
-    return ISO8583Validator()
-
-
-@pytest.fixture
-def sample_visa_fields():
-    """Sample fields for VISA message"""
-    return {
-        0: "0100",
-        2: "4111111111111111",
-        3: "000000",
-        4: "000000001000",
-        11: "123456",
-        14: "2412",
-        22: "021",
-        24: "001",
-        25: "00",
-        41: "TEST1234",
-        42: "MERCHANT12345"
-    }
-
-
-def test_build_parse_cycle(builder, parser, validator, sample_visa_fields):
     """Test complete build-parse cycle"""
-    # Create and build message
-    original = ISO8583Message(
-        mti="0100",
-        fields=sample_visa_fields,
-        network=CardNetwork.VISA
-    )
+
+    # Create message using centralized test data
+    original = create_message('visa_auth', test_messages)
 
     # Validate original message
     errors = validator.validate_message(original)
@@ -74,25 +31,10 @@ def test_build_parse_cycle(builder, parser, validator, sample_visa_fields):
             assert parsed.fields[field_num] == value
 
 
-def test_network_specific_processing(builder, parser, validator):
+def test_network_specific_processing(builder, parser, validator, test_messages, create_message):
     """Test network-specific message processing"""
-    # VISA message
-    visa_msg = ISO8583Message(
-        mti="0100",
-        fields={
-            0: "0100",
-            2: "4111111111111111",
-            3: "000000",
-            4: "000000001000",
-            11: "123456",
-            14: "2412",
-            22: "021",
-            24: "001",
-            25: "00",
-            44: "A5B7"
-        },
-        network=CardNetwork.VISA
-    )
+    # Create VISA message
+    visa_msg = create_message('visa_auth', test_messages)
 
     # Build and parse VISA message
     built_visa = builder.build(visa_msg)
@@ -100,45 +42,20 @@ def test_network_specific_processing(builder, parser, validator):
     assert parsed_visa.network == CardNetwork.VISA
     assert parsed_visa.fields[44] == "A5B7"
 
-    # Mastercard message
-    mc_msg = ISO8583Message(
-        mti="0100",
-        fields={
-            0: "0100",
-            2: "5111111111111111",
-            3: "000000",
-            4: "000000001000",
-            11: "123456",
-            22: "021",
-            24: "001",
-            25: "00",
-            48: "MC01"
-        },
-        network=CardNetwork.MASTERCARD
-    )
+    # Create Mastercard message
+    mc_msg = create_message('mastercard_auth', test_messages)
 
     # Build and parse Mastercard message
     built_mc = builder.build(mc_msg)
     parsed_mc = parser.parse(built_mc)
     assert parsed_mc.network == CardNetwork.MASTERCARD
-    assert parsed_mc.fields[48] == "MC01"
+    assert parsed_mc.fields[48] == "MC123"
 
 
-def test_response_message_flow(builder, parser, validator):
+def test_response_message_flow(builder, parser, validator, test_messages, create_message):
     """Test complete request-response flow"""
-    # Create request message
-    request = ISO8583Message(
-        mti="0100",
-        fields={
-            0: "0100",
-            2: "4111111111111111",
-            3: "000000",
-            4: "000000001000",
-            11: "123456",
-            41: "TEST1234",
-            42: "MERCHANT12345"
-        }
-    )
+    # Create request message using centralized test data
+    request = create_message('basic_auth', test_messages)
 
     # Create response
     response_fields = {

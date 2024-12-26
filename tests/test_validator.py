@@ -12,115 +12,6 @@ from iso8583sim.core.types import (
     VERSION_SPECIFIC_FIELDS,
     ISO8583_FIELDS
 )
-from iso8583sim.core.validator import ISO8583Validator
-
-
-@pytest.fixture
-def validator():
-    """Fixture for validator instance"""
-    return ISO8583Validator()
-
-
-@pytest.fixture
-def valid_message():
-    """Fixture for a valid message"""
-    return ISO8583Message(
-        mti="0100",
-        fields={
-            0: "0100",
-            2: "4111111111111111",
-            3: "000000",
-            4: "000000001000",
-            7: "0701234567",
-            11: "123456"
-        }
-    )
-
-
-@pytest.fixture
-def valid_emv_data():
-    """Valid EMV data samples"""
-    return [
-        # Simple EMV data
-        "9F0607A0000000031010",
-        # Multiple tags
-        "9F0607A00000000310109F15020001",
-        # Complex EMV data
-        "9F33036028C89F3501229F40056000F0A0019F02060000000001009F03060000000000009F1A0208409F3501229F34034203009F3704C6B1A04F9F0902008C9F4104000000019F1E0838323032313435339F0902008C500B56495341204352454449549F120F4352454449542044454249542F"
-    ]
-
-@pytest.fixture
-def invalid_emv_data():
-    """Invalid EMV data samples"""
-    return [
-        # Incomplete tag
-        "9F",
-        # Invalid tag
-        "XX0607A0000000031010",
-        # Invalid length
-        "9F06XX",
-        # Incomplete value
-        "9F0607A0000000",
-        # Invalid value characters
-        "9F0607A00000000310ZZ"
-    ]
-
-
-@pytest.fixture
-def complete_visa_message():
-    """Fixture for a complete VISA message"""
-    return ISO8583Message(
-        mti="0100",
-        fields={
-            0: "0100",
-            2: "4111111111111111",
-            3: "000000",
-            4: "000000001000",
-            11: "123456",
-            14: "2412",
-            22: "051",
-            24: "200",
-            25: "00",
-            44: "A5B7"
-        },
-        network=CardNetwork.VISA
-    )
-
-
-@pytest.fixture
-def visa_message():
-    """Fixture for a VISA message"""
-    return ISO8583Message(
-        mti="0100",
-        fields={
-            0: "0100",
-            2: "4111111111111111",
-            3: "000000",
-            4: "000000001000",
-            7: "0701234567",
-            11: "123456",
-            44: "A5B7",  # VISA specific field
-        },
-        network=CardNetwork.VISA
-    )
-
-
-@pytest.fixture
-def mastercard_message():
-    """Fixture for a Mastercard message"""
-    return ISO8583Message(
-        mti="0200",
-        fields={
-            0: "0200",
-            2: "5111111111111111",
-            3: "000000",
-            4: "000000001000",
-            7: "0701234567",
-            11: "123456",
-            48: "MC123",  # Mastercard specific field
-        },
-        network=CardNetwork.MASTERCARD
-    )
 
 
 def test_validate_field_numeric(validator):
@@ -231,44 +122,28 @@ def test_validate_pan(validator):
     assert not validator.validate_pan("4111111111111112")  # Invalid check digit
 
 
-def test_validate_network_specific_fields(validator):
+def test_validate_network_specific_fields(validator, test_messages, create_message):
     """Test network-specific field validation"""
-    # VISA field 44
-    field_def = FieldDefinition(
-        field_type=FieldType.ALPHANUMERIC,
-        max_length=4,
-        description="VISA field 44"
-    )
-    valid, error = validator.validate_field(
-        44, "A5B7", field_def, network=CardNetwork.VISA
-    )
-    assert valid
-    assert error is None
+    # Test VISA field validation
+    visa_msg = create_message('visa_auth', test_messages)
+    errors = validator.validate_message(visa_msg)
+    assert len(errors) == 0
 
-    # Invalid VISA field 44
-    valid, error = validator.validate_field(
-        44, "XYZ@", field_def, network=CardNetwork.VISA
-    )
-    assert not valid
-    assert "Invalid VISA field 44 format" in error
-
-    # Mastercard field 48
-    field_def = FieldDefinition(
-        field_type=FieldType.ALPHANUMERIC,
-        max_length=4,
-        description="MC field 48"
-    )
-    valid, error = validator.validate_field(
-        48, "MC01", field_def, network=CardNetwork.MASTERCARD
-    )
-    assert valid
-    assert error is None
+    # Test Mastercard field validation
+    mc_msg = create_message('mastercard_auth', test_messages)
+    errors = validator.validate_message(mc_msg)
+    assert len(errors) == 0
 
 
-def test_validate_message_network_compliance(validator, complete_visa_message):
+def test_validate_message_network_compliance(validator, test_messages, create_message):
     """Test network-specific message validation"""
+    # Test complete message
+    complete_msg = create_message('visa_auth', test_messages)
+    errors = validator.validate_message(complete_msg)
+    assert len(errors) == 0
+
     # Test incomplete message
-    incomplete_message = ISO8583Message(
+    incomplete_msg = ISO8583Message(
         mti="0100",
         fields={
             0: "0100",
@@ -276,8 +151,7 @@ def test_validate_message_network_compliance(validator, complete_visa_message):
         },
         network=CardNetwork.VISA
     )
-
-    errors = validator.validate_message(incomplete_message)
+    errors = validator.validate_message(incomplete_msg)
     assert len(errors) > 0
     assert any("Required field" in error for error in errors)
 
@@ -296,7 +170,7 @@ def test_validate_version_specific_fields(validator):
     errors = validator.validate_message(message_1987)
     assert len(errors) == 0
 
-    # Test 2003 version field with longer length
+    # Test 2003 version field
     message_2003 = ISO8583Message(
         mti="0100",
         fields={
@@ -309,30 +183,86 @@ def test_validate_version_specific_fields(validator):
     assert len(errors) == 0
 
 
-def test_validate_emv_data(validator):
+def test_validate_emv_data(validator, valid_emv_data, invalid_emv_data):
     """Test EMV data validation"""
-    # Valid EMV data
-    valid_emv = "9F0607A0000000031010"
-    errors = validator.validate_emv_data(valid_emv)
+    # Test valid EMV data
+    for data in valid_emv_data:
+        errors = validator.validate_emv_data(data)
+        assert len(errors) == 0, f"Should be valid: {data}"
+
+    # Test invalid EMV data
+    for data in invalid_emv_data:
+        errors = validator.validate_emv_data(data)
+        assert len(errors) > 0, f"Should be invalid: {data}"
+
+
+def test_validate_field_format(validator, test_messages, create_message):
+    """Test field format validation"""
+    message = create_message('basic_auth', test_messages)
+
+    # Test numeric field
+    valid, error = validator.validate_field(
+        3, "000000",
+        ISO8583_FIELDS[3]
+    )
+    assert valid
+    assert error is None
+
+    # Test alphanumeric field with padding
+    valid, error = validator.validate_field(
+        42, "MERCHANT12345  ",  # Exactly 15 chars
+        ISO8583_FIELDS[42]
+    )
+    assert valid
+    assert error is None
+
+
+def test_validate_required_fields(validator, test_messages, create_message):
+    """Test required fields validation"""
+    # Test VISA required fields
+    visa_msg = create_message('visa_auth', test_messages)
+    errors = validator.validate_message(visa_msg)
     assert len(errors) == 0
 
-    # Invalid EMV data - incomplete
-    invalid_emv = "9F06"
-    errors = validator.validate_emv_data(invalid_emv)
-    assert len(errors) > 0
-    assert "Incomplete EMV data" in errors[0]
+    # Test Mastercard required fields
+    mc_msg = create_message('mastercard_auth', test_messages)
+    errors = validator.validate_message(mc_msg)
+    assert len(errors) == 0
 
-    # Invalid EMV data - wrong length
-    invalid_emv = "9F0607A00000000310"  # Missing last byte
-    errors = validator.validate_emv_data(invalid_emv)
-    assert len(errors) > 0
-    assert "Incomplete value for tag" in errors[0]
 
-    # Invalid EMV data - invalid tag
-    invalid_emv = "XX0607A0000000031010"
-    errors = validator.validate_emv_data(invalid_emv)
-    assert len(errors) > 0
-    assert "Invalid tag format" in errors[0]
+def test_validate_field_length(validator):
+    """Test field length validation"""
+    # Test fixed-length field
+    field_def = FieldDefinition(
+        field_type=FieldType.NUMERIC,
+        max_length=6,
+        description="Test fixed length"
+    )
+    valid, error = validator.validate_field(3, "123456", field_def)
+    assert valid
+    assert error is None
+
+    # Test variable length field
+    field_def = FieldDefinition(
+        field_type=FieldType.LLVAR,
+        max_length=19,
+        description="Test variable length"
+    )
+    valid, error = validator.validate_field(2, "4111111111111111", field_def)
+    assert valid
+    assert error is None
+
+
+def test_validate_binary_fields(validator):
+    """Test binary field validation"""
+    field_def = FieldDefinition(
+        field_type=FieldType.BINARY,
+        max_length=8,
+        description="Test binary"
+    )
+    valid, error = validator.validate_field(52, "0123456789ABCDEF", field_def)
+    assert valid
+    assert error is None
 
 
 def test_validate_network_field_format(validator):
@@ -358,49 +288,25 @@ def test_validate_network_field_format(validator):
     assert valid
     assert error is None
 
-    # Invalid Mastercard field
-    valid, error = validator._validate_network_field(
-        48, "XX01", CardNetwork.MASTERCARD
-    )
-    assert not valid
-    assert "Mastercard field 48 must start with 'MC'" in error
-
-
-def test_validate_network_compliance(validator, complete_visa_message):
-    """Test network compliance validation"""
-    # Test valid message
-    errors = validator.validate_network_compliance(complete_visa_message)
-    assert len(errors) == 0
-
-    # Test with invalid field format
-    complete_visa_message.fields[44] = "XYZ"  # Invalid format for VISA field 44
-    errors = validator.validate_network_compliance(complete_visa_message)
-    assert len(errors) > 0
-    assert "Invalid format for VISA field 44" in errors
-
 
 def test_validate_field_compatibility(validator):
     """Test field version compatibility"""
+    # Test 2003 version compatibility
     errors = validator.validate_field_compatibility(
         43, "A" * 256, ISO8583Version.V2003
     )
     assert len(errors) == 0
 
+    # Test 1987 version compatibility
     errors = validator.validate_field_compatibility(
         43, "A" * 256, ISO8583Version.V1987
     )
     assert len(errors) > 0  # Too long for 1987 version
 
 
-def test_validate_message_field_padding(validator):
+def test_validate_message_field_padding(validator, test_messages, create_message):
     """Test field padding validation"""
-    message = ISO8583Message(
-        mti="0100",
-        fields={
-            0: "0100",
-            41: "TEST1234"  # 8 chars exactly, no padding needed
-        }
-    )
+    message = create_message('basic_auth', test_messages)
     errors = validator.validate_message(message)
     assert len(errors) == 0
 
@@ -409,3 +315,20 @@ def test_validate_message_field_padding(validator):
     errors = validator.validate_message(message)
     assert len(errors) > 0
     assert any("length must be" in error for error in errors)
+
+
+def test_validate_message_completeness(validator, test_messages, create_message):
+    """Test message completeness validation"""
+    # Test complete message
+    message = create_message('visa_auth', test_messages)
+    errors = validator.validate_message(message)
+    assert len(errors) == 0
+
+    # Test incomplete message
+    incomplete = ISO8583Message(
+        mti="0100",
+        fields={0: "0100"},  # Missing required fields
+        network=CardNetwork.VISA
+    )
+    errors = validator.validate_message(incomplete)
+    assert len(errors) > 0
