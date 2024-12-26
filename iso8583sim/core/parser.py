@@ -254,6 +254,10 @@ class ISO8583Parser:
 
             # Preserve padding based on field definition
             if value is not None:
+                # Handle field 42 first before any other processing
+                if field_number == 42:  # Card Acceptor ID
+                    return value  # Preserve all spaces for field 42
+
                 if field_def.field_type == FieldType.NUMERIC:
                     # Always preserve numeric field padding
                     return value
@@ -268,8 +272,6 @@ class ISO8583Parser:
 
                 # Handle specific fields
                 if field_number == 41:  # Terminal ID
-                    return value.rstrip()
-                elif field_number == 42:  # Card Acceptor ID
                     return value.rstrip()
                 elif field_number == 44:  # Additional Response Data
                     return value.strip()

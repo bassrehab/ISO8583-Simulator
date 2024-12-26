@@ -1,4 +1,3 @@
-# tests/test_data/test_config.yaml
 default:
   version: "1987"
   encoding: "ascii"
@@ -27,6 +26,15 @@ networks:
       112: "^AX.*$"
 
 field_validations:
+  field_lengths:
+    fixed:
+      41: 8   # Terminal ID must be exactly 8 chars
+      42: 15  # Card Acceptor ID must be exactly 15 chars
+    variable:
+      2: 19   # PAN maximum length
+      55: 999 # EMV data maximum length
+      48: 999 # Additional data maximum length
+
   pan_ranges:
     visa: ["4"]
     mastercard: ["51", "52", "53", "54", "55"]
@@ -54,3 +62,14 @@ field_validations:
     "4511": "Airlines"
     "7011": "Hotels"
     "4814": "Telecom Services"
+
+  padding:
+    right_pad:
+      - 41  # Terminal ID
+      - 42  # Card Acceptor ID
+      - 43  # Card Acceptor Name/Location
+    left_pad:
+      - 3   # Processing Code
+      - 4   # Amount, Transaction
+      - 11  # STAN
+      - 12  # Time, Local Transaction
