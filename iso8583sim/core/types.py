@@ -78,6 +78,7 @@ class FieldDefinition:
     field_type: FieldType  # Data type of the field
     max_length: int  # Maximum length in characters/digits
     description: str  # Field description
+    field_number: Optional[int] = None  # Field number in ISO8583 message
     encoding: str = "ascii"  # Character encoding
     min_length: Optional[int] = None  # Minimum length (if different from max)
     padding_char: Optional[str] = None  # Character used for padding
