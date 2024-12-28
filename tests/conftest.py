@@ -122,6 +122,14 @@ def test_messages():
 
 
 @pytest.fixture
+def create_raw_message():
+    """Helper fixture to create raw ISO8583 message strings"""
+    def _create_raw_message(mti: str, bitmap: str, data: str) -> str:
+        return f"{mti}{bitmap}{data}"
+    return _create_raw_message
+
+
+@pytest.fixture
 def create_message():
     """Factory fixture to create ISO8583Message objects"""
     def _create_message(msg_type: str, test_messages: dict) -> ISO8583Message:

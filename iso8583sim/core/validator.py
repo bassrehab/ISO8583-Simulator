@@ -355,35 +355,28 @@ class ISO8583Validator:
         return errors
 
     def validate_emv_data(self, emv_data: str) -> List[str]:
-        """
-        Validate EMV data format
-        Returns list of validation errors (empty if valid)
-        """
+        """Validate EMV data format"""
+        if not emv_data:
+            return ["Empty EMV data"]
+
         errors = []
+        position = 0
 
         try:
-            if not emv_data:
-                return ["Empty EMV data"]
-
-            # Data length must be even (hex representation)
-            if len(emv_data) % 2 != 0:
-                return ["Invalid EMV data length"]
-
-            position = 0
             while position < len(emv_data):
-                # Need at least 4 chars for tag and length
+                # Need minimum 4 chars (2 for tag, 2 for length)
                 if position + 4 > len(emv_data):
                     errors.append("Incomplete EMV data")
                     break
 
-                # Validate tag (2 bytes)
+                # Check tag format (2 hex chars)
                 tag = emv_data[position:position + 2]
-                if not all(c in '0123456789ABCDEF' for c in tag.upper()):
+                if not re.match(r'^[0-9A-F]{2}$', tag.upper()):
                     errors.append(f"Invalid tag format: {tag}")
                     break
                 position += 2
 
-                # Validate length (1 byte)
+                # Check length format (2 hex chars)
                 length_hex = emv_data[position:position + 2]
                 try:
                     length = int(length_hex, 16)
@@ -392,23 +385,18 @@ class ISO8583Validator:
                     break
                 position += 2
 
-                # Validate value
+                # Check value format (length * 2 hex chars)
                 value_length = length * 2  # Each byte is 2 hex chars
                 if position + value_length > len(emv_data):
                     errors.append(f"Incomplete value for tag {tag}")
                     break
 
-                # Validate value format
                 value = emv_data[position:position + value_length]
-                if not all(c in '0123456789ABCDEF' for c in value.upper()):
+                if not re.match(f'^[0-9A-F]{{{value_length}}}$', value.upper()):
                     errors.append(f"Invalid value format for tag {tag}")
                     break
 
                 position += value_length
-
-            # Check if all data was consumed
-            if position != len(emv_data):
-                errors.append("Extra data after EMV structure")
 
             return errors
 
@@ -465,3 +453,16 @@ class ISO8583Validator:
                 errors.append("Field 43 maximum length is 256 in ISO8583:2003")
 
         return errors
+
+    def _parse_emv_data(self, value: str) -> str:
+        """Parse EMV data and validate format"""
+        if not value:
+            return ""
+
+        # For field 55, treat entire data as EMV data
+        if value and len(value) >= 4:
+            # Validate basic EMV structure
+            if self.validate_emv_data(value):
+                return value
+
+        return value
