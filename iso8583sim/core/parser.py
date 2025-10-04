@@ -454,6 +454,10 @@ class ISO8583Parser:
         if field_number in [41, 42]:
             return value  # Preserve padding for these fields
 
+        # Numeric fields are already handled in _parse_fixed_field - don't double-strip
+        if field_def.field_type == FieldType.NUMERIC:
+            return value
+
         # Handle fixed length fields
         if field_def.field_type not in [FieldType.LLVAR, FieldType.LLLVAR]:
             if field_def.padding_char:

@@ -40,12 +40,14 @@ test = [
     "pytest-cov>=4.1.0",
     "pytest-html>=4.1.1",
     "coverage>=7.4.0",
+    "pyyaml>=6.0.0",
 ]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.1.0",
     "pytest-html>=4.1.1",
     "coverage>=7.4.0",
+    "pyyaml>=6.0.0",
     "black>=22.0.0",
     "isort>=5.0.0",
     "mypy>=0.900",
