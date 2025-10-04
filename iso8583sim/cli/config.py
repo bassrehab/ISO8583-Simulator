@@ -46,13 +46,13 @@ class ConfigManager:
         """Save configuration to file"""
         try:
             Path(self.app_dir).mkdir(parents=True, exist_ok=True)
-            self.config_file.write_text(config.json(indent=2))
+            self.config_file.write_text(config.model_dump_json(indent=2))
         except Exception as e:
             print(f"Error saving config: {e}")
 
     def update_config(self, **kwargs):
         """Update configuration with new values"""
-        config_data = self.config.dict()
+        config_data = self.config.model_dump()
         config_data.update(kwargs)
         self.config = CLIConfig(**config_data)
         self._save_config(self.config)
