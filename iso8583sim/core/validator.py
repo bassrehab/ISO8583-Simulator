@@ -355,7 +355,7 @@ class ISO8583Validator:
         return errors
 
     def validate_emv_data(self, emv_data: str) -> List[str]:
-        """Validate EMV data format"""
+        """Validate EMV data format (TLV structure)"""
         if not emv_data:
             return ["Empty EMV data"]
 
@@ -364,19 +364,39 @@ class ISO8583Validator:
 
         try:
             while position < len(emv_data):
-                # Need minimum 4 chars (2 for tag, 2 for length)
+                # Need minimum 4 chars (2 for 1-byte tag, 2 for length)
                 if position + 4 > len(emv_data):
                     errors.append("Incomplete EMV data")
                     break
 
-                # Check tag format (2 hex chars)
-                tag = emv_data[position:position + 2]
-                if not re.match(r'^[0-9A-F]{2}$', tag.upper()):
-                    errors.append(f"Invalid tag format: {tag}")
+                # Read first byte of tag
+                tag_byte1 = emv_data[position:position + 2]
+                if not re.match(r'^[0-9A-F]{2}$', tag_byte1.upper()):
+                    errors.append(f"Invalid tag format: {tag_byte1}")
                     break
                 position += 2
 
-                # Check length format (2 hex chars)
+                # Check if this is a multi-byte tag (bits 1-5 all set = 1F, 5F, 9F, DF)
+                first_byte = int(tag_byte1, 16)
+                if (first_byte & 0x1F) == 0x1F:
+                    # Multi-byte tag - read second byte
+                    if position + 2 > len(emv_data):
+                        errors.append(f"Incomplete multi-byte tag starting with {tag_byte1}")
+                        break
+                    tag_byte2 = emv_data[position:position + 2]
+                    if not re.match(r'^[0-9A-F]{2}$', tag_byte2.upper()):
+                        errors.append(f"Invalid second byte of tag: {tag_byte2}")
+                        break
+                    tag = tag_byte1 + tag_byte2
+                    position += 2
+                else:
+                    tag = tag_byte1
+
+                # Check length format (2 hex chars for 1-byte length)
+                if position + 2 > len(emv_data):
+                    errors.append(f"Missing length for tag {tag}")
+                    break
+
                 length_hex = emv_data[position:position + 2]
                 try:
                     length = int(length_hex, 16)
