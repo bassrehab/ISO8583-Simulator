@@ -1,8 +1,9 @@
 site_name: ISO8583 Simulator
 site_description: High-performance ISO 8583 message simulator with CLI, Python SDK, and LLM features
 site_author: Subhadip Mitra
-repo_url: https://github.com/anthropics/iso8583sim
-repo_name: iso8583sim
+site_url: https://iso8583.subhadipmitra.com
+repo_url: https://github.com/bassrehab/ISO8583-Simulator
+repo_name: ISO8583-Simulator
 
 theme:
   name: material
@@ -100,4 +101,4 @@ nav:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/anthropics/iso8583sim
+      link: https://github.com/bassrehab/ISO8583-Simulator

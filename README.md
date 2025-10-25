@@ -126,7 +126,7 @@ See [benchmarks/BASELINE.md](benchmarks/BASELINE.md) for detailed results.
 
 ```bash
 # Clone and setup
-git clone https://github.com/anthropics/iso8583sim.git
+git clone https://github.com/bassrehab/ISO8583-Simulator.git
 cd iso8583sim
 python -m venv .venv
 source .venv/bin/activate

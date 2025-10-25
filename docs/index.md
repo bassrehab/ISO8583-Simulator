@@ -78,4 +78,4 @@ See the [Performance Guide](performance.md) for optimization techniques.
 
 ## License
 
-MIT License - see [LICENSE](https://github.com/anthropics/iso8583sim/blob/main/LICENSE) for details.
+MIT License - see [LICENSE](https://github.com/bassrehab/ISO8583-Simulator/blob/main/LICENSE) for details.

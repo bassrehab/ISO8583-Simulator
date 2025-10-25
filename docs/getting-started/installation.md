@@ -81,7 +81,7 @@ mkdocs serve
 Clone and install in development mode:
 
 ```bash
-git clone https://github.com/anthropics/iso8583sim.git
+git clone https://github.com/bassrehab/ISO8583-Simulator.git
 cd iso8583sim
 python -m venv .venv
 source .venv/bin/activate

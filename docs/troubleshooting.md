@@ -323,7 +323,7 @@ for raw in messages:
 If you can't resolve an issue:
 
 1. Check the [API Reference](api/core.md) for correct usage
-2. Search [GitHub Issues](https://github.com/anthropics/iso8583sim/issues)
+2. Search [GitHub Issues](https://github.com/bassrehab/ISO8583-Simulator/issues)
 3. Open a new issue with:
    - Python version (`python --version`)
    - iso8583sim version (`pip show iso8583sim`)
