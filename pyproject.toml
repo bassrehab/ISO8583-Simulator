@@ -4,15 +4,15 @@ build-backend = "hatchling.build"
 
 [project]
 name = "iso8583sim"
-version = "0.1.0"
-description = "A hybrid ISO 8583 message simulator with CLI and web interface"
+version = "1.0.0"
+description = "High-performance ISO 8583 message simulator with CLI, Python SDK, and LLM features"
 readme = "README.md"
 authors = [
     { name = "Subhadip Mitra", email = "contact@subhadipmitra.com" }
 ]
 license = { file = "LICENSE" }
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Financial and Insurance Industry",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
