@@ -56,3 +56,4 @@ docs/_build/
 # Jupyter
 .ipynb_checkpoints/
 notebooks/.ipynb_checkpoints/
+site/

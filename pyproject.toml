@@ -76,6 +76,11 @@ google = [
 ollama = [
     "ollama>=0.4.0",
 ]
+docs = [
+    "mkdocs>=1.6.0",
+    "mkdocs-material>=9.5.0",
+    "mkdocstrings[python]>=0.24.0",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

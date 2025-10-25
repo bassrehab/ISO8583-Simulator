@@ -1,0 +1,103 @@
+site_name: ISO8583 Simulator
+site_description: High-performance ISO 8583 message simulator with CLI, Python SDK, and LLM features
+site_author: Subhadip Mitra
+repo_url: https://github.com/anthropics/iso8583sim
+repo_name: iso8583sim
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - content.code.copy
+    - content.code.annotate
+    - search.highlight
+    - search.suggest
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            show_source: true
+            show_root_heading: true
+            show_root_full_path: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            members_order: source
+            docstring_style: google
+            merge_init_into_class: true
+            show_signature_annotations: true
+            separate_signature: true
+
+markdown_extensions:
+  - pymdownx.highlight:
+      use_pygments: true
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - pymdownx.details
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quickstart.md
+    - ISO 8583 Concepts: getting-started/concepts.md
+  - Architecture:
+    - Overview: architecture/overview.md
+    - Message Flow: architecture/message-flow.md
+    - Module Structure: architecture/module-structure.md
+  - Core Module:
+    - Overview: core/index.md
+    - Types & Fields: core/types.md
+    - Parser: core/parser.md
+    - Builder: core/builder.md
+    - Validator: core/validator.md
+    - EMV Data: core/emv.md
+    - Object Pool: core/pool.md
+  - Card Networks:
+    - Overview: networks/index.md
+    - VISA: networks/visa.md
+    - Mastercard: networks/mastercard.md
+    - Other Networks: networks/others.md
+  - LLM Features:
+    - Overview: llm/index.md
+    - Providers: llm/providers.md
+    - Message Explainer: llm/explainer.md
+    - Message Generator: llm/generator.md
+  - CLI Reference: cli/index.md
+  - API Reference:
+    - Core Module: api/core.md
+    - LLM Module: api/llm.md
+    - Demo Module: api/demo.md
+  - Performance: performance.md
+  - Troubleshooting: troubleshooting.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/anthropics/iso8583sim
