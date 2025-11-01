@@ -1,6 +1,7 @@
 # tests/setup_test_structure.py
 from pathlib import Path
 
+
 def create_test_structure():
     """Create test directory structure"""
     # Get the base directory
@@ -18,6 +19,7 @@ def create_test_structure():
     # Create __init__.py files
     (base_dir / "__init__.py").touch()
     (test_data_dir / "__init__.py").touch()
+
 
 if __name__ == "__main__":
     create_test_structure()

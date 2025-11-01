@@ -1,20 +1,9 @@
 # iso8583sim/core/validator.py
 
-from typing import Dict, Optional, List, Tuple, Any
-from datetime import datetime
 import re
-from .types import (
-    FieldType,
-    FieldDefinition,
-    ISO8583_FIELDS,
-    ValidationError,
-    ISO8583Message,
-    ISO8583Version,
-    CardNetwork,
-    NETWORK_SPECIFIC_FIELDS,
-    VERSION_SPECIFIC_FIELDS,
-    get_field_definition
-)
+from typing import List, Optional, Tuple
+
+from .types import CardNetwork, FieldDefinition, FieldType, ISO8583Message, ISO8583Version, get_field_definition
 
 
 class ISO8583Validator:
@@ -27,7 +16,7 @@ class ISO8583Validator:
             CardNetwork.AMEX: [2, 3, 4, 11, 22, 25],
             CardNetwork.DISCOVER: [2, 3, 4, 11, 22],
             CardNetwork.JCB: [2, 3, 4, 11, 22, 25],
-            CardNetwork.UNIONPAY: [2, 3, 4, 11, 22, 25, 49]
+            CardNetwork.UNIONPAY: [2, 3, 4, 11, 22, 25, 49],
         }
 
     def _load_custom_validators(self):
@@ -38,15 +27,11 @@ class ISO8583Validator:
             CardNetwork.AMEX: self._validate_amex_specific,
             CardNetwork.DISCOVER: self._validate_discover_specific,
             CardNetwork.JCB: self._validate_jcb_specific,
-            CardNetwork.UNIONPAY: self._validate_unionpay_specific
+            CardNetwork.UNIONPAY: self._validate_unionpay_specific,
         }
 
     def validate_field(
-            self,
-            field_number: int,
-            value: str,
-            field_def: FieldDefinition,
-            network: Optional[CardNetwork] = None
+        self, field_number: int, value: str, field_def: FieldDefinition, network: Optional[CardNetwork] = None
     ) -> Tuple[bool, Optional[str]]:
         """Validate field value"""
         try:
@@ -71,13 +56,13 @@ class ISO8583Validator:
                 if not value.isdigit():
                     return False, f"Field {field_number} must contain only digits"
             elif field_def.field_type == FieldType.BINARY:
-                if not all(c in '0123456789ABCDEF' for c in value.upper()):
+                if not all(c in "0123456789ABCDEF" for c in value.upper()):
                     return False, f"Field {field_number} must be valid hexadecimal"
             elif field_def.field_type == FieldType.ALPHA:
-                if not value.replace(' ', '').isalpha():
+                if not value.replace(" ", "").isalpha():
                     return False, f"Field {field_number} must contain only letters"
             elif field_def.field_type == FieldType.ALPHANUMERIC:
-                if not value.replace(' ', '').isalnum():
+                if not value.replace(" ", "").isalnum():
                     return False, f"Field {field_number} must contain only letters and numbers"
 
             # Field passed all validations
@@ -86,26 +71,22 @@ class ISO8583Validator:
         except Exception as e:
             return False, f"Validation error for field {field_number}: {str(e)}"
 
-
     def _validate_network_field(
-            self,
-            field_number: int,
-            value: str,
-            network: CardNetwork
+        self, field_number: int, value: str, network: CardNetwork
     ) -> Tuple[bool, Optional[str]]:
         """Validate network-specific field format"""
         if network == CardNetwork.VISA:
             if field_number == 44:
-                if not all(c in '0123456789ABCDEF' for c in value):
+                if not all(c in "0123456789ABCDEF" for c in value):
                     return False, "Invalid VISA field 44 format"
 
             elif field_number == 48:
-                if not value.startswith('VISA'):
+                if not value.startswith("VISA"):
                     return False, "VISA field 48 must start with 'VISA'"
 
         elif network == CardNetwork.MASTERCARD:
             if field_number == 48:
-                if not value.startswith('MC'):
+                if not value.startswith("MC"):
                     return False, "Mastercard field 48 must start with 'MC'"
 
         return True, None
@@ -131,11 +112,7 @@ class ISO8583Validator:
                 continue
 
             # Get field definition considering network and version
-            field_def = get_field_definition(
-                field_number,
-                message.network,
-                message.version
-            )
+            field_def = get_field_definition(field_number, message.network, message.version)
 
             if not field_def:
                 errors.append(f"Unknown field number: {field_number}")
@@ -164,7 +141,7 @@ class ISO8583Validator:
         """Mastercard specific validation rules"""
         errors = []
         if field_number == 55:
-            if not value.startswith('9F'):
+            if not value.startswith("9F"):
                 errors.append("MC EMV data must start with '9F'")
         return errors
 
@@ -218,11 +195,11 @@ class ISO8583Validator:
             return False, "MTI must contain only digits"
 
         version = mti[0]
-        if version not in ['0', '1']:
+        if version not in ["0", "1"]:
             return False, "MTI version must be 0 or 1"
 
         message_class = mti[1]
-        if message_class not in ['1', '2', '3', '4', '5', '6', '8', '9']:
+        if message_class not in ["1", "2", "3", "4", "5", "6", "8", "9"]:
             return False, "Invalid MTI message class"
 
         return True, None
@@ -325,7 +302,7 @@ class ISO8583Validator:
         # Check VISA PIN block format
         if 52 in message.fields:
             pin_block = message.fields[52]
-            if not re.match(r'^[0-9A-F]{16}$', pin_block):
+            if not re.match(r"^[0-9A-F]{16}$", pin_block):
                 errors.append("Invalid VISA PIN block format")
 
         # Check VISA CVV2 format
@@ -343,13 +320,13 @@ class ISO8583Validator:
         # Check Mastercard specific fields
         if 48 in message.fields:
             field_48 = message.fields[48]
-            if not field_48.startswith('MC'):
+            if not field_48.startswith("MC"):
                 errors.append("Mastercard field 48 must start with 'MC'")
 
         # Check Mastercard POS Entry Mode
         if 22 in message.fields:
             pos_entry = message.fields[22]
-            if pos_entry not in ['02', '05', '07', '80', '90']:
+            if pos_entry not in ["02", "05", "07", "80", "90"]:
                 errors.append("Invalid Mastercard POS Entry Mode")
 
         return errors
@@ -370,8 +347,8 @@ class ISO8583Validator:
                     break
 
                 # Read first byte of tag
-                tag_byte1 = emv_data[position:position + 2]
-                if not re.match(r'^[0-9A-F]{2}$', tag_byte1.upper()):
+                tag_byte1 = emv_data[position : position + 2]
+                if not re.match(r"^[0-9A-F]{2}$", tag_byte1.upper()):
                     errors.append(f"Invalid tag format: {tag_byte1}")
                     break
                 position += 2
@@ -383,8 +360,8 @@ class ISO8583Validator:
                     if position + 2 > len(emv_data):
                         errors.append(f"Incomplete multi-byte tag starting with {tag_byte1}")
                         break
-                    tag_byte2 = emv_data[position:position + 2]
-                    if not re.match(r'^[0-9A-F]{2}$', tag_byte2.upper()):
+                    tag_byte2 = emv_data[position : position + 2]
+                    if not re.match(r"^[0-9A-F]{2}$", tag_byte2.upper()):
                         errors.append(f"Invalid second byte of tag: {tag_byte2}")
                         break
                     tag = tag_byte1 + tag_byte2
@@ -397,7 +374,7 @@ class ISO8583Validator:
                     errors.append(f"Missing length for tag {tag}")
                     break
 
-                length_hex = emv_data[position:position + 2]
+                length_hex = emv_data[position : position + 2]
                 try:
                     length = int(length_hex, 16)
                 except ValueError:
@@ -411,8 +388,8 @@ class ISO8583Validator:
                     errors.append(f"Incomplete value for tag {tag}")
                     break
 
-                value = emv_data[position:position + value_length]
-                if not re.match(f'^[0-9A-F]{{{value_length}}}$', value.upper()):
+                value = emv_data[position : position + value_length]
+                if not re.match(f"^[0-9A-F]{{{value_length}}}$", value.upper()):
                     errors.append(f"Invalid value format for tag {tag}")
                     break
 
@@ -423,12 +400,7 @@ class ISO8583Validator:
         except Exception as e:
             return [f"EMV validation error: {str(e)}"]
 
-    def validate_field_compatibility(
-            self,
-            field_number: int,
-            value: str,
-            version: ISO8583Version
-    ) -> List[str]:
+    def validate_field_compatibility(self, field_number: int, value: str, version: ISO8583Version) -> List[str]:
         """
         Validate field compatibility with ISO version
 
@@ -455,11 +427,8 @@ class ISO8583Validator:
             )
 
         # Check type compatibility
-        if field_def.field_type == FieldType.BINARY and not re.match(r'^[0-9A-F]+$', value):
-            errors.append(
-                f"Field {field_number} must be hexadecimal "
-                f"in version {version.value}"
-            )
+        if field_def.field_type == FieldType.BINARY and not re.match(r"^[0-9A-F]+$", value):
+            errors.append(f"Field {field_number} must be hexadecimal " f"in version {version.value}")
 
         # Version-specific validations
         if version == ISO8583Version.V1987:

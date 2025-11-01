@@ -1,24 +1,27 @@
 # iso8583sim/core/parser.py
 
 import logging
-from typing import Dict, Optional, List, Tuple
 from dataclasses import dataclass
-import re
+from typing import List, Optional, Tuple
 
 from .types import (
-    ISO8583Message,
-    FieldType,
-    FieldDefinition,
-    ParseError,
-    ISO8583Version,
+    ISO8583_FIELDS,
+    NETWORK_SPECIFIC_FIELDS,
+    VERSION_SPECIFIC_FIELDS,
     CardNetwork,
-    get_field_definition, VERSION_SPECIFIC_FIELDS, NETWORK_SPECIFIC_FIELDS, ISO8583_FIELDS
+    FieldDefinition,
+    FieldType,
+    ISO8583Message,
+    ISO8583Version,
+    ParseError,
+    get_field_definition,
 )
 
 
 @dataclass
 class EMVTag:
     """EMV Tag data structure"""
+
     tag: str
     length: int
     value: str
@@ -58,18 +61,16 @@ class ISO8583Parser:
             if not network:
                 self._detected_network = self._detect_network(message)
 
-            self.logger.info("Processing message for network: %s",
-                             self._detected_network.value if self._detected_network else "Unknown")
+            self.logger.info(
+                "Processing message for network: %s",
+                self._detected_network.value if self._detected_network else "Unknown",
+            )
 
             # Parse data fields
             fields = {0: mti}  # MTI is field 0
             for field_number in present_fields:
                 try:
-                    field_def = get_field_definition(
-                        field_number,
-                        self._detected_network,
-                        self.version
-                    )
+                    field_def = get_field_definition(field_number, self._detected_network, self.version)
 
                     if field_def is None:
                         self.logger.warning("No definition found for field %d", field_number)
@@ -91,7 +92,7 @@ class ISO8583Parser:
                 version=self.version,
                 network=self._detected_network,
                 raw_message=message,
-                bitmap=bitmap
+                bitmap=bitmap,
             )
 
             self.logger.info("Successfully parsed message")
@@ -99,7 +100,7 @@ class ISO8583Parser:
 
         except Exception as e:
             self.logger.error("Failed to parse message: %s", str(e))
-            raise ParseError(f"Failed to parse message: {str(e)}")
+            raise ParseError(f"Failed to parse message: {str(e)}") from e
 
     def parse_file(self, filename: str) -> List[ISO8583Message]:
         """Parse multiple messages from file"""
@@ -107,7 +108,7 @@ class ISO8583Parser:
         messages = []
 
         try:
-            with open(filename, 'r') as f:
+            with open(filename) as f:
                 for line_num, line in enumerate(f, 1):
                     line = line.strip()
                     if not line:
@@ -120,23 +121,21 @@ class ISO8583Parser:
                         self.logger.info(f"Successfully parsed message {line_num}")
                     except Exception as e:
                         self.logger.error(f"Failed to parse message at line {line_num}: {str(e)}")
-                        raise ParseError(f"Failed to parse message at line {line_num}: {str(e)}")
+                        raise ParseError(f"Failed to parse message at line {line_num}: {str(e)}") from e
 
             self.logger.info(f"Successfully parsed {len(messages)} messages from file")
             return messages
 
         except Exception as e:
             self.logger.error(f"Error reading or parsing file: {str(e)}")
-            raise ParseError(f"Failed to read or parse file: {str(e)}")
-
-
+            raise ParseError(f"Failed to read or parse file: {str(e)}") from e
 
     def _parse_mti(self) -> str:
         """Parse Message Type Indicator"""
         if len(self._raw_message) < self._current_position + 4:
             raise ParseError("Message too short for MTI")
 
-        mti = self._raw_message[self._current_position:self._current_position + 4]
+        mti = self._raw_message[self._current_position : self._current_position + 4]
         if not mti.isdigit():
             raise ParseError("Invalid MTI format - must be numeric")
 
@@ -149,7 +148,7 @@ class ISO8583Parser:
             raise ParseError("Message too short for bitmap")
 
         # Parse primary bitmap
-        primary_bitmap = self._raw_message[self._current_position:self._current_position + 16]
+        primary_bitmap = self._raw_message[self._current_position : self._current_position + 16]
         self._current_position += 16
 
         # Check for secondary bitmap
@@ -159,7 +158,7 @@ class ISO8583Parser:
         if self._secondary_bitmap:
             if len(self._raw_message) < self._current_position + 16:
                 raise ParseError("Message too short for secondary bitmap")
-            secondary_bitmap = self._raw_message[self._current_position:self._current_position + 16]
+            secondary_bitmap = self._raw_message[self._current_position : self._current_position + 16]
             self._current_position += 16
             return primary_bitmap + secondary_bitmap
 
@@ -169,7 +168,7 @@ class ISO8583Parser:
         """Get list of present fields from bitmap"""
         try:
             # Convert hex bitmap to binary string
-            bitmap_bits = ''
+            bitmap_bits = ""
             for hex_char in bitmap:
                 # Convert each hex character to 4 bits
                 bits = bin(int(hex_char, 16))[2:].zfill(4)
@@ -178,7 +177,7 @@ class ISO8583Parser:
             # Find all set bits
             present_fields = []
             for i in range(len(bitmap_bits)):
-                if bitmap_bits[i] == '1':
+                if bitmap_bits[i] == "1":
                     field_number = i + 1
                     if field_number not in [1, 65]:  # Skip bitmap indicators
                         field_def = self._get_field_definition(field_number)
@@ -187,7 +186,7 @@ class ISO8583Parser:
 
             return sorted(present_fields)
         except ValueError:
-            raise ParseError("Invalid bitmap format")
+            raise ParseError("Invalid bitmap format") from None
 
     def _get_field_definition(self, field_number: int) -> Optional[FieldDefinition]:
         """Get field definition considering network and version"""
@@ -220,7 +219,7 @@ class ISO8583Parser:
             return self._handle_field_padding(field_number, value, field_def)
 
         except Exception as e:
-            raise ParseError(f"Failed to parse field {field_number}: {str(e)}")
+            raise ParseError(f"Failed to parse field {field_number}: {str(e)}") from e
 
     def _parse_fixed_field(self, field_number: int, field_def: FieldDefinition) -> str:
         """Parse fixed length field"""
@@ -231,12 +230,12 @@ class ISO8583Parser:
         if self._current_position + field_length > len(self._raw_message):
             raise ParseError(f"Message too short for field {field_number}")
 
-        value = self._raw_message[self._current_position:self._current_position + field_length]
+        value = self._raw_message[self._current_position : self._current_position + field_length]
         self._current_position += field_length
 
         # Handle numeric fields with left padding
         if field_def.field_type == FieldType.NUMERIC:
-            if field_def.padding_char == '0':
+            if field_def.padding_char == "0":
                 value = value.zfill(field_length)
             elif not value.isdigit():
                 raise ParseError(f"Field {field_number} must contain only digits")
@@ -247,7 +246,7 @@ class ISO8583Parser:
 
         # Remove padding if specified
         if field_def.padding_char:
-            if field_def.padding_direction == 'left':
+            if field_def.padding_direction == "left":
                 value = value.lstrip(field_def.padding_char)
                 if field_def.field_type == FieldType.NUMERIC:
                     value = value.zfill(field_length)
@@ -270,7 +269,7 @@ class ISO8583Parser:
                 raise ParseError(f"Message too short for field {field_number} length indicator")
 
             # Get and validate length indicator
-            length_str = self._raw_message[self._current_position:self._current_position + length_indicator_size]
+            length_str = self._raw_message[self._current_position : self._current_position + length_indicator_size]
             if not length_str.isdigit():
                 if field_number in [41, 42]:  # Special handling for these fields
                     return self._parse_fixed_field(field_number, field_def)
@@ -286,7 +285,7 @@ class ISO8583Parser:
             if self._current_position + length > len(self._raw_message):
                 raise ParseError(f"Message too short for field {field_number} data")
 
-            value = self._raw_message[self._current_position:self._current_position + length]
+            value = self._raw_message[self._current_position : self._current_position + length]
             self._current_position += length
 
             # Special field handling
@@ -299,9 +298,9 @@ class ISO8583Parser:
             return value
 
         except ValueError as e:
-            raise ParseError(f"Invalid length value for field {field_number}: {str(e)}")
+            raise ParseError(f"Invalid length value for field {field_number}: {str(e)}") from e
         except Exception as e:
-            raise ParseError(f"Error parsing variable length field {field_number}: {str(e)}")
+            raise ParseError(f"Error parsing variable length field {field_number}: {str(e)}") from e
 
     def _parse_binary_field(self, field_number: int, field_def: FieldDefinition) -> str:
         """Parse binary field"""
@@ -309,8 +308,8 @@ class ISO8583Parser:
         if self._current_position + field_length > len(self._raw_message):
             raise ParseError(f"Message too short for binary field {field_number}")
 
-        value = self._raw_message[self._current_position:self._current_position + field_length]
-        if not all(c in '0123456789ABCDEFabcdef' for c in value):
+        value = self._raw_message[self._current_position : self._current_position + field_length]
+        if not all(c in "0123456789ABCDEFabcdef" for c in value):
             raise ParseError(f"Invalid hex format in binary field {field_number}")
 
         self._current_position += field_length
@@ -336,14 +335,14 @@ class ISO8583Parser:
             # Handle padding for fixed-length fields
             if field_def.field_type not in [FieldType.LLVAR, FieldType.LLLVAR]:
                 if field_def.padding_char:
-                    if field_def.padding_direction == 'left':
+                    if field_def.padding_direction == "left":
                         return value.lstrip(field_def.padding_char)
                     return value.rstrip(field_def.padding_char)
 
             return value
 
         except Exception as e:
-            raise ParseError(f"Failed to format field {field_number}: {str(e)}")
+            raise ParseError(f"Failed to format field {field_number}: {str(e)}") from e
 
     def _parse_emv_data(self, value: str) -> str:
         """Parse EMV data"""
@@ -360,25 +359,25 @@ class ISO8583Parser:
 
             if len(message) > pan_start + 2:  # Ensure we have enough length
                 pan_length = int(message[bitmap_length:pan_start])
-                pan = message[pan_start:pan_start + pan_length]
+                pan = message[pan_start : pan_start + pan_length]
 
-                if pan.startswith('4'):
+                if pan.startswith("4"):
                     return CardNetwork.VISA
-                elif any(pan.startswith(prefix) for prefix in ['51', '52', '53', '54', '55']):
+                elif any(pan.startswith(prefix) for prefix in ["51", "52", "53", "54", "55"]):
                     return CardNetwork.MASTERCARD
-                elif any(pan.startswith(prefix) for prefix in ['34', '37']):
+                elif any(pan.startswith(prefix) for prefix in ["34", "37"]):
                     return CardNetwork.AMEX
-                elif pan.startswith('62'):
+                elif pan.startswith("62"):
                     return CardNetwork.UNIONPAY
-                elif pan.startswith('35'):
+                elif pan.startswith("35"):
                     return CardNetwork.JCB
 
             # Look for network-specific patterns
-            if 'VISA' in message:
+            if "VISA" in message:
                 return CardNetwork.VISA
-            elif 'MC' in message:
+            elif "MC" in message:
                 return CardNetwork.MASTERCARD
-            elif 'AMEX' in message:
+            elif "AMEX" in message:
                 return CardNetwork.AMEX
 
             return None
@@ -386,67 +385,6 @@ class ISO8583Parser:
         except Exception as e:
             self.logger.warning(f"Network detection failed: {str(e)}")
             return None
-
-    def parse(self, message: str, network: Optional[CardNetwork] = None) -> ISO8583Message:
-        """Parse an ISO 8583 message string into an ISO8583Message object"""
-        try:
-            self._raw_message = message
-            self._current_position = 0
-
-            # Auto-detect network if not provided
-            self._detected_network = network or self._detect_network(message)
-            self.logger.info(
-                f"Processing message for network: {self._detected_network.value if self._detected_network else 'Unknown'}")
-
-            # Parse MTI
-            mti = self._parse_mti()
-            self.logger.debug(f"Parsed MTI: {mti}")
-
-            # Parse bitmap
-            bitmap = self._parse_bitmap()
-            self.logger.debug(f"Parsed bitmap: {bitmap}")
-            present_fields = self._get_present_fields(bitmap)
-            self.logger.debug(f"Present fields: {present_fields}")
-
-            # Parse data fields
-            fields = {0: mti}  # MTI is field 0
-            for field_number in present_fields:
-                try:
-                    field_def = get_field_definition(
-                        field_number,
-                        self._detected_network,
-                        self.version
-                    )
-
-                    if field_def is None:
-                        self.logger.warning(f"No definition found for field {field_number}")
-                        continue
-
-                    value = self._parse_field(field_number, field_def)
-                    if value is not None:
-                        fields[field_number] = value
-                        self.logger.debug(f"Parsed field {field_number}: {value}")
-
-                except Exception as e:
-                    self.logger.error(f"Error parsing field {field_number}: {str(e)}")
-                    raise ParseError(f"Failed to parse field {field_number}: {str(e)}")
-
-            # Create message object
-            message = ISO8583Message(
-                mti=mti,
-                fields=fields,
-                version=self.version,
-                network=self._detected_network,
-                raw_message=message,
-                bitmap=bitmap
-            )
-
-            self.logger.info("Successfully parsed message")
-            return message
-
-        except Exception as e:
-            self.logger.error(f"Failed to parse message: {str(e)}")
-            raise ParseError(f"Failed to parse message: {str(e)}")
 
     def _handle_field_padding(self, field_number: int, value: str, field_def: FieldDefinition) -> str:
         """Handle field padding based on field definition"""
@@ -461,13 +399,12 @@ class ISO8583Parser:
         # Handle fixed length fields
         if field_def.field_type not in [FieldType.LLVAR, FieldType.LLLVAR]:
             if field_def.padding_char:
-                if field_def.padding_direction == 'left':
+                if field_def.padding_direction == "left":
                     value = value.lstrip(field_def.padding_char)
                 else:
                     value = value.rstrip(field_def.padding_char)
 
         return value
-
 
     def _handle_network_specific(self, field_number: int, value: str) -> str:
         """Apply network-specific formatting rules"""
@@ -477,22 +414,22 @@ class ISO8583Parser:
         if self._detected_network == CardNetwork.VISA:
             # VISA-specific formatting
             if field_number == 44:  # Additional Response Data
-                if not all(c in '0123456789ABCDEF' for c in value.upper()):
+                if not all(c in "0123456789ABCDEF" for c in value.upper()):
                     raise ParseError(f"Invalid VISA field 44 format: {value}")
                 return value.upper()
             elif field_number == 48:  # Private Data
-                if not value.startswith('VISA'):
+                if not value.startswith("VISA"):
                     return f"VISA{value}"
                 return value
         elif self._detected_network == CardNetwork.MASTERCARD:
             # Mastercard-specific formatting
             if field_number == 48:  # Private Data
-                if not value.startswith('MC'):
+                if not value.startswith("MC"):
                     return f"MC{value}"
                 return value
             elif field_number == 55:  # EMV Data
                 value = self._parse_emv_data(value)
-                if not value.startswith('9F'):
+                if not value.startswith("9F"):
                     raise ParseError("Invalid MC EMV data format")
                 return value
 
@@ -507,8 +444,7 @@ class ISO8583Parser:
                 expected_length *= 2  # Each byte is 2 hex chars
             if len(value) != expected_length:
                 raise ParseError(
-                    f"Field {field_number} has incorrect length: "
-                    f"got {len(value)}, expected {expected_length}"
+                    f"Field {field_number} has incorrect length: " f"got {len(value)}, expected {expected_length}"
                 )
 
         # Validate content type
@@ -516,13 +452,13 @@ class ISO8583Parser:
             if not value.isdigit():
                 raise ParseError(f"Field {field_number} must contain only digits")
         elif field_def.field_type == FieldType.BINARY:
-            if not all(c in '0123456789ABCDEFabcdef' for c in value):
+            if not all(c in "0123456789ABCDEFabcdef" for c in value):
                 raise ParseError(f"Field {field_number} must contain valid hexadecimal")
         elif field_def.field_type == FieldType.ALPHA:
-            if not value.replace(' ', '').isalpha():
+            if not value.replace(" ", "").isalpha():
                 raise ParseError(f"Field {field_number} must contain only letters")
         elif field_def.field_type == FieldType.ALPHANUMERIC:
-            if not value.replace(' ', '').isalnum():
+            if not value.replace(" ", "").isalnum():
                 raise ParseError(f"Field {field_number} must contain only letters and numbers")
 
     def _parse_length_indicator(self, field_number: int, indicator_size: int) -> int:
@@ -530,9 +466,7 @@ class ISO8583Parser:
         if self._current_position + indicator_size > len(self._raw_message):
             raise ParseError(f"Message too short for field {field_number} length indicator")
 
-        length_str = self._raw_message[
-                     self._current_position:self._current_position + indicator_size
-                     ]
+        length_str = self._raw_message[self._current_position : self._current_position + indicator_size]
 
         if not length_str.isdigit():
             raise ParseError(f"Invalid length indicator for field {field_number}: {length_str}")
@@ -545,8 +479,7 @@ class ISO8583Parser:
         if field_def.field_type in [FieldType.LLVAR, FieldType.LLLVAR]:
             if base_length > field_def.max_length:
                 raise ParseError(
-                    f"Field {field_number} length {base_length} "
-                    f"exceeds maximum {field_def.max_length}"
+                    f"Field {field_number} length {base_length} " f"exceeds maximum {field_def.max_length}"
                 )
             return base_length
 
@@ -572,7 +505,7 @@ class ISO8583Parser:
 
         current_position = self._current_position
         for i, bit in enumerate(bitmap_bits):
-            if bit == '1' and i + 1 not in [1, 65]:  # Skip bitmap indicators
+            if bit == "1" and i + 1 not in [1, 65]:  # Skip bitmap indicators
                 field_positions.append((i + 1, current_position))
 
         return field_positions

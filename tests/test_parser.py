@@ -1,15 +1,8 @@
 # tests/test_parser.py
-from pathlib import Path
 import pytest
-from iso8583sim.core.types import (
-    ISO8583Message,
-    ISO8583Version,
-    CardNetwork,
-    ParseError,
-    FieldType,
-    FieldDefinition
-)
+
 from iso8583sim.core.parser import ISO8583Parser
+from iso8583sim.core.types import CardNetwork, ISO8583Version, ParseError
 
 
 def test_parse_mti(parser):
@@ -43,24 +36,28 @@ def test_get_present_fields(parser):
 
 def test_bitmap_with_secondary(parser):
     """Test bitmap parsing with secondary bitmap"""
-    message = ("0100" +  # MTI
-               "C000000000000000" +  # Primary bitmap
-               "0000000000000000" +  # Secondary bitmap
-               "164111111111111111")  # Some data
+    message = (
+        "0100"  # MTI
+        + "C000000000000000"  # Primary bitmap
+        + "0000000000000000"  # Secondary bitmap
+        + "164111111111111111"
+    )  # Some data
 
     parser._raw_message = message
     parser._current_position = 4  # After MTI
 
     bitmap = parser._parse_bitmap()
     assert len(bitmap) == 32  # Should have both primary and secondary
-    assert parser._secondary_bitmap == True
+    assert parser._secondary_bitmap
 
 
 def test_field_length_validation(parser):
     """Test field length validation during parsing"""
-    message = ("0100" +  # MTI
-               "8220000000000000" +  # Bitmap
-               "1234")  # Truncated data
+    message = (
+        "0100"  # MTI
+        + "8220000000000000"  # Bitmap
+        + "1234"
+    )  # Truncated data
 
     with pytest.raises(ParseError) as exc_info:
         parser.parse(message)
@@ -69,9 +66,11 @@ def test_field_length_validation(parser):
 
 def test_variable_length_field_parsing(parser):
     """Test parsing of LLVAR and LLLVAR fields"""
-    message = ("0100" +  # MTI
-               "4000000000000000" +  # Bitmap (only field 2 present)
-               "164111111111111111")  # Field 2 (16 digits PAN with length indicator)
+    message = (
+        "0100"  # MTI
+        + "4000000000000000"  # Bitmap (only field 2 present)
+        + "164111111111111111"
+    )  # Field 2 (16 digits PAN with length indicator)
 
     parsed = parser.parse(message)
     assert parsed.fields[2] == "4111111111111111"
@@ -82,10 +81,12 @@ def test_parse_with_padding(parser):
     """Test parsing fields with padding"""
     # Bitmap: field 41 = bit 41, field 42 = bit 42
     # Character 10 (0-indexed): field 41=bit0(8), field 42=bit1(4) -> 8+4=C
-    message = ("0100" +  # MTI
-               "0000000000C00000" +  # Bitmap (fields 41,42)
-               "TEST1234" +  # Field 41 (8 chars)
-               "MERCHANT12345  ")  # Field 42 (15 chars)
+    message = (
+        "0100"  # MTI
+        + "0000000000C00000"  # Bitmap (fields 41,42)
+        + "TEST1234"  # Field 41 (8 chars)
+        + "MERCHANT12345  "
+    )  # Field 42 (15 chars)
 
     parsed = parser.parse(message)
     assert parsed.fields[41] == "TEST1234"
@@ -94,9 +95,11 @@ def test_parse_with_padding(parser):
 
 def test_network_detection(parser):
     """Test network detection from PAN"""
-    message = ("0100" +  # MTI
-               "4000000000000000" +  # Bitmap (only field 2 present)
-               "164111111111111111")  # Field 2 (16 digits PAN with length indicator)
+    message = (
+        "0100"  # MTI
+        + "4000000000000000"  # Bitmap (only field 2 present)
+        + "164111111111111111"
+    )  # Field 2 (16 digits PAN with length indicator)
 
     parsed = parser.parse(message)
     assert parsed.network == CardNetwork.VISA  # Based on PAN prefix '4'
@@ -105,9 +108,11 @@ def test_network_detection(parser):
 def test_parse_network_specific_fields(parser):
     """Test parsing network-specific fields"""
     # Field 44: character 10, bit 3 (value 1)
-    message = ("0100" +  # MTI
-               "0000000000100000" +  # Bitmap with field 44 set
-               "03A5B")  # Field 44 (LLVAR) with length '03'
+    message = (
+        "0100"  # MTI
+        + "0000000000100000"  # Bitmap with field 44 set
+        + "03A5B"
+    )  # Field 44 (LLVAR) with length '03'
 
     parsed = parser.parse(message, network=CardNetwork.VISA)
     assert 44 in parsed.fields
@@ -117,9 +122,11 @@ def test_parse_network_specific_fields(parser):
 def test_parse_binary_fields(parser):
     """Test parsing binary fields"""
     # Field 52: character 12 (fields 49-52), bit 3 (value 1)
-    message = ("0100" +  # MTI
-               "0000000000001000" +  # Bitmap (field 52 present)
-               "0123456789ABCDEF")  # Field 52 (binary data, 8 bytes = 16 hex chars)
+    message = (
+        "0100"  # MTI
+        + "0000000000001000"  # Bitmap (field 52 present)
+        + "0123456789ABCDEF"
+    )  # Field 52 (binary data, 8 bytes = 16 hex chars)
 
     parsed = parser.parse(message)
     assert 52 in parsed.fields
@@ -129,9 +136,11 @@ def test_parse_binary_fields(parser):
 def test_parse_emv_data(parser):
     """Test EMV data parsing"""
     # Field 55: character 13 (fields 53-56), bit 2 (value 2)
-    message = ("0100" +  # MTI
-               "0000000000000200" +  # Bitmap (field 55)
-               "0209F0607A0000000031010")  # Field 55 (EMV data) with length prefix 020
+    message = (
+        "0100"  # MTI
+        + "0000000000000200"  # Bitmap (field 55)
+        + "0209F0607A0000000031010"
+    )  # Field 55 (EMV data) with length prefix 020
 
     parsed = parser.parse(message)
     assert 55 in parsed.fields
@@ -144,9 +153,12 @@ def test_parse_with_different_versions(parser):
     parser_93 = ISO8583Parser(version=ISO8583Version.V1993)
     # Field 43: character 10, bit 2 (value 2)
     # In v1993, field 43 is LLVAR (max 99)
-    message = ("0100" +  # MTI
-               "0000000000200000" +  # Bitmap (field 43 set)
-               "40" + "A" * 40)  # Field 43 with length prefix 40
+    message = (
+        "0100"  # MTI
+        + "0000000000200000"  # Bitmap (field 43 set)
+        + "40"
+        + "A" * 40
+    )  # Field 43 with length prefix 40
 
     parsed = parser_93.parse(message)
     assert parsed.version == ISO8583Version.V1993
@@ -154,10 +166,12 @@ def test_parse_with_different_versions(parser):
 
 def test_parse_with_extended_bitmap(parser):
     """Test parsing message with secondary bitmap"""
-    message = ("0100" +  # MTI
-               "C000000000000000" +  # Primary bitmap (C indicates secondary bitmap)
-               "0000000000000000" +  # Secondary bitmap
-               "164111111111111111")  # Field 2 data
+    message = (
+        "0100"  # MTI
+        + "C000000000000000"  # Primary bitmap (C indicates secondary bitmap)
+        + "0000000000000000"  # Secondary bitmap
+        + "164111111111111111"
+    )  # Field 2 data
 
     parsed = parser.parse(message)
     assert len(parsed.bitmap) == 32  # 16 bytes primary + 16 bytes secondary
@@ -182,13 +196,17 @@ def test_parse_multiple_messages(parser, tmp_path):
     """Test parsing multiple messages"""
     messages = [
         # Message 1: Authorization with EMV (field 55: char 13, bit 2 = value 2)
-        ("0100" +  # MTI
-         "0000000000000200" +  # Bitmap (field 55)
-         "0209F0607A0000000031010"),  # Field 55 (EMV) with length prefix 020
+        (
+            "0100"  # MTI
+            + "0000000000000200"  # Bitmap (field 55)
+            + "0209F0607A0000000031010"
+        ),  # Field 55 (EMV) with length prefix 020
         # Message 2: Financial with PAN
-        ("0200" +  # MTI
-         "4000000000000000" +  # Bitmap (field 2)
-         "164111111111111111")  # Field 2 (PAN) with length prefix 16
+        (
+            "0200"  # MTI
+            + "4000000000000000"  # Bitmap (field 2)
+            + "164111111111111111"
+        ),  # Field 2 (PAN) with length prefix 16
     ]
 
     test_file = tmp_path / "test_messages.txt"
@@ -210,9 +228,11 @@ def test_parse_multiple_messages(parser, tmp_path):
 def test_network_specific_formatting(parser):
     """Test network-specific field formatting"""
     # Field 44: character 10, bit 3 (value 1)
-    message = ("0100" +  # MTI
-               "0000000000100000" +  # Bitmap (field 44 present)
-               "04ABCD")  # Field 44 (LLVAR) with length prefix
+    message = (
+        "0100"  # MTI
+        + "0000000000100000"  # Bitmap (field 44 present)
+        + "04ABCD"
+    )  # Field 44 (LLVAR) with length prefix
 
     parsed = parser.parse(message, network=CardNetwork.VISA)
     assert parsed.fields[44] == "ABCD"
@@ -222,10 +242,12 @@ def test_parse_field_padding_preservation(parser):
     """Test preservation of field padding"""
     # Bitmap: field 41 = bit 41, field 42 = bit 42
     # Character 10 (0-indexed): field 41=bit0(8), field 42=bit1(4) -> 8+4=C
-    message = ("0100" +  # MTI
-               "0000000000C00000" +  # Bitmap (fields 41,42)
-               "TEST1234" +  # Field 41 (8 chars)
-               "MERCHANT12345  ")  # Field 42 (15 chars)
+    message = (
+        "0100"  # MTI
+        + "0000000000C00000"  # Bitmap (fields 41,42)
+        + "TEST1234"  # Field 41 (8 chars)
+        + "MERCHANT12345  "
+    )  # Field 42 (15 chars)
 
     parsed = parser.parse(message)
     assert len(parsed.fields[41]) == 8

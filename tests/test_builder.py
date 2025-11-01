@@ -1,17 +1,16 @@
 # tests/test_builder.py
+
 import pytest
-from datetime import datetime
+
 from iso8583sim.core.types import (
+    BuildError,
+    CardNetwork,
+    FieldDefinition,
+    FieldType,
     ISO8583Message,
     ISO8583Version,
-    CardNetwork,
-    FieldType,
-    FieldDefinition,
-    BuildError,
-    MessageFunction,
-    get_field_definition
+    get_field_definition,
 )
-
 
 # Using all common fixtures from conftest.py: builder, parser, validator, test_messages, create_message
 
@@ -24,8 +23,8 @@ def binary_message():
         fields={
             0: "0100",
             52: "0123456789ABCDEF",  # 16 hex chars = 8 bytes
-            96: "0123456789ABCDEF"  # 16 hex chars = 8 bytes
-        }
+            96: "0123456789ABCDEF",  # 16 hex chars = 8 bytes
+        },
     )
 
 
@@ -38,8 +37,8 @@ def test_build_numeric_fields(builder):
             3: "000000",  # Processing Code (n6)
             4: "000000001234",  # Amount (n12)
             11: "123456",  # STAN (n6)
-            39: "00"  # Response Code (n2)
-        }
+            39: "00",  # Response Code (n2)
+        },
     )
 
     result = builder.build(message)
@@ -57,8 +56,8 @@ def test_build_alphanumeric_fields(builder):
         fields={
             0: "0100",
             41: "TEST1234",  # Terminal ID (exactly 8 chars)
-            42: "MERCHANT12345  "  # Card Acceptor ID (exactly 15 chars)
-        }
+            42: "MERCHANT12345  ",  # Card Acceptor ID (exactly 15 chars)
+        },
     )
 
     result = builder.build(message)
@@ -68,7 +67,7 @@ def test_build_alphanumeric_fields(builder):
 
 def test_build_bitmap(builder, test_messages, create_message):
     """Test bitmap building"""
-    message = create_message('basic_auth', test_messages)
+    message = create_message("basic_auth", test_messages)
     bitmap = builder._build_bitmap(message.fields)
     binary = bin(int(bitmap, 16))[2:].zfill(64)
 
@@ -83,11 +82,7 @@ def test_build_bitmap(builder, test_messages, create_message):
 def test_build_field(builder):
     """Test building individual fields"""
     # Test LLVAR field
-    field_def = FieldDefinition(
-        field_type=FieldType.LLVAR,
-        max_length=19,
-        description="Test LLVAR"
-    )
+    field_def = FieldDefinition(field_type=FieldType.LLVAR, max_length=19, description="Test LLVAR")
     value = builder._build_field(2, "4111111111111111", field_def)
     assert value == "164111111111111111"  # 16 is length prefix
 
@@ -97,7 +92,7 @@ def test_build_field(builder):
         max_length=6,
         description="Test numeric",
         padding_char="0",
-        padding_direction="left"
+        padding_direction="left",
     )
     value = builder._build_field(3, "123", field_def)
     assert value == "000123"
@@ -117,8 +112,8 @@ def test_build_with_secondary_bitmap(builder):
         fields={
             0: "0100",
             2: "4111111111111111",
-            65: "1234567890123456"  # Field in secondary bitmap
-        }
+            65: "1234567890123456",  # Field in secondary bitmap
+        },
     )
 
     result = builder.build(message)
@@ -129,7 +124,7 @@ def test_build_with_secondary_bitmap(builder):
 
 def test_build_network_specific(builder, test_messages, create_message):
     """Test building network-specific messages"""
-    visa_msg = create_message('visa_auth', test_messages)
+    visa_msg = create_message("visa_auth", test_messages)
     result = builder.build(visa_msg)
     assert result is not None
     assert "A5B7" in result  # VISA-specific field 44
@@ -137,7 +132,7 @@ def test_build_network_specific(builder, test_messages, create_message):
 
 def test_build_network_specific_fields(builder, test_messages, create_message):
     """Test building network-specific fields"""
-    visa_msg = create_message('visa_auth', test_messages)
+    visa_msg = create_message("visa_auth", test_messages)
     result = builder.build(visa_msg)
 
     assert result is not None
@@ -149,10 +144,10 @@ def test_build_network_specific_fields(builder, test_messages, create_message):
 
 def test_build_response_message(builder, test_messages, create_message):
     """Test building response message"""
-    request = create_message('basic_auth', test_messages)
+    request = create_message("basic_auth", test_messages)
     response_fields = {
         39: "00",  # Approval code
-        54: "000000001000"  # Additional amount
+        54: "000000001000",  # Additional amount
     }
 
     response = builder.create_response(request, response_fields)
@@ -165,14 +160,14 @@ def test_build_response_message(builder, test_messages, create_message):
 
 def test_build_reversal_message(builder, test_messages, create_message):
     """Test building reversal message"""
-    original = create_message('basic_auth', test_messages)
+    original = create_message("basic_auth", test_messages)
     extra_fields = {
         39: "00",
-        90: "0100123456".ljust(42, '0')  # 42 chars
+        90: "0100123456".ljust(42, "0"),  # 42 chars
     }
 
     reversal = builder.create_reversal(original, extra_fields)
-    result = builder.build(reversal)
+    builder.build(reversal)  # Verify build succeeds
 
     assert reversal.mti == "0400"
     assert len(reversal.fields[90]) == 42
@@ -180,12 +175,9 @@ def test_build_reversal_message(builder, test_messages, create_message):
 
 def test_build_network_management_message(builder):
     """Test building network management message"""
-    message = builder.create_network_management_message(
-        message_type="301",
-        network=CardNetwork.VISA
-    )
+    message = builder.create_network_management_message(message_type="301", network=CardNetwork.VISA)
 
-    result = builder.build(message)
+    builder.build(message)  # Verify build succeeds
     assert message.mti == "0800"
     assert message.fields[70] == "301"
     assert len(message.fields[96]) == 16
@@ -193,11 +185,7 @@ def test_build_network_management_message(builder):
 
 def test_build_emv_data(builder):
     """Test building EMV data"""
-    emv_tags = {
-        "9F06": "A0000000031010",
-        "9F1A": "840",
-        "9F33": "E0F8C8"
-    }
+    emv_tags = {"9F06": "A0000000031010", "9F1A": "840", "9F33": "E0F8C8"}
 
     emv_data = builder.build_emv_data(emv_tags)
     assert "9F06" in emv_data
@@ -213,8 +201,8 @@ def test_build_field_validation_errors(builder):
             mti="0100",
             fields={
                 0: "0100",
-                3: "12A34"  # Invalid: contains letter
-            }
+                3: "12A34",  # Invalid: contains letter
+            },
         )
         builder.build(message)
     assert "must contain only digits" in str(exc_info.value)
@@ -226,8 +214,8 @@ def test_build_error_handling(builder):
         mti="0100",
         fields={
             0: "0100",
-            3: "ABC"  # Must be numeric
-        }
+            3: "ABC",  # Must be numeric
+        },
     )
     with pytest.raises(BuildError) as exc_info:
         builder.build(message)
@@ -240,9 +228,9 @@ def test_build_version_specific(builder):
         mti="0100",
         fields={
             0: "0100",
-            43: "A" * 99  # 1993 version max length
+            43: "A" * 99,  # 1993 version max length
         },
-        version=ISO8583Version.V1993
+        version=ISO8583Version.V1993,
     )
     result_93 = builder.build(message_93)
     assert len(result_93) > 20
@@ -251,9 +239,9 @@ def test_build_version_specific(builder):
         mti="0100",
         fields={
             0: "0100",
-            43: "A" * 256  # 2003 version max length
+            43: "A" * 256,  # 2003 version max length
         },
-        version=ISO8583Version.V2003
+        version=ISO8583Version.V2003,
     )
     result_03 = builder.build(message_03)
     assert len(result_03) > 20
@@ -262,7 +250,7 @@ def test_build_version_specific(builder):
 def test_message_recreation(builder, parser, test_messages, create_message):
     """Test complete building and parsing cycle"""
     # Using basic_auth message as base
-    original = create_message('basic_auth', test_messages)
+    original = create_message("basic_auth", test_messages)
 
     # Build message
     built = builder.build(original)
@@ -280,7 +268,7 @@ def test_message_recreation(builder, parser, test_messages, create_message):
     assert parsed.raw_message == built
 
     # Validate fields
-    for field_num, value in original.fields.items():
+    for field_num, _value in original.fields.items():
         if field_num == 0:  # Skip MTI as it's also in fields[0]
             continue
 
@@ -297,21 +285,23 @@ def test_message_recreation(builder, parser, test_messages, create_message):
         if field_def.field_type not in [FieldType.LLVAR, FieldType.LLLVAR]:
             if field_def.field_type == FieldType.BINARY:
                 # For binary fields, string length should be twice max_length
-                assert len(parsed_value) == field_def.max_length * 2, \
-                    f"Field {field_num} length mismatch: {len(parsed_value)} != {field_def.max_length * 2}"
+                assert (
+                    len(parsed_value) == field_def.max_length * 2
+                ), f"Field {field_num} length mismatch: {len(parsed_value)} != {field_def.max_length * 2}"
             else:
-                assert len(parsed_value) == field_def.max_length, \
-                    f"Field {field_num} length mismatch: {len(parsed_value)} != {field_def.max_length}"
+                assert (
+                    len(parsed_value) == field_def.max_length
+                ), f"Field {field_num} length mismatch: {len(parsed_value)} != {field_def.max_length}"
 
         # Check field type-specific validations
         if field_def.field_type == FieldType.NUMERIC:
             assert parsed_value.isdigit(), f"Field {field_num} should be numeric"
         elif field_def.field_type == FieldType.BINARY:
-            assert all(c in '0123456789ABCDEF' for c in parsed_value.upper()), \
-                f"Field {field_num} should be hexadecimal"
+            assert all(
+                c in "0123456789ABCDEF" for c in parsed_value.upper()
+            ), f"Field {field_num} should be hexadecimal"
         elif field_def.field_type == FieldType.ALPHA:
-            assert parsed_value.replace(' ', '').isalpha(), \
-                f"Field {field_num} should be alphabetic"
+            assert parsed_value.replace(" ", "").isalpha(), f"Field {field_num} should be alphabetic"
 
     # Validate bitmap reconstruction
     original_bitmap = builder._build_bitmap(original.fields)
@@ -327,7 +317,7 @@ def test_field_padding_handling(builder):
         max_length=8,
         description="Test right pad",
         padding_char=" ",
-        padding_direction="right"
+        padding_direction="right",
     )
     value = builder._build_field(41, "TEST", field_def)
     assert value == "TEST    "  # 4 spaces padding
@@ -338,7 +328,7 @@ def test_field_padding_handling(builder):
         max_length=6,
         description="Test left pad",
         padding_char="0",
-        padding_direction="left"
+        padding_direction="left",
     )
     value = builder._build_field(3, "123", field_def)
     assert value == "000123"

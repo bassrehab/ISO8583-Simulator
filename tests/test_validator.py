@@ -1,22 +1,10 @@
 # tests/test_validator.py
-import pytest
-from iso8583sim.core.types import (
-    ISO8583Message,
-    ISO8583Version,
-    CardNetwork,
-    FieldType,
-    FieldDefinition,
-    ValidationError
-)
+from iso8583sim.core.types import CardNetwork, FieldDefinition, FieldType, ISO8583Message, ISO8583Version
 
 
 def test_validate_field_numeric(validator):
     """Test numeric field validation"""
-    field_def = FieldDefinition(
-        field_type=FieldType.NUMERIC,
-        max_length=6,
-        description="Test numeric"
-    )
+    field_def = FieldDefinition(field_type=FieldType.NUMERIC, max_length=6, description="Test numeric")
 
     # Valid cases
     valid, error = validator.validate_field(3, "123456", field_def)
@@ -33,11 +21,7 @@ def test_validate_field_numeric(validator):
 
 def test_validate_field_alpha(validator):
     """Test alphabetic field validation"""
-    field_def = FieldDefinition(
-        field_type=FieldType.ALPHA,
-        max_length=4,
-        description="Test alpha"
-    )
+    field_def = FieldDefinition(field_type=FieldType.ALPHA, max_length=4, description="Test alpha")
 
     # Valid cases
     valid, error = validator.validate_field(1, "ABCD", field_def)
@@ -51,11 +35,7 @@ def test_validate_field_alpha(validator):
 
 def test_validate_field_alphanumeric(validator):
     """Test alphanumeric field validation"""
-    field_def = FieldDefinition(
-        field_type=FieldType.ALPHANUMERIC,
-        max_length=6,
-        description="Test alphanumeric"
-    )
+    field_def = FieldDefinition(field_type=FieldType.ALPHANUMERIC, max_length=6, description="Test alphanumeric")
 
     # Valid cases
     valid, error = validator.validate_field(1, "ABC123", field_def)
@@ -135,9 +115,9 @@ def test_validate_network_specific_fields(validator):
             25: "00",
             41: "TEST1234",
             42: "MERCHANT12345  ",
-            44: "A5B7"
+            44: "A5B7",
         },
-        network=CardNetwork.VISA
+        network=CardNetwork.VISA,
     )
 
     errors = validator.validate_message(message)
@@ -161,22 +141,15 @@ def test_validate_message_network_compliance(validator):
             25: "00",
             41: "TEST1234",
             42: "MERCHANT12345  ",
-            44: "A5B7"
+            44: "A5B7",
         },
-        network=CardNetwork.VISA
+        network=CardNetwork.VISA,
     )
     errors = validator.validate_network_compliance(complete_message)
     assert len(errors) == 0
 
     # Test incomplete message
-    incomplete_message = ISO8583Message(
-        mti="0100",
-        fields={
-            0: "0100",
-            2: "4111111111111111"
-        },
-        network=CardNetwork.VISA
-    )
+    incomplete_message = ISO8583Message(mti="0100", fields={0: "0100", 2: "4111111111111111"}, network=CardNetwork.VISA)
     errors = validator.validate_network_compliance(incomplete_message)
     assert len(errors) > 0
     assert any("Required field" in error for error in errors)
@@ -188,7 +161,7 @@ def test_validate_emv_data(validator):
     valid_data = [
         ("9F0607A0000000031010", "Simple EMV tag"),
         ("9F0607A00000000310109F15020001", "Multiple EMV tags"),
-        ("9F33036028C89F3501229F40056000F0A001", "Complex EMV data")
+        ("9F33036028C89F3501229F40056000F0A001", "Complex EMV data"),
     ]
 
     for data, desc in valid_data:
@@ -200,7 +173,7 @@ def test_validate_emv_data(validator):
         ("9F", "Incomplete tag"),
         ("XX0607A0000000031010", "Invalid tag"),
         ("9F06XX", "Invalid length"),
-        ("9F0607A0000000", "Incomplete value")
+        ("9F0607A0000000", "Incomplete value"),
     ]
 
     for data, desc in invalid_data:
@@ -215,7 +188,7 @@ def test_validate_field_padding(validator):
         max_length=15,
         description="Test right pad",
         padding_char=" ",
-        padding_direction="right"
+        padding_direction="right",
     )
 
     # Test exact length with padding
@@ -235,7 +208,7 @@ def test_validate_field_length(validator):
         max_length=6,
         description="Test fixed length",
         padding_char="0",
-        padding_direction="left"
+        padding_direction="left",
     )
 
     # Test exact length
@@ -255,13 +228,9 @@ def test_validate_field_length(validator):
 def test_validate_field_compatibility(validator):
     """Test field version compatibility"""
     # Test 2003 version field
-    errors = validator.validate_field_compatibility(
-        43, "A" * 256, ISO8583Version.V2003
-    )
+    errors = validator.validate_field_compatibility(43, "A" * 256, ISO8583Version.V2003)
     assert len(errors) == 0
 
     # Test same field with 1987 version (too long)
-    errors = validator.validate_field_compatibility(
-        43, "A" * 256, ISO8583Version.V1987
-    )
+    errors = validator.validate_field_compatibility(43, "A" * 256, ISO8583Version.V1987)
     assert len(errors) > 0
