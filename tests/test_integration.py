@@ -1,16 +1,13 @@
 # tests/test_integration.py
 
-from iso8583sim.core.types import (
-    CardNetwork
-)
+from iso8583sim.core.types import CardNetwork
 
 
 def test_build_parse_cycle(builder, parser, validator, test_messages, create_message):
-
     """Test complete build-parse cycle"""
 
     # Create message using centralized test data
-    original = create_message('visa_auth', test_messages)
+    original = create_message("visa_auth", test_messages)
 
     # Validate original message
     errors = validator.validate_message(original)
@@ -34,7 +31,7 @@ def test_build_parse_cycle(builder, parser, validator, test_messages, create_mes
 def test_network_specific_processing(builder, parser, validator, test_messages, create_message):
     """Test network-specific message processing"""
     # Create VISA message
-    visa_msg = create_message('visa_auth', test_messages)
+    visa_msg = create_message("visa_auth", test_messages)
 
     # Build and parse VISA message
     built_visa = builder.build(visa_msg)
@@ -43,7 +40,7 @@ def test_network_specific_processing(builder, parser, validator, test_messages, 
     assert parsed_visa.fields[44] == "A5B7"
 
     # Create Mastercard message
-    mc_msg = create_message('mastercard_auth', test_messages)
+    mc_msg = create_message("mastercard_auth", test_messages)
 
     # Build and parse Mastercard message
     built_mc = builder.build(mc_msg)
@@ -55,12 +52,12 @@ def test_network_specific_processing(builder, parser, validator, test_messages, 
 def test_response_message_flow(builder, parser, validator, test_messages, create_message):
     """Test complete request-response flow"""
     # Create request message using centralized test data
-    request = create_message('basic_auth', test_messages)
+    request = create_message("basic_auth", test_messages)
 
     # Create response
     response_fields = {
         39: "00",  # Approval code
-        54: "000000001000"  # Additional amount
+        54: "000000001000",  # Additional amount
     }
     response = builder.create_response(request, response_fields)
 

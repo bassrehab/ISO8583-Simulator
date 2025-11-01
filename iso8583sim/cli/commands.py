@@ -1,45 +1,35 @@
-import typer
-import json
-from pathlib import Path
-from typing import Optional, Dict, List, Any
-from datetime import datetime
 import code
 import readline
-import rlcompleter
-from rich.console import Console
-from rich.table import Table
-from rich import print as rprint
-from rich.panel import Panel
-from rich.syntax import Syntax
-from rich.tree import Tree
+from pathlib import Path
+from typing import Any, Dict, Optional
 
+import typer
+from rich.console import Console
+from rich.panel import Panel
+
+from ..core.builder import ISO8583Builder
+from ..core.parser import ISO8583Parser
 from ..core.types import (
+    CardNetwork,
     ISO8583Message,
     ISO8583Version,
-    CardNetwork,
-    ISO8583_FIELDS,
 )
-from ..core.parser import ISO8583Parser
-from ..core.builder import ISO8583Builder
 from ..core.validator import ISO8583Validator
+from .config import ConfigManager
 from .formatter import CLIFormatter
 from .utils import (
+    create_template_message,
+    format_amount,
     load_json_file,
     save_json_file,
-    generate_output_filename,
-    validate_file_path,
-    format_amount,
     validate_pan,
-    create_template_message,
-    get_response_code_description
 )
-from .config import ConfigManager
 
 # Initialize Typer app
 app = typer.Typer(
     name="iso8583sim",
     help="ISO 8583 Message Simulator - Parse, Build, and Test ISO 8583 messages",
-    add_completion=False
+    add_completion=False,
 )
 
 # Initialize shared objects
@@ -60,7 +50,7 @@ class ISO8583Shell(code.InteractiveConsole):
     def _setup_readline(self):
         """Setup readline with history and tab completion"""
         # Enable tab completion
-        readline.parse_and_bind('tab: complete')
+        readline.parse_and_bind("tab: complete")
 
         # Load history if exists
         if self.history_file.exists():
@@ -125,31 +115,11 @@ def version():
 
 @app.command("parse")
 def parse_message(
-        message: str = typer.Argument(..., help="ISO 8583 message string to parse"),
-        version: str = typer.Option(
-            "1987",
-            "--version",
-            "-v",
-            help="ISO 8583 version (1987, 1993, 2003)"
-        ),
-        network: Optional[str] = typer.Option(
-            None,
-            "--network",
-            "-n",
-            help="Card network (VISA, MASTERCARD, AMEX, etc.)"
-        ),
-        output: Optional[Path] = typer.Option(
-            None,
-            "--output",
-            "-o",
-            help="Output file for parsed message (JSON format)"
-        ),
-        format: str = typer.Option(
-            "table",
-            "--format",
-            "-f",
-            help="Output format (table, json, tree)"
-        )
+    message: str = typer.Argument(..., help="ISO 8583 message string to parse"),
+    version: str = typer.Option("1987", "--version", "-v", help="ISO 8583 version (1987, 1993, 2003)"),
+    network: Optional[str] = typer.Option(None, "--network", "-n", help="Card network (VISA, MASTERCARD, AMEX, etc.)"),
+    output: Optional[Path] = typer.Option(None, "--output", "-o", help="Output file for parsed message (JSON format)"),
+    format: str = typer.Option("table", "--format", "-f", help="Output format (table, json, tree)"),
 ):
     """Parse an ISO 8583 message and display its contents"""
     try:
@@ -175,52 +145,27 @@ def parse_message(
 
         # Save to file if requested
         if output:
-            result = {
-                "mti": parsed.mti,
-                "version": version,
-                "network": network,
-                "fields": parsed.fields
-            }
+            result = {"mti": parsed.mti, "version": version, "network": network, "fields": parsed.fields}
             save_json_file(result, output)
             console.print(f"\n[green]Results saved to {output}")
 
     except Exception as e:
         console.print(f"[red]Error parsing message: {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 @app.command("build")
 def build_message(
-        mti: str = typer.Option(..., "--mti", "-m", help="Message Type Indicator"),
-        fields_file: Path = typer.Option(
-            ...,
-            "--fields",
-            "-f",
-            help="JSON file containing field values"
-        ),
-        version: str = typer.Option(
-            "1987",
-            "--version",
-            "-v",
-            help="ISO 8583 version (1987, 1993, 2003)"
-        ),
-        network: Optional[str] = typer.Option(
-            None,
-            "--network",
-            "-n",
-            help="Card network (VISA, MASTERCARD, AMEX, etc.)"
-        ),
-        output: Optional[Path] = typer.Option(
-            None,
-            "--output",
-            "-o",
-            help="Output file for built message"
-        )
+    mti: str = typer.Option(..., "--mti", "-m", help="Message Type Indicator"),
+    fields_file: Path = typer.Option(..., "--fields", "-f", help="JSON file containing field values"),
+    version: str = typer.Option("1987", "--version", "-v", help="ISO 8583 version (1987, 1993, 2003)"),
+    network: Optional[str] = typer.Option(None, "--network", "-n", help="Card network (VISA, MASTERCARD, AMEX, etc.)"),
+    output: Optional[Path] = typer.Option(None, "--output", "-o", help="Output file for built message"),
 ):
     """Build an ISO 8583 message from field values"""
     try:
-        # Load fields from JSON
-        fields_data = load_json_file(fields_file)
+        # Load fields from JSON and convert string keys to integers
+        fields_data = {int(k): v for k, v in load_json_file(fields_file).items()}
 
         # Initialize builder
         iso_version = ISO8583Version(version)
@@ -228,22 +173,13 @@ def build_message(
 
         # Create message with optional network
         card_network = CardNetwork(network.upper()) if network else None
-        message = ISO8583Message(
-            mti=mti,
-            fields=fields_data,
-            version=iso_version,
-            network=card_network
-        )
+        message = ISO8583Message(mti=mti, fields=fields_data, version=iso_version, network=card_network)
 
         # Build message
         result = builder.build(message)
 
         # Display result
-        panel = Panel(
-            result,
-            title="Built ISO 8583 Message",
-            border_style="cyan"
-        )
+        panel = Panel(result, title="Built ISO 8583 Message", border_style="cyan")
         console.print(panel)
 
         # Save to file if requested
@@ -253,24 +189,14 @@ def build_message(
 
     except Exception as e:
         console.print(f"[red]Error building message: {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 @app.command("validate")
 def validate_message(
-        message: str = typer.Argument(..., help="ISO 8583 message to validate"),
-        version: str = typer.Option(
-            "1987",
-            "--version",
-            "-v",
-            help="ISO 8583 version (1987, 1993, 2003)"
-        ),
-        network: Optional[str] = typer.Option(
-            None,
-            "--network",
-            "-n",
-            help="Card network (VISA, MASTERCARD, AMEX, etc.)"
-        )
+    message: str = typer.Argument(..., help="ISO 8583 message to validate"),
+    version: str = typer.Option("1987", "--version", "-v", help="ISO 8583 version (1987, 1993, 2003)"),
+    network: Optional[str] = typer.Option(None, "--network", "-n", help="Card network (VISA, MASTERCARD, AMEX, etc.)"),
 ):
     """Validate an ISO 8583 message"""
     try:
@@ -293,56 +219,22 @@ def validate_message(
 
     except Exception as e:
         console.print(f"[red]Error validating message: {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 @app.command("generate")
 def generate_message(
-        type: str = typer.Option(
-            ...,
-            "--type",
-            "-t",
-            help="Message type (auth, financial, reversal)"
-        ),
-        pan: str = typer.Option(
-            "4111111111111111",
-            "--pan",
-            "-p",
-            help="Primary Account Number"
-        ),
-        amount: str = typer.Option(
-            "000000001000",
-            "--amount",
-            "-a",
-            help="Transaction amount"
-        ),
-        currency: str = typer.Option(
-            "840",
-            "--currency",
-            "-c",
-            help="Currency code (ISO 4217)"
-        ),
-        network: Optional[str] = typer.Option(
-            None,
-            "--network",
-            "-n",
-            help="Card network (VISA, MASTERCARD, AMEX, etc.)"
-        ),
-        output: Optional[Path] = typer.Option(
-            None,
-            "--output",
-            "-o",
-            help="Output file for generated message"
-        )
+    type: str = typer.Option(..., "--type", "-t", help="Message type (auth, financial, reversal)"),
+    pan: str = typer.Option("4111111111111111", "--pan", "-p", help="Primary Account Number"),
+    amount: str = typer.Option("000000001000", "--amount", "-a", help="Transaction amount"),
+    currency: str = typer.Option("840", "--currency", "-c", help="Currency code (ISO 4217)"),
+    network: Optional[str] = typer.Option(None, "--network", "-n", help="Card network (VISA, MASTERCARD, AMEX, etc.)"),
+    output: Optional[Path] = typer.Option(None, "--output", "-o", help="Output file for generated message"),
 ):
     """Generate a sample ISO 8583 message"""
     try:
         # Create message template
-        message = create_template_message(
-            get_mti_for_type(type),
-            pan=validate_pan(pan),
-            amount=format_amount(amount)
-        )
+        message = create_template_message(get_mti_for_type(type), pan=validate_pan(pan), amount=format_amount(amount))
 
         # Add network if specified
         if network:
@@ -357,11 +249,7 @@ def generate_message(
         result = builder.build(iso_message)
 
         # Display result
-        panel = Panel(
-            result,
-            title=f"Generated {type.title()} Message",
-            border_style="cyan"
-        )
+        panel = Panel(result, title=f"Generated {type.title()} Message", border_style="cyan")
         console.print(panel)
 
         # Save to file if requested
@@ -371,7 +259,7 @@ def generate_message(
 
     except Exception as e:
         console.print(f"[red]Error generating message: {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 @app.command("shell")
@@ -395,7 +283,7 @@ def interactive_shell():
             "formatter": formatter,
             "ISO8583Message": ISO8583Message,
             "ISO8583Version": ISO8583Version,
-            "CardNetwork": CardNetwork
+            "CardNetwork": CardNetwork,
         }
 
         # Create and start shell
@@ -404,22 +292,15 @@ def interactive_shell():
 
     except Exception as e:
         console.print(f"[red]Error starting interactive shell: {str(e)}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 def get_mti_for_type(type: str) -> str:
     """Get MTI for message type"""
-    mti_map = {
-        "auth": "0100",
-        "financial": "0200",
-        "reversal": "0400",
-        "network": "0800"
-    }
+    mti_map = {"auth": "0100", "financial": "0200", "reversal": "0400", "network": "0800"}
 
     if type not in mti_map:
-        raise ValueError(
-            f"Invalid message type. Choose from: {', '.join(mti_map.keys())}"
-        )
+        raise ValueError(f"Invalid message type. Choose from: {', '.join(mti_map.keys())}")
 
     return mti_map[type]
 

@@ -1,32 +1,29 @@
 # tests/test_types.py
 import pytest
+
 from iso8583sim.core.types import (
-    ISO8583Version,
-    FieldType,
-    FieldDefinition,
-    ISO8583Message,
-    ISO8583Error,
-    ParseError,
-    ValidationError,
+    ISO8583_FIELDS,
+    NETWORK_SPECIFIC_FIELDS,
+    VERSION_SPECIFIC_FIELDS,
     BuildError,
     CardNetwork,
+    FieldDefinition,
+    FieldType,
+    ISO8583Error,
+    ISO8583Message,
+    ISO8583Version,
     MessageClass,
     MessageFunction,
     MessageOrigin,
-    NETWORK_SPECIFIC_FIELDS,
-    VERSION_SPECIFIC_FIELDS,
+    ParseError,
+    ValidationError,
     get_field_definition,
-    ISO8583_FIELDS
 )
 
 
 def test_field_definition_creation():
     """Test creating field definitions"""
-    field = FieldDefinition(
-        field_type=FieldType.NUMERIC,
-        max_length=6,
-        description="Test field"
-    )
+    field = FieldDefinition(field_type=FieldType.NUMERIC, max_length=6, description="Test field")
     assert field.field_type == FieldType.NUMERIC
     assert field.max_length == 6
     assert field.description == "Test field"
@@ -37,21 +34,11 @@ def test_field_definition_creation():
 def test_variable_length_field_definition():
     """Test variable length field definitions"""
     # LLVAR field
-    llvar = FieldDefinition(
-        field_type=FieldType.LLVAR,
-        max_length=19,
-        description="Test LLVAR",
-        min_length=1
-    )
+    llvar = FieldDefinition(field_type=FieldType.LLVAR, max_length=19, description="Test LLVAR", min_length=1)
     assert llvar.min_length == 1  # min_length should not be modified for LLVAR
 
     # LLLVAR field
-    lllvar = FieldDefinition(
-        field_type=FieldType.LLLVAR,
-        max_length=999,
-        description="Test LLLVAR",
-        min_length=1
-    )
+    lllvar = FieldDefinition(field_type=FieldType.LLLVAR, max_length=999, description="Test LLLVAR", min_length=1)
     assert lllvar.min_length == 1  # min_length should not be modified for LLLVAR
 
 
@@ -71,11 +58,7 @@ def test_field_type_string_representation():
 
 def test_message_creation():
     """Test creating ISO8583Message instances"""
-    msg = ISO8583Message(
-        mti="0100",
-        fields={0: "0100", 2: "4111111111111111", 3: "000000"},
-        network=CardNetwork.VISA
-    )
+    msg = ISO8583Message(mti="0100", fields={0: "0100", 2: "4111111111111111", 3: "000000"}, network=CardNetwork.VISA)
     assert msg.mti == "0100"
     assert msg.version == ISO8583Version.V1987  # default version
     assert msg.network == CardNetwork.VISA
@@ -149,11 +132,7 @@ def test_field_type_properties():
 
 def test_field_definition_defaults():
     """Test field definition default values"""
-    field = FieldDefinition(
-        field_type=FieldType.NUMERIC,
-        max_length=6,
-        description="Test"
-    )
+    field = FieldDefinition(field_type=FieldType.NUMERIC, max_length=6, description="Test")
 
     assert field.encoding == "ascii"
     assert field.padding_direction == "left"
@@ -175,52 +154,28 @@ def test_field_definition_validation():
         FieldDefinition(
             field_type="invalid",  # Should be FieldType enum
             max_length=6,
-            description="Test"
+            description="Test",
         )
 
     # Test invalid max length
     with pytest.raises(ValueError, match="Invalid max length"):
-        FieldDefinition(
-            field_type=FieldType.NUMERIC,
-            max_length=-1,
-            description="Test"
-        )
+        FieldDefinition(field_type=FieldType.NUMERIC, max_length=-1, description="Test")
 
     # Test invalid min length
     with pytest.raises(ValueError, match="Invalid min length"):
-        FieldDefinition(
-            field_type=FieldType.NUMERIC,
-            max_length=6,
-            min_length=-1,
-            description="Test"
-        )
+        FieldDefinition(field_type=FieldType.NUMERIC, max_length=6, min_length=-1, description="Test")
 
     # Test min length greater than max length
     with pytest.raises(ValueError, match="min_length cannot be greater than max_length"):
-        FieldDefinition(
-            field_type=FieldType.NUMERIC,
-            max_length=6,
-            min_length=8,
-            description="Test"
-        )
+        FieldDefinition(field_type=FieldType.NUMERIC, max_length=6, min_length=8, description="Test")
 
     # Test invalid padding direction
     with pytest.raises(ValueError, match="Invalid padding direction"):
-        FieldDefinition(
-            field_type=FieldType.NUMERIC,
-            max_length=6,
-            description="Test",
-            padding_direction="invalid"
-        )
+        FieldDefinition(field_type=FieldType.NUMERIC, max_length=6, description="Test", padding_direction="invalid")
 
     # Test invalid padding char
     with pytest.raises(ValueError, match="padding_char must be a single character"):
-        FieldDefinition(
-            field_type=FieldType.NUMERIC,
-            max_length=6,
-            description="Test",
-            padding_char="00"
-        )
+        FieldDefinition(field_type=FieldType.NUMERIC, max_length=6, description="Test", padding_char="00")
 
 
 def test_custom_exceptions():

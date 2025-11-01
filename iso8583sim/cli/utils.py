@@ -1,8 +1,9 @@
 # iso8583sim/cli/utils.py
-from pathlib import Path
-from typing import Optional, Dict, Any
 import json
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, Optional
+
 import typer
 
 
@@ -12,18 +13,18 @@ def load_json_file(file_path: Path) -> Dict[str, Any]:
         with open(file_path) as f:
             return json.load(f)
     except json.JSONDecodeError:
-        raise typer.BadParameter(f"Invalid JSON file: {file_path}")
+        raise typer.BadParameter(f"Invalid JSON file: {file_path}") from None
     except FileNotFoundError:
-        raise typer.BadParameter(f"File not found: {file_path}")
+        raise typer.BadParameter(f"File not found: {file_path}") from None
 
 
 def save_json_file(data: Dict[str, Any], file_path: Path):
     """Save data to JSON file"""
     try:
-        with open(file_path, 'w') as f:
+        with open(file_path, "w") as f:
             json.dump(data, f, indent=2)
     except Exception as e:
-        raise typer.BadParameter(f"Error saving file: {e}")
+        raise typer.BadParameter(f"Error saving file: {e}") from None
 
 
 def generate_output_filename(prefix: str, suffix: str = "") -> str:
@@ -52,7 +53,7 @@ def format_amount(amount: str) -> str:
         # Return 12-digit zero-padded string
         return f"{num:012d}"
     except ValueError:
-        raise typer.BadParameter("Invalid amount format")
+        raise typer.BadParameter("Invalid amount format") from None
 
 
 def validate_pan(pan: str) -> str:
@@ -78,10 +79,7 @@ def validate_pan(pan: str) -> str:
 
 
 def create_template_message(
-        mti: str,
-        pan: Optional[str] = None,
-        amount: Optional[str] = None,
-        terminal_id: Optional[str] = None
+    mti: str, pan: Optional[str] = None, amount: Optional[str] = None, terminal_id: Optional[str] = None
 ) -> Dict[str, Any]:
     """Create template message with common fields"""
     now = datetime.now()
@@ -92,7 +90,7 @@ def create_template_message(
             11: now.strftime("%H%M%S"),  # STAN
             12: now.strftime("%H%M%S"),  # Time
             13: now.strftime("%m%d"),  # Date
-        }
+        },
     }
 
     if pan:

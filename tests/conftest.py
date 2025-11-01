@@ -1,21 +1,14 @@
 # tests/conftest.py
 
 import json
-from datetime import datetime
 from pathlib import Path
 
 import pytest
 import yaml
 
-from iso8583sim.core.types import (
-    CardNetwork,
-    ISO8583Message,
-    ISO8583Version,
-    FieldType,
-    FieldDefinition
-)
-from iso8583sim.core.parser import ISO8583Parser
 from iso8583sim.core.builder import ISO8583Builder
+from iso8583sim.core.parser import ISO8583Parser
+from iso8583sim.core.types import CardNetwork, ISO8583Message
 from iso8583sim.core.validator import ISO8583Validator
 
 # Constants for test data
@@ -44,22 +37,22 @@ def test_data_dir():
 def test_messages():
     """Common ISO8583 test messages with correct field formatting"""
     return {
-        'basic_auth': {
-            'mti': "0100",
-            'fields': {
+        "basic_auth": {
+            "mti": "0100",
+            "fields": {
                 0: "0100",
                 2: "4111111111111111",
                 3: "000000",  # Processing Code (n6)
                 4: "000000001000",  # Amount, Transaction (n12)
                 11: "123456",  # STAN (n6)
                 41: "TEST1234",  # Terminal ID (ans8)
-                42: "MERCHANT12345  "  # Card Acceptor ID (ans15) - exactly 15 chars with spaces
-            }
+                42: "MERCHANT12345  ",  # Card Acceptor ID (ans15) - exactly 15 chars with spaces
+            },
         },
-        'visa_auth': {
-            'mti': "0100",
-            'network': CardNetwork.VISA,
-            'fields': {
+        "visa_auth": {
+            "mti": "0100",
+            "network": CardNetwork.VISA,
+            "fields": {
                 0: "0100",
                 2: "4111111111111111",
                 3: "000000",
@@ -71,13 +64,13 @@ def test_messages():
                 25: "00",
                 41: "TEST1234",
                 42: "MERCHANT12345  ",  # Exactly 15 chars with spaces
-                44: "A5B7"
-            }
+                44: "A5B7",
+            },
         },
-        'mastercard_auth': {
-            'mti': "0200",
-            'network': CardNetwork.MASTERCARD,
-            'fields': {
+        "mastercard_auth": {
+            "mti": "0200",
+            "network": CardNetwork.MASTERCARD,
+            "fields": {
                 0: "0200",
                 2: "5111111111111111",
                 3: "000000",
@@ -88,12 +81,12 @@ def test_messages():
                 25: "00",
                 41: "TEST1234",
                 42: "MERCHANT12345  ",  # Exactly 15 chars with spaces
-                48: "MC123"
-            }
+                48: "MC123",
+            },
         },
-        'emv_auth': {
-            'mti': "0100",
-            'fields': {
+        "emv_auth": {
+            "mti": "0100",
+            "fields": {
                 0: "0100",
                 2: "4111111111111111",
                 3: "000000",
@@ -101,12 +94,12 @@ def test_messages():
                 11: "123456",
                 41: "TEST1234",
                 42: "MERCHANT12345  ",  # Exactly 15 chars with spaces
-                55: "9F0607A0000000031010"  # EMV data
-            }
+                55: "9F0607A0000000031010",  # EMV data
+            },
         },
-        'reversal': {
-            'mti': "0400",
-            'fields': {
+        "reversal": {
+            "mti": "0400",
+            "fields": {
                 0: "0400",
                 2: "4111111111111111",
                 3: "000000",
@@ -115,30 +108,34 @@ def test_messages():
                 41: "TEST1234",
                 42: "MERCHANT12345  ",  # Exactly 15 chars with spaces
                 39: "400",  # Reversal response code
-                90: "0100123456".ljust(42, '0')  # Original elements (42 chars)
-            }
-        }
+                90: "0100123456".ljust(42, "0"),  # Original elements (42 chars)
+            },
+        },
     }
 
 
 @pytest.fixture
 def create_raw_message():
     """Helper fixture to create raw ISO8583 message strings"""
+
     def _create_raw_message(mti: str, bitmap: str, data: str) -> str:
         return f"{mti}{bitmap}{data}"
+
     return _create_raw_message
 
 
 @pytest.fixture
 def create_message():
     """Factory fixture to create ISO8583Message objects"""
+
     def _create_message(msg_type: str, test_messages: dict) -> ISO8583Message:
         msg_data = test_messages[msg_type]
         return ISO8583Message(
-            mti=msg_data['mti'],
-            fields=msg_data['fields'].copy(),  # Create a copy to avoid modifying original
-            network=msg_data.get('network')
+            mti=msg_data["mti"],
+            fields=msg_data["fields"].copy(),  # Create a copy to avoid modifying original
+            network=msg_data.get("network"),
         )
+
     return _create_message
 
 
@@ -163,24 +160,28 @@ def validator():
 @pytest.fixture(scope="session")
 def load_test_message():
     """Fixture to load test messages from JSON files"""
+
     def _load_message(filename: str) -> dict:
         file_path = TEST_DATA_DIR / filename
         if not file_path.exists():
             raise FileNotFoundError(f"Test data file not found: {filename}")
         with open(file_path) as f:
             return json.load(f)
+
     return _load_message
 
 
 @pytest.fixture(scope="session")
 def load_test_config():
     """Fixture to load test configuration from YAML files"""
+
     def _load_config(filename: str) -> dict:
         file_path = TEST_DATA_DIR / filename
         if not file_path.exists():
             raise FileNotFoundError(f"Config file not found: {filename}")
         with open(file_path) as f:
             return yaml.safe_load(f)
+
     return _load_config
 
 
@@ -190,7 +191,7 @@ def valid_emv_data():
     return [
         "9F0607A0000000031010",  # Simple EMV data
         "9F0607A00000000310109F15020001",  # Multiple tags
-        "9F33036028C89F3501229F40056000F0A0019F02060000000001009F03060000000000009F1A0208409F3501229F34034203009F3704C6B1A04F"  # Complex
+        "9F33036028C89F3501229F40056000F0A0019F02060000000001009F03060000000000009F1A0208409F3501229F34034203009F3704C6B1A04F",  # Complex
     ]
 
 
@@ -202,15 +203,17 @@ def invalid_emv_data():
         "XX0607A0000000031010",  # Invalid tag
         "9F06XX",  # Invalid length
         "9F0607A0000000",  # Incomplete value
-        "9F0607A00000000310ZZ"  # Invalid value characters
+        "9F0607A00000000310ZZ",  # Invalid value characters
     ]
 
 
 @pytest.fixture
 def test_message_file(tmp_path):
     """Fixture to create temporary message files"""
+
     def _create_message_file(content: str, filename: str = "test_message.txt"):
         file_path = tmp_path / filename
         file_path.write_text(content)
         return file_path
+
     return _create_message_file

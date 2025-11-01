@@ -1,12 +1,14 @@
 # iso8583sim/cli/config.py
-from pathlib import Path
 import json
-from typing import Dict, Optional
+from pathlib import Path
+
 import typer
 from pydantic import BaseModel
 
+
 class CLIConfig(BaseModel):
     """CLI Configuration Model"""
+
     default_version: str = "1987"
     output_directory: str = "./output"
     templates_directory: str = "./templates"
@@ -17,6 +19,7 @@ class CLIConfig(BaseModel):
     default_currency: str = "840"
     default_terminal_id: str = "TEST1234"
     default_merchant_id: str = "MERCHANT123456789"
+
 
 class ConfigManager:
     def __init__(self):
