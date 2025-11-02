@@ -1,7 +1,10 @@
 # iso8583sim/core/parser.py
 
+from __future__ import annotations
+
 import logging
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from .types import (
     ISO8583_FIELDS,
@@ -15,6 +18,9 @@ from .types import (
     ParseError,
     get_field_definition,
 )
+
+if TYPE_CHECKING:
+    from .pool import MessagePool
 
 # Try to import Cython-optimized functions
 try:
@@ -39,8 +45,16 @@ class EMVTag:
 class ISO8583Parser:
     """Parser for ISO 8583 messages with network support"""
 
-    def __init__(self, version: ISO8583Version = ISO8583Version.V1987):
+    def __init__(self, version: ISO8583Version = ISO8583Version.V1987, pool: MessagePool | None = None):
+        """
+        Initialize the parser.
+
+        Args:
+            version: ISO8583 version to use
+            pool: Optional MessagePool for object reuse in high-throughput scenarios
+        """
         self.version = version
+        self._pool = pool
         self._current_position = 0
         self._raw_message = ""
         self._detected_network = None
@@ -102,18 +116,28 @@ class ISO8583Parser:
                     self.logger.error("Error parsing field %d: %s", field_number, str(e))
                     raise
 
-            # Create message object
-            message = ISO8583Message(
-                mti=mti,
-                fields=fields,
-                version=self.version,
-                network=self._detected_network,
-                raw_message=message,
-                bitmap=bitmap,
-            )
+            # Create message object (use pool if available for better performance)
+            if self._pool is not None:
+                msg = self._pool.acquire(
+                    mti=mti,
+                    fields=fields,
+                    version=self.version,
+                    network=self._detected_network,
+                    raw_message=message,
+                    bitmap=bitmap,
+                )
+            else:
+                msg = ISO8583Message(
+                    mti=mti,
+                    fields=fields,
+                    version=self.version,
+                    network=self._detected_network,
+                    raw_message=message,
+                    bitmap=bitmap,
+                )
 
             self.logger.info("Successfully parsed message")
-            return message
+            return msg
 
         except Exception as e:
             self.logger.error("Failed to parse message: %s", str(e))

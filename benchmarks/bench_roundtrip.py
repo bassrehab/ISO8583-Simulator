@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from iso8583sim.core.builder import ISO8583Builder
 from iso8583sim.core.parser import ISO8583Parser
+from iso8583sim.core.pool import MessagePool
 from iso8583sim.core.types import ISO8583Message
 from iso8583sim.core.validator import ISO8583Validator
 
@@ -136,6 +137,71 @@ def benchmark_response_flow(count: int, iterations: int = 5, warmup: int = 1) ->
     return statistics.mean(results), min(results), max(results)
 
 
+def benchmark_roundtrip_pooled(
+    count: int, iterations: int = 5, warmup: int = 1, include_validation: bool = True
+) -> tuple[float, float, float]:
+    """Benchmark roundtrip with object pooling.
+
+    Args:
+        count: Number of messages per iteration
+        iterations: Number of benchmark iterations
+        warmup: Number of warmup iterations
+        include_validation: Whether to include validation step
+
+    Returns:
+        Tuple of (mean_tps, min_tps, max_tps)
+    """
+    pool = MessagePool(size=100)
+    builder = ISO8583Builder()
+    parser = ISO8583Parser(pool=pool)
+    validator = ISO8583Validator()
+    results = []
+
+    def run_cycle(i: int):
+        # Build
+        msg = ISO8583Message(
+            mti="0100",
+            fields={
+                0: "0100",
+                2: f"411111111111{i:04d}",
+                3: "000000",
+                4: f"{(i % 100000):012d}",
+                11: f"{i % 1000000:06d}",
+                41: "TERM0001",
+                42: "MERCHANT12345  ",
+            },
+        )
+        raw = builder.build(msg)
+
+        # Parse (uses pool)
+        parsed = parser.parse(raw)
+
+        # Validate (optional)
+        if include_validation:
+            validator.validate_message(parsed)
+
+        # Release back to pool
+        pool.release(parsed)
+
+        return parsed
+
+    # Warmup
+    for _ in range(warmup):
+        for i in range(min(count, 100)):
+            run_cycle(i)
+
+    # Benchmark
+    for _ in range(iterations):
+        start = time.perf_counter()
+        for i in range(count):
+            run_cycle(i)
+        elapsed = time.perf_counter() - start
+        tps = count / elapsed
+        results.append(tps)
+
+    return statistics.mean(results), min(results), max(results)
+
+
 def run_benchmarks():
     """Run all roundtrip benchmarks."""
     print("=" * 60)
@@ -154,6 +220,10 @@ def run_benchmarks():
         # Roundtrip without validation
         mean, min_tps, max_tps = benchmark_roundtrip(size, include_validation=False)
         print(f"Build->Parse only:      {mean:>8,.0f} TPS (min: {min_tps:,.0f}, max: {max_tps:,.0f})")
+
+        # Pooled roundtrip
+        mean, min_tps, max_tps = benchmark_roundtrip_pooled(size, include_validation=True)
+        print(f"Pooled (with validate): {mean:>8,.0f} TPS (min: {min_tps:,.0f}, max: {max_tps:,.0f})")
 
         # Request/Response flow
         mean, min_tps, max_tps = benchmark_response_flow(size)
