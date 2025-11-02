@@ -5,7 +5,6 @@ import statistics
 import sys
 import time
 from pathlib import Path
-from typing import List, Tuple
 
 from conftest import generate_emv_messages, generate_test_messages
 
@@ -15,7 +14,7 @@ from iso8583sim.core.parser import ISO8583Parser
 from iso8583sim.core.types import CardNetwork
 
 
-def benchmark_parse(messages: List[str], iterations: int = 5, warmup: int = 1) -> Tuple[float, float, float]:
+def benchmark_parse(messages: list[str], iterations: int = 5, warmup: int = 1) -> tuple[float, float, float]:
     """Benchmark parsing performance.
 
     Args:

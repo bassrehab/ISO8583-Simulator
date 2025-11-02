@@ -5,7 +5,7 @@ import statistics
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -13,7 +13,7 @@ from iso8583sim.core.builder import ISO8583Builder
 from iso8583sim.core.types import ISO8583Message
 
 
-def generate_message_data(count: int) -> List[Dict[str, Any]]:
+def generate_message_data(count: int) -> list[dict[str, Any]]:
     """Generate message data for building.
 
     Args:
@@ -42,8 +42,8 @@ def generate_message_data(count: int) -> List[Dict[str, Any]]:
 
 
 def benchmark_build(
-    message_data: List[Dict[str, Any]], iterations: int = 5, warmup: int = 1
-) -> Tuple[float, float, float]:
+    message_data: list[dict[str, Any]], iterations: int = 5, warmup: int = 1
+) -> tuple[float, float, float]:
     """Benchmark building performance.
 
     Args:
@@ -76,7 +76,7 @@ def benchmark_build(
     return statistics.mean(results), min(results), max(results)
 
 
-def benchmark_create_message(count: int, iterations: int = 5, warmup: int = 1) -> Tuple[float, float, float]:
+def benchmark_create_message(count: int, iterations: int = 5, warmup: int = 1) -> tuple[float, float, float]:
     """Benchmark create_message method (includes validation).
 
     Args:

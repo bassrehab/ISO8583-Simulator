@@ -2,12 +2,12 @@
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 import typer
 
 
-def load_json_file(file_path: Path) -> Dict[str, Any]:
+def load_json_file(file_path: Path) -> dict[str, Any]:
     """Load and validate JSON file"""
     try:
         with open(file_path) as f:
@@ -18,7 +18,7 @@ def load_json_file(file_path: Path) -> Dict[str, Any]:
         raise typer.BadParameter(f"File not found: {file_path}") from None
 
 
-def save_json_file(data: Dict[str, Any], file_path: Path):
+def save_json_file(data: dict[str, Any], file_path: Path):
     """Save data to JSON file"""
     try:
         with open(file_path, "w") as f:
@@ -79,8 +79,8 @@ def validate_pan(pan: str) -> str:
 
 
 def create_template_message(
-    mti: str, pan: Optional[str] = None, amount: Optional[str] = None, terminal_id: Optional[str] = None
-) -> Dict[str, Any]:
+    mti: str, pan: str | None = None, amount: str | None = None, terminal_id: str | None = None
+) -> dict[str, Any]:
     """Create template message with common fields"""
     now = datetime.now()
 

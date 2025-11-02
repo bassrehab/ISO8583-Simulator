@@ -2,7 +2,6 @@
 
 import logging
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
 
 from .types import (
     ISO8583_FIELDS,
@@ -17,8 +16,17 @@ from .types import (
     get_field_definition,
 )
 
+# Try to import Cython-optimized functions
+try:
+    from ._bitmap import build_bitmap_fast, get_present_fields_fast  # noqa: F401
+    from ._parser_fast import parse_bitmap_fast, parse_mti_fast  # noqa: F401
 
-@dataclass
+    _USE_CYTHON = True
+except ImportError:
+    _USE_CYTHON = False
+
+
+@dataclass(slots=True)
 class EMVTag:
     """EMV Tag data structure"""
 
@@ -37,15 +45,20 @@ class ISO8583Parser:
         self._raw_message = ""
         self._detected_network = None
         self._secondary_bitmap = False
+        self._network_fields = {}  # Cache for network-specific field definitions
+        # Cache version-specific fields at init time (version doesn't change)
+        self._version_fields = VERSION_SPECIFIC_FIELDS.get(version, {})
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self.logger.debug("Initialized ISO8583Parser with version %s", version.value)
 
-    def parse(self, message: str, network: Optional[CardNetwork] = None) -> ISO8583Message:
+    def parse(self, message: str, network: CardNetwork | None = None) -> ISO8583Message:
         """Parse an ISO 8583 message string into an ISO8583Message object"""
         try:
             self._raw_message = message
             self._current_position = 0
             self._detected_network = network
+            # Cache network-specific fields for faster lookup
+            self._network_fields = NETWORK_SPECIFIC_FIELDS.get(network, {}) if network else {}
 
             # Parse MTI
             mti = self._parse_mti()
@@ -60,6 +73,10 @@ class ISO8583Parser:
             # Auto-detect network if not provided
             if not network:
                 self._detected_network = self._detect_network(message)
+                # Update cached network fields after detection
+                self._network_fields = (
+                    NETWORK_SPECIFIC_FIELDS.get(self._detected_network, {}) if self._detected_network else {}
+                )
 
             self.logger.info(
                 "Processing message for network: %s",
@@ -102,9 +119,9 @@ class ISO8583Parser:
             self.logger.error("Failed to parse message: %s", str(e))
             raise ParseError(f"Failed to parse message: {str(e)}") from e
 
-    def parse_file(self, filename: str) -> List[ISO8583Message]:
+    def parse_file(self, filename: str) -> list[ISO8583Message]:
         """Parse multiple messages from file"""
-        self.logger.info(f"Starting to parse messages from file: {filename}")
+        self.logger.info("Starting to parse messages from file: %s", filename)
         messages = []
 
         try:
@@ -115,19 +132,19 @@ class ISO8583Parser:
                         continue
 
                     try:
-                        self.logger.debug(f"Parsing message from line {line_num}")
+                        self.logger.debug("Parsing message from line %d", line_num)
                         message = self.parse(line)
                         messages.append(message)
-                        self.logger.info(f"Successfully parsed message {line_num}")
+                        self.logger.info("Successfully parsed message %d", line_num)
                     except Exception as e:
-                        self.logger.error(f"Failed to parse message at line {line_num}: {str(e)}")
+                        self.logger.error("Failed to parse message at line %d: %s", line_num, str(e))
                         raise ParseError(f"Failed to parse message at line {line_num}: {str(e)}") from e
 
-            self.logger.info(f"Successfully parsed {len(messages)} messages from file")
+            self.logger.info("Successfully parsed %d messages from file", len(messages))
             return messages
 
         except Exception as e:
-            self.logger.error(f"Error reading or parsing file: {str(e)}")
+            self.logger.error("Error reading or parsing file: %s", str(e))
             raise ParseError(f"Failed to read or parse file: {str(e)}") from e
 
     def _parse_mti(self) -> str:
@@ -164,9 +181,16 @@ class ISO8583Parser:
 
         return primary_bitmap
 
-    def _get_present_fields(self, bitmap: str) -> List[int]:
+    def _get_present_fields(self, bitmap: str) -> list[int]:
         """Get list of present fields from bitmap using optimized bit manipulation"""
         try:
+            # Use Cython-optimized version if available
+            if _USE_CYTHON:
+                raw_fields = get_present_fields_fast(bitmap)
+                # Filter to only fields that have definitions
+                return [f for f in raw_fields if self._get_field_definition(f)]
+
+            # Pure Python fallback
             # Convert hex bitmap to integer directly
             bitmap_int = int(bitmap, 16)
             bitmap_len = len(bitmap) * 4  # Each hex char = 4 bits
@@ -187,18 +211,15 @@ class ISO8583Parser:
         except ValueError:
             raise ParseError("Invalid bitmap format") from None
 
-    def _get_field_definition(self, field_number: int) -> Optional[FieldDefinition]:
+    def _get_field_definition(self, field_number: int) -> FieldDefinition | None:
         """Get field definition considering network and version"""
-        # Check network-specific definitions first
-        if self._detected_network:
-            network_fields = NETWORK_SPECIFIC_FIELDS.get(self._detected_network, {})
-            field_def = network_fields.get(field_number)
-            if field_def is not None:
-                return field_def
+        # Check cached network-specific definitions first (avoids repeated dict.get())
+        field_def = self._network_fields.get(field_number)
+        if field_def is not None:
+            return field_def
 
-        # Check version-specific variations
-        version_fields = VERSION_SPECIFIC_FIELDS.get(self.version, {})
-        field_def = version_fields.get(field_number)
+        # Check cached version-specific variations
+        field_def = self._version_fields.get(field_number)
         if field_def is not None:
             return field_def
 
@@ -208,11 +229,10 @@ class ISO8583Parser:
     def _parse_field(self, field_number: int, field_def: FieldDefinition) -> str:
         """Parse field based on its definition"""
         try:
-            # Handle network-specific fields
-            if self._detected_network:
-                network_fields = NETWORK_SPECIFIC_FIELDS.get(self._detected_network, {})
-                if field_number in network_fields:
-                    field_def = network_fields[field_number]
+            # Use cached network-specific field definition if available
+            network_field_def = self._network_fields.get(field_number)
+            if network_field_def is not None:
+                field_def = network_field_def
 
             value = self._handle_field_type(field_number, field_def)
             return self._handle_field_padding(field_number, value, field_def)
@@ -348,7 +368,7 @@ class ISO8583Parser:
         # For field 55, return the raw EMV data
         return value
 
-    def _detect_network(self, message: str) -> Optional[CardNetwork]:
+    def _detect_network(self, message: str) -> CardNetwork | None:
         """Detect card network from message contents"""
         try:
             # First look for LLVAR PAN (field 2)
@@ -382,7 +402,7 @@ class ISO8583Parser:
             return None
 
         except Exception as e:
-            self.logger.warning(f"Network detection failed: {str(e)}")
+            self.logger.warning("Network detection failed: %s", str(e))
             return None
 
     def _handle_field_padding(self, field_number: int, value: str, field_def: FieldDefinition) -> str:
@@ -494,10 +514,10 @@ class ISO8583Parser:
         try:
             return self._parse_emv_data(value)
         except Exception as e:
-            self.logger.warning(f"EMV parsing error: {str(e)}")
+            self.logger.warning("EMV parsing error: %s", str(e))
             return value
 
-    def _process_bitmap_fields(self, bitmap: str) -> List[Tuple[int, int]]:
+    def _process_bitmap_fields(self, bitmap: str) -> list[tuple[int, int]]:
         """Process bitmap and return list of (field_number, field_position) tuples"""
         bitmap_bits = bin(int(bitmap, 16))[2:].zfill(len(bitmap) * 4)
         field_positions = []

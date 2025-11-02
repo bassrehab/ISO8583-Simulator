@@ -1,7 +1,7 @@
 import code
 import readline
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 import typer
 from rich.console import Console
@@ -41,7 +41,7 @@ config_manager = ConfigManager()
 class ISO8583Shell(code.InteractiveConsole):
     """Enhanced interactive shell for ISO8583 simulation"""
 
-    def __init__(self, locals: Dict[str, Any], history_file: Path):
+    def __init__(self, locals: dict[str, Any], history_file: Path):
         super().__init__(locals)
         self.history_file = history_file
         self.console = Console()
@@ -117,8 +117,8 @@ def version():
 def parse_message(
     message: str = typer.Argument(..., help="ISO 8583 message string to parse"),
     version: str = typer.Option("1987", "--version", "-v", help="ISO 8583 version (1987, 1993, 2003)"),
-    network: Optional[str] = typer.Option(None, "--network", "-n", help="Card network (VISA, MASTERCARD, AMEX, etc.)"),
-    output: Optional[Path] = typer.Option(None, "--output", "-o", help="Output file for parsed message (JSON format)"),
+    network: str | None = typer.Option(None, "--network", "-n", help="Card network (VISA, MASTERCARD, AMEX, etc.)"),
+    output: Path | None = typer.Option(None, "--output", "-o", help="Output file for parsed message (JSON format)"),
     format: str = typer.Option("table", "--format", "-f", help="Output format (table, json, tree)"),
 ):
     """Parse an ISO 8583 message and display its contents"""
@@ -159,8 +159,8 @@ def build_message(
     mti: str = typer.Option(..., "--mti", "-m", help="Message Type Indicator"),
     fields_file: Path = typer.Option(..., "--fields", "-f", help="JSON file containing field values"),
     version: str = typer.Option("1987", "--version", "-v", help="ISO 8583 version (1987, 1993, 2003)"),
-    network: Optional[str] = typer.Option(None, "--network", "-n", help="Card network (VISA, MASTERCARD, AMEX, etc.)"),
-    output: Optional[Path] = typer.Option(None, "--output", "-o", help="Output file for built message"),
+    network: str | None = typer.Option(None, "--network", "-n", help="Card network (VISA, MASTERCARD, AMEX, etc.)"),
+    output: Path | None = typer.Option(None, "--output", "-o", help="Output file for built message"),
 ):
     """Build an ISO 8583 message from field values"""
     try:
@@ -196,7 +196,7 @@ def build_message(
 def validate_message(
     message: str = typer.Argument(..., help="ISO 8583 message to validate"),
     version: str = typer.Option("1987", "--version", "-v", help="ISO 8583 version (1987, 1993, 2003)"),
-    network: Optional[str] = typer.Option(None, "--network", "-n", help="Card network (VISA, MASTERCARD, AMEX, etc.)"),
+    network: str | None = typer.Option(None, "--network", "-n", help="Card network (VISA, MASTERCARD, AMEX, etc.)"),
 ):
     """Validate an ISO 8583 message"""
     try:
@@ -228,8 +228,8 @@ def generate_message(
     pan: str = typer.Option("4111111111111111", "--pan", "-p", help="Primary Account Number"),
     amount: str = typer.Option("000000001000", "--amount", "-a", help="Transaction amount"),
     currency: str = typer.Option("840", "--currency", "-c", help="Currency code (ISO 4217)"),
-    network: Optional[str] = typer.Option(None, "--network", "-n", help="Card network (VISA, MASTERCARD, AMEX, etc.)"),
-    output: Optional[Path] = typer.Option(None, "--output", "-o", help="Output file for generated message"),
+    network: str | None = typer.Option(None, "--network", "-n", help="Card network (VISA, MASTERCARD, AMEX, etc.)"),
+    output: Path | None = typer.Option(None, "--output", "-o", help="Output file for generated message"),
 ):
     """Generate a sample ISO 8583 message"""
     try:
