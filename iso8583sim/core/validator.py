@@ -9,6 +9,18 @@ _HEX_16_PATTERN = re.compile(r"^[0-9A-F]{16}$")
 _HEX_2_PATTERN = re.compile(r"^[0-9A-F]{2}$", re.IGNORECASE)
 _HEX_PATTERN = re.compile(r"^[0-9A-F]+$", re.IGNORECASE)
 
+# Try to import Cython-optimized functions
+try:
+    from ._validator_fast import is_alpha as _is_alpha_fast
+    from ._validator_fast import is_alphanumeric as _is_alphanumeric_fast
+    from ._validator_fast import is_numeric as _is_numeric_fast
+    from ._validator_fast import is_valid_hex as _is_valid_hex_fast
+    from ._validator_fast import validate_pan_luhn as _validate_pan_luhn_fast
+
+    _USE_CYTHON = True
+except ImportError:
+    _USE_CYTHON = False
+
 
 class ISO8583Validator:
     """Enhanced validator for ISO 8583 messages with network support"""
@@ -55,18 +67,24 @@ class ISO8583Validator:
                 if field_def.min_length and len(value) < field_def.min_length:
                     return False, f"Field {field_number} length cannot be less than {field_def.min_length}"
 
-            # Type-specific validation
+            # Type-specific validation (use Cython if available)
             if field_def.field_type == FieldType.NUMERIC:
-                if not value.isdigit():
+                is_valid = _is_numeric_fast(value) if _USE_CYTHON else value.isdigit()
+                if not is_valid:
                     return False, f"Field {field_number} must contain only digits"
             elif field_def.field_type == FieldType.BINARY:
-                if not all(c in "0123456789ABCDEF" for c in value.upper()):
+                is_valid = (
+                    _is_valid_hex_fast(value) if _USE_CYTHON else all(c in "0123456789ABCDEFabcdef" for c in value)
+                )
+                if not is_valid:
                     return False, f"Field {field_number} must be valid hexadecimal"
             elif field_def.field_type == FieldType.ALPHA:
-                if not value.replace(" ", "").isalpha():
+                is_valid = _is_alpha_fast(value) if _USE_CYTHON else value.replace(" ", "").isalpha()
+                if not is_valid:
                     return False, f"Field {field_number} must contain only letters"
             elif field_def.field_type == FieldType.ALPHANUMERIC:
-                if not value.replace(" ", "").isalnum():
+                is_valid = _is_alphanumeric_fast(value) if _USE_CYTHON else value.replace(" ", "").isalnum()
+                if not is_valid:
                     return False, f"Field {field_number} must contain only letters and numbers"
 
             # Field passed all validations
@@ -247,6 +265,11 @@ class ISO8583Validator:
         Returns:
             True if valid, False otherwise
         """
+        # Use Cython-optimized version if available
+        if _USE_CYTHON:
+            return _validate_pan_luhn_fast(pan)
+
+        # Pure Python fallback
         if not pan.isdigit():
             return False
 
@@ -267,9 +290,9 @@ class ISO8583Validator:
 
     def _validate_visa_field_44(self, value: str) -> bool:
         """Validate VISA-specific field 44 format"""
-        if not all(c in "0123456789ABCDEF" for c in value):
-            return False
-        return True
+        if _USE_CYTHON:
+            return _is_valid_hex_fast(value)
+        return all(c in "0123456789ABCDEFabcdef" for c in value)
 
     def validate_network_compliance(self, message: ISO8583Message) -> list[str]:
         """Validate network-specific requirements"""

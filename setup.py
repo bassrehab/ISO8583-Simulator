@@ -19,6 +19,7 @@ def get_extensions():
         [
             "iso8583sim/core/_bitmap.pyx",
             "iso8583sim/core/_parser_fast.pyx",
+            "iso8583sim/core/_validator_fast.pyx",
         ],
         compiler_directives={
             "language_level": "3",
