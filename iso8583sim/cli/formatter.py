@@ -1,6 +1,6 @@
 # iso8583sim/cli/formatter.py
 import json
-from typing import Any, Dict, List
+from typing import Any
 
 from rich.console import Console
 from rich.panel import Panel
@@ -13,7 +13,7 @@ class CLIFormatter:
     def __init__(self):
         self.console = Console()
 
-    def format_message(self, message: Dict[str, Any]) -> Panel:
+    def format_message(self, message: dict[str, Any]) -> Panel:
         """Format ISO message for display"""
         content = []
         content.append(f"[cyan]MTI:[/] {message.get('mti', 'N/A')}")
@@ -27,7 +27,7 @@ class CLIFormatter:
 
         return Panel("\n".join(content), title="ISO 8583 Message", border_style="cyan")
 
-    def format_validation_results(self, errors: List[str]) -> Panel:
+    def format_validation_results(self, errors: list[str]) -> Panel:
         """Format validation results"""
         if not errors:
             return Panel("[green]✓ Message is valid[/]", title="Validation Results", border_style="green")
@@ -38,7 +38,7 @@ class CLIFormatter:
 
         return Panel("\n".join(content), title="Validation Results", border_style="red")
 
-    def format_field_table(self, fields: Dict[int, str]) -> Table:
+    def format_field_table(self, fields: dict[int, str]) -> Table:
         """Create table of message fields"""
         table = Table(title="Message Fields")
         table.add_column("Field Number", style="cyan")
@@ -51,7 +51,7 @@ class CLIFormatter:
 
         return table
 
-    def format_tree_view(self, message: Dict[str, Any]) -> Tree:
+    def format_tree_view(self, message: dict[str, Any]) -> Tree:
         """Create tree view of message structure"""
         tree = Tree("ISO 8583 Message")
         tree.add(f"MTI: {message.get('mti', 'N/A')}")
@@ -98,12 +98,12 @@ class CLIFormatter:
         """Print info message"""
         self.console.print(f"[blue]i[/] {message}")
 
-    def format_json(self, data: Dict[str, Any]) -> str:
+    def format_json(self, data: dict[str, Any]) -> str:
         """Format data as colored JSON"""
         # Just return the formatted JSON string
         return json.dumps(data, indent=2)
 
-    def print_json(self, data: Dict[str, Any]):
+    def print_json(self, data: dict[str, Any]):
         """Print data as syntax-highlighted JSON"""
         # Use Syntax for display but don't return it
         syntax = Syntax(json.dumps(data, indent=2), "json", theme="monokai", line_numbers=True)

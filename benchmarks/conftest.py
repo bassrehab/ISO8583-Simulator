@@ -2,7 +2,6 @@
 
 import sys
 from pathlib import Path
-from typing import List
 
 # Add parent to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -11,7 +10,7 @@ from iso8583sim.core.builder import ISO8583Builder
 from iso8583sim.core.types import CardNetwork, ISO8583Message
 
 
-def generate_test_messages(count: int, network: CardNetwork = None) -> List[str]:
+def generate_test_messages(count: int, network: CardNetwork = None) -> list[str]:
     """Generate a batch of test messages for benchmarking.
 
     Args:
@@ -67,7 +66,7 @@ def generate_test_messages(count: int, network: CardNetwork = None) -> List[str]
     return messages
 
 
-def generate_emv_messages(count: int) -> List[str]:
+def generate_emv_messages(count: int) -> list[str]:
     """Generate messages with EMV data for benchmarking."""
     builder = ISO8583Builder()
     messages = []

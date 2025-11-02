@@ -5,7 +5,6 @@ import statistics
 import sys
 import time
 from pathlib import Path
-from typing import Tuple
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -17,7 +16,7 @@ from iso8583sim.core.validator import ISO8583Validator
 
 def benchmark_roundtrip(
     count: int, iterations: int = 5, warmup: int = 1, include_validation: bool = True
-) -> Tuple[float, float, float]:
+) -> tuple[float, float, float]:
     """Benchmark full roundtrip performance.
 
     Args:
@@ -76,7 +75,7 @@ def benchmark_roundtrip(
     return statistics.mean(results), min(results), max(results)
 
 
-def benchmark_response_flow(count: int, iterations: int = 5, warmup: int = 1) -> Tuple[float, float, float]:
+def benchmark_response_flow(count: int, iterations: int = 5, warmup: int = 1) -> tuple[float, float, float]:
     """Benchmark request/response flow.
 
     Simulates: build request -> parse -> create response -> build response

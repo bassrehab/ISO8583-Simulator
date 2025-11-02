@@ -3,7 +3,6 @@
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
-from typing import Dict, List, Optional
 
 
 class ISO8583Version(Enum):
@@ -78,17 +77,17 @@ class MessageOrigin(Enum):
     OTHER_REPEAT = "5"  # Other repeat
 
 
-@dataclass
+@dataclass(slots=True)
 class FieldDefinition:
     """Definition of an ISO 8583 field"""
 
     field_type: FieldType  # Data type of the field
     max_length: int  # Maximum length in characters/digits
     description: str  # Field description
-    field_number: Optional[int] = None  # Field number in ISO8583 message
+    field_number: int | None = None  # Field number in ISO8583 message
     encoding: str = "ascii"  # Character encoding
-    min_length: Optional[int] = None  # Minimum length (if different from max)
-    padding_char: Optional[str] = None  # Character used for padding
+    min_length: int | None = None  # Minimum length (if different from max)
+    padding_char: str | None = None  # Character used for padding
     padding_direction: str = "left"  # Direction of padding ('left' or 'right')
 
     def __post_init__(self):
@@ -125,16 +124,16 @@ class FieldDefinition:
             raise ValueError("encoding must be a string")
 
 
-@dataclass
+@dataclass(slots=True)
 class ISO8583Message:
     """Represents a complete ISO 8583 message"""
 
     mti: str  # Message Type Indicator
-    fields: Dict[int, str]  # Message fields
+    fields: dict[int, str]  # Message fields
     version: ISO8583Version = ISO8583Version.V1987  # Protocol version
-    network: Optional[CardNetwork] = None  # Card network
-    raw_message: Optional[str] = None  # Raw message string
-    bitmap: Optional[str] = None  # Message bitmap
+    network: CardNetwork | None = None  # Card network
+    raw_message: str | None = None  # Raw message string
+    bitmap: str | None = None  # Message bitmap
 
     def __post_init__(self):
         """Initialize fields after creation"""
@@ -187,7 +186,7 @@ class BuildError(ISO8583Error):
 
 
 # Standard ISO8583 field definitions - Core Fields (0-49)
-ISO8583_FIELDS: Dict[int, FieldDefinition] = {
+ISO8583_FIELDS: dict[int, FieldDefinition] = {
     # Message Header Fields (0-9)
     0: FieldDefinition(
         field_type=FieldType.NUMERIC, max_length=4, description="Message Type Indicator (MTI)", padding_char=None
@@ -1333,8 +1332,8 @@ VERSION_SPECIFIC_FIELDS = {
 
 @lru_cache(maxsize=512)
 def get_field_definition(
-    field_number: int, network: Optional[CardNetwork] = None, version: ISO8583Version = ISO8583Version.V1987
-) -> Optional[FieldDefinition]:
+    field_number: int, network: CardNetwork | None = None, version: ISO8583Version = ISO8583Version.V1987
+) -> FieldDefinition | None:
     """
     Get field definition considering network and version specifics.
 
@@ -1407,7 +1406,7 @@ def is_valid_mti(mti: str) -> bool:
     return True
 
 
-def get_network_required_fields(network: CardNetwork) -> List[int]:
+def get_network_required_fields(network: CardNetwork) -> list[int]:
     """
     Get list of required fields for a specific network.
 
@@ -1420,7 +1419,7 @@ def get_network_required_fields(network: CardNetwork) -> List[int]:
     return NETWORK_REQUIRED_FIELDS.get(network, [])
 
 
-def get_field_format_pattern(network: CardNetwork, field_number: int) -> Optional[str]:
+def get_field_format_pattern(network: CardNetwork, field_number: int) -> str | None:
     """
     Get network-specific field format pattern.
 

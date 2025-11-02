@@ -1,7 +1,6 @@
 # iso8583sim/core/builder.py
 
 from datetime import datetime
-from typing import Dict, Optional
 
 from .types import (
     BuildError,
@@ -173,7 +172,7 @@ class ISO8583Builder:
         except Exception as e:
             raise BuildError(f"Failed to build field {field_number}: {str(e)}") from e
 
-    def _build_bitmap(self, fields: Dict[int, str]) -> str:
+    def _build_bitmap(self, fields: dict[int, str]) -> str:
         """Build bitmap from present fields"""
         try:
             # Initialize bitmap arrays
@@ -204,7 +203,7 @@ class ISO8583Builder:
         except Exception as e:
             raise BuildError(f"Failed to build bitmap: {str(e)}") from e
 
-    def create_message(self, mti: str, fields: Dict[int, str]) -> ISO8583Message:
+    def create_message(self, mti: str, fields: dict[int, str]) -> ISO8583Message:
         """Create an ISO8583Message object with validation"""
         message = ISO8583Message(mti=mti, fields=fields, version=self.version)
 
@@ -219,7 +218,7 @@ class ISO8583Builder:
 
         return message
 
-    def create_response(self, request: ISO8583Message, response_fields: Dict[int, str]) -> ISO8583Message:
+    def create_response(self, request: ISO8583Message, response_fields: dict[int, str]) -> ISO8583Message:
         """Create a response message based on a request message"""
         # Create response MTI
         req_mti = request.mti
@@ -244,7 +243,7 @@ class ISO8583Builder:
         return self.create_message(response_mti, response_fields)
 
     def create_reversal(
-        self, original: ISO8583Message, additional_fields: Optional[Dict[int, str]] = None
+        self, original: ISO8583Message, additional_fields: dict[int, str] | None = None
     ) -> ISO8583Message:
         """Create a reversal message"""
         # Create reversal MTI
@@ -278,7 +277,7 @@ class ISO8583Builder:
         return self.create_message(rev_mti, reversal_fields)
 
     def create_network_management_message(
-        self, message_type: str, network: Optional[CardNetwork] = None
+        self, message_type: str, network: CardNetwork | None = None
     ) -> ISO8583Message:
         """Create a network management message"""
         fields = {
@@ -298,7 +297,7 @@ class ISO8583Builder:
 
         return self.create_message("0800", fields)
 
-    def build_emv_data(self, emv_tags: Dict[str, str]) -> str:
+    def build_emv_data(self, emv_tags: dict[str, str]) -> str:
         """Build EMV data field (field 55) from tags"""
         result = []
         for tag, value in sorted(emv_tags.items()):

@@ -2,9 +2,14 @@
 __pycache__/
 *.py[cod]
 *.class
-*.so
 .Python
 build/
+
+# Cython
+*.so
+*.c
+iso8583sim/core/_bitmap.c
+iso8583sim/core/_parser_fast.c
 develop-eggs/
 dist/
 downloads/
@@ -35,6 +40,7 @@ env/
 .coverage
 htmlcov/
 .pytest_cache/
+test-results.xml
 
 # Distribution
 dist/
