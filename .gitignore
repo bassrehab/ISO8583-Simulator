@@ -10,6 +10,7 @@ build/
 *.c
 iso8583sim/core/_bitmap.c
 iso8583sim/core/_parser_fast.c
+iso8583sim/core/_validator_fast.c
 develop-eggs/
 dist/
 downloads/
