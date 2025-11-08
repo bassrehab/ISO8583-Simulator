@@ -393,21 +393,16 @@ def validate(message: ISO8583Message | str) -> None:
     if isinstance(message, str):
         message = _parser.parse(message)
 
-    result = _validator.validate_message(message)
+    errors = _validator.validate_message(message)
 
     print("Validation Result:")
     print("-" * 40)
-    print(f"Valid: {'YES' if result.is_valid else 'NO'}")
+    print(f"Valid: {'YES' if not errors else 'NO'}")
 
-    if result.errors:
+    if errors:
         print("\nErrors:")
-        for error in result.errors:
+        for error in errors:
             print(f"  - {error}")
-
-    if result.warnings:
-        print("\nWarnings:")
-        for warning in result.warnings:
-            print(f"  - {warning}")
 
 
 def explain_emv(emv_hex: str) -> None:
