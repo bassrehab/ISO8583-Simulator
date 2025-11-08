@@ -165,26 +165,25 @@ class ISO8583Parser:
         return primary_bitmap
 
     def _get_present_fields(self, bitmap: str) -> List[int]:
-        """Get list of present fields from bitmap"""
+        """Get list of present fields from bitmap using optimized bit manipulation"""
         try:
-            # Convert hex bitmap to binary string
-            bitmap_bits = ""
-            for hex_char in bitmap:
-                # Convert each hex character to 4 bits
-                bits = bin(int(hex_char, 16))[2:].zfill(4)
-                bitmap_bits += bits
+            # Convert hex bitmap to integer directly
+            bitmap_int = int(bitmap, 16)
+            bitmap_len = len(bitmap) * 4  # Each hex char = 4 bits
 
-            # Find all set bits
+            # Find all set bits using bit manipulation
             present_fields = []
-            for i in range(len(bitmap_bits)):
-                if bitmap_bits[i] == "1":
-                    field_number = i + 1
-                    if field_number not in [1, 65]:  # Skip bitmap indicators
-                        field_def = self._get_field_definition(field_number)
-                        if field_def:
+            for bit_pos in range(bitmap_len):
+                # Check if bit is set (MSB first)
+                if bitmap_int & (1 << (bitmap_len - 1 - bit_pos)):
+                    field_number = bit_pos + 1
+                    # Skip bitmap indicators (field 1 for secondary, field 65 for tertiary)
+                    if field_number not in (1, 65):
+                        # Only add if field definition exists
+                        if self._get_field_definition(field_number):
                             present_fields.append(field_number)
 
-            return sorted(present_fields)
+            return present_fields  # Already in order, no need to sort
         except ValueError:
             raise ParseError("Invalid bitmap format") from None
 

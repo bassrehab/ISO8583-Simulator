@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from enum import Enum
+from functools import lru_cache
 from typing import Dict, List, Optional
 
 
@@ -1330,6 +1331,7 @@ VERSION_SPECIFIC_FIELDS = {
 # Helper Functions
 
 
+@lru_cache(maxsize=512)
 def get_field_definition(
     field_number: int, network: Optional[CardNetwork] = None, version: ISO8583Version = ISO8583Version.V1987
 ) -> Optional[FieldDefinition]:
@@ -1348,6 +1350,8 @@ def get_field_definition(
     1. Network-specific definition
     2. Version-specific definition
     3. Standard field definition
+
+    Note: Results are cached for performance (lru_cache with 512 entries).
     """
     # Check network-specific fields first
     if network and network in NETWORK_SPECIFIC_FIELDS:
