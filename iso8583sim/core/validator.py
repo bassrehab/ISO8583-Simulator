@@ -5,6 +5,11 @@ from typing import List, Optional, Tuple
 
 from .types import CardNetwork, FieldDefinition, FieldType, ISO8583Message, ISO8583Version, get_field_definition
 
+# Pre-compiled regex patterns for performance
+_HEX_16_PATTERN = re.compile(r"^[0-9A-F]{16}$")
+_HEX_2_PATTERN = re.compile(r"^[0-9A-F]{2}$", re.IGNORECASE)
+_HEX_PATTERN = re.compile(r"^[0-9A-F]+$", re.IGNORECASE)
+
 
 class ISO8583Validator:
     """Enhanced validator for ISO 8583 messages with network support"""
@@ -302,7 +307,7 @@ class ISO8583Validator:
         # Check VISA PIN block format
         if 52 in message.fields:
             pin_block = message.fields[52]
-            if not re.match(r"^[0-9A-F]{16}$", pin_block):
+            if not _HEX_16_PATTERN.match(pin_block):
                 errors.append("Invalid VISA PIN block format")
 
         # Check VISA CVV2 format
@@ -348,7 +353,7 @@ class ISO8583Validator:
 
                 # Read first byte of tag
                 tag_byte1 = emv_data[position : position + 2]
-                if not re.match(r"^[0-9A-F]{2}$", tag_byte1.upper()):
+                if not _HEX_2_PATTERN.match(tag_byte1):
                     errors.append(f"Invalid tag format: {tag_byte1}")
                     break
                 position += 2
@@ -361,7 +366,7 @@ class ISO8583Validator:
                         errors.append(f"Incomplete multi-byte tag starting with {tag_byte1}")
                         break
                     tag_byte2 = emv_data[position : position + 2]
-                    if not re.match(r"^[0-9A-F]{2}$", tag_byte2.upper()):
+                    if not _HEX_2_PATTERN.match(tag_byte2):
                         errors.append(f"Invalid second byte of tag: {tag_byte2}")
                         break
                     tag = tag_byte1 + tag_byte2
@@ -389,7 +394,7 @@ class ISO8583Validator:
                     break
 
                 value = emv_data[position : position + value_length]
-                if not re.match(f"^[0-9A-F]{{{value_length}}}$", value.upper()):
+                if len(value) != value_length or not _HEX_PATTERN.match(value):
                     errors.append(f"Invalid value format for tag {tag}")
                     break
 
@@ -427,7 +432,7 @@ class ISO8583Validator:
             )
 
         # Check type compatibility
-        if field_def.field_type == FieldType.BINARY and not re.match(r"^[0-9A-F]+$", value):
+        if field_def.field_type == FieldType.BINARY and not _HEX_PATTERN.match(value):
             errors.append(f"Field {field_number} must be hexadecimal " f"in version {version.value}")
 
         # Version-specific validations

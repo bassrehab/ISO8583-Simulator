@@ -1,70 +1,79 @@
-# ISO8583 Simulator - Baseline Performance
+# ISO8583 Simulator - Performance Benchmarks
 
-**Date:** 2025-10-04 (logical)
+**Date:** 2025-11-01 (v0.3.0 optimizations)
 **System:** macOS 15.7.2 arm64, Python 3.12.6, Apple Silicon
 
 ## Summary
 
-| Operation | TPS | Notes |
-|-----------|-----|-------|
-| Parse (basic) | ~100,000 | No network validation |
-| Parse (VISA) | ~65,000 | With network-specific handling |
-| Parse (EMV) | ~104,000 | With EMV TLV data |
-| Build | ~143,000 | Message construction only |
-| Build + Validate | ~105,000 | create_message() |
-| Roundtrip (full) | ~45,000 | Build → Parse → Validate |
-| Roundtrip (no validate) | ~54,000 | Build → Parse |
-| Request/Response | ~25,000 | Full auth flow simulation |
+| Operation | v0.2.0 TPS | v0.3.0 TPS | Improvement |
+|-----------|------------|------------|-------------|
+| Parse (basic) | ~95,000 | ~105,000 | +10% |
+| Parse (VISA) | ~64,000 | ~75,000 | +17% |
+| Parse (EMV) | ~104,000 | ~113,000 | +9% |
+| Build | ~143,000 | ~150,000 | +5% |
+| Build + Validate | ~106,000 | ~116,000 | +9% |
+| Roundtrip (full) | ~45,000 | ~49,000 | +10% |
+| Roundtrip (no validate) | ~54,000 | ~58,000 | +7% |
+| Request/Response | ~25,000 | ~27,000 | +7% |
 
-## Detailed Results
+## Optimizations Applied (v0.3.0)
+
+1. **Field definition caching** - `@lru_cache(maxsize=512)` on `get_field_definition()`
+2. **Pre-compiled regex patterns** - Module-level compiled patterns for hex validation
+3. **Optimized bitmap parsing** - Direct integer bit manipulation instead of string operations
+
+## Detailed Results (v0.3.0)
 
 ### Parser Benchmarks
 
 ```
 --- Batch size: 10,000 messages ---
-Basic messages:      95,442 TPS (min: 92,614, max: 96,817)
-VISA messages:       64,278 TPS (min: 55,135, max: 67,085)
-EMV messages:       104,278 TPS (min: 102,970, max: 105,372)
+Basic messages:     104,608 TPS (min: 90,815, max: 110,581)
+VISA messages:       74,979 TPS (min: 70,357, max: 78,584)
+EMV messages:       113,318 TPS (min: 108,125, max: 114,726)
 ```
 
 ### Builder Benchmarks
 
 ```
 --- Batch size: 10,000 messages ---
-build():             143,033 TPS (min: 140,255, max: 144,797)
-create_message():    105,781 TPS (min: 85,416, max: 112,562)
+build():             150,107 TPS (min: 146,798, max: 151,702)
+create_message():    115,629 TPS (min: 113,990, max: 116,608)
 ```
 
 ### Roundtrip Benchmarks
 
 ```
 --- Batch size: 10,000 messages ---
-Build->Parse->Validate:   44,548 TPS (min: 44,054, max: 45,012)
-Build->Parse only:        54,018 TPS (min: 53,575, max: 54,244)
-Request->Response flow:   25,264 TPS (min: 24,998, max: 25,393)
+Build->Parse->Validate:   49,163 TPS (min: 47,115, max: 49,820)
+Build->Parse only:        57,659 TPS (min: 54,004, max: 59,554)
+Request->Response flow:   26,981 TPS (min: 26,866, max: 27,099)
 ```
 
-## Analysis
+## Targets vs Actual
 
-### Current State
-- **Parser** already exceeds 100k TPS target for basic messages
-- **Builder** exceeds 100k TPS target
-- **Roundtrip** at ~45k TPS is close to 50k target
-- **VISA-specific parsing** slower due to network validation overhead
+| Target | v0.2.0 | v0.3.0 | Status |
+|--------|--------|--------|--------|
+| 100k TPS generation | 143k | 150k | ✅ Exceeded |
+| 50k TPS processing | 45k | 49k | 🟡 98% of target |
 
-### Optimization Opportunities
-1. **Network validation** adds ~35% overhead (100k → 65k TPS)
-2. **Validation step** adds ~20% overhead to roundtrip (54k → 45k TPS)
-3. **Response creation** is the bottleneck in request/response flow
+## Previous Baseline (v0.2.0)
 
-### Targets vs Actual
-| Target | Current | Gap |
-|--------|---------|-----|
-| 100k TPS generation | 143k TPS | ✅ Exceeded |
-| 50k TPS processing | 45k TPS | 10% below target |
+```
+--- Batch size: 10,000 messages ---
+Basic messages:      95,442 TPS
+VISA messages:       64,278 TPS
+EMV messages:       104,278 TPS
+build():            143,033 TPS
+create_message():   105,781 TPS
+Build->Parse->Validate:   44,548 TPS
+Build->Parse only:        54,018 TPS
+Request->Response flow:   25,264 TPS
+```
 
-## Next Steps
-1. Profile VISA parsing to identify validation hotspots
-2. Optimize validation for 2-3x improvement
-3. Cache field definitions to reduce lookup overhead
-4. Consider lazy validation for high-throughput scenarios
+## Future Optimization Opportunities
+
+1. **Lazy logging** - Check log level before formatting strings
+2. **`__slots__`** - Add to dataclasses for memory efficiency (requires Python 3.10+)
+3. **memoryview** - Zero-copy parsing for large messages
+4. **Cython** - Compile hot paths for 2-5x additional speedup
