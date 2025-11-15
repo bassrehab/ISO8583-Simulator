@@ -28,6 +28,7 @@ wheels/
 
 # Virtual Environment
 venv/
+.venv/
 ENV/
 env/
 
@@ -51,3 +52,7 @@ build/
 # Documentation
 docs/_build/
 /_dev/
+
+# Jupyter
+.ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/

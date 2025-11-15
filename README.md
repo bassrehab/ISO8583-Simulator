@@ -1,91 +1,144 @@
 # ISO8583 Simulator
 
-A modern, hybrid ISO 8583 message simulator with both CLI and web interfaces for financial message testing and simulation.
+A modern, high-performance ISO 8583 message simulator with CLI, Python SDK, and interactive Jupyter notebooks.
 
 ## Features
 
 - **Message Handling**:
-  - Parse ISO 8583 messages
-  - Build ISO 8583 messages
+  - Parse ISO 8583 messages (180k+ TPS with Cython)
+  - Build ISO 8583 messages (150k+ TPS)
   - Validate message structure and content
-  - Support for different ISO versions (1987, 1993, 2003)
+  - Support for ISO versions (1987, 1993, 2003)
+
+- **Network Support**:
+  - VISA, Mastercard, AMEX, Discover, JCB, UnionPay
+  - Network-specific field validation
+  - EMV/chip card data handling (Field 55)
 
 - **Multiple Interfaces**:
-  - Command Line Interface (CLI) for automation and scripting
-  - Web Interface for interactive testing (Coming Soon)
+  - Command Line Interface (CLI)
   - Python SDK for programmatic usage
+  - Interactive Jupyter notebooks
 
-- **Advanced Features**:
-  - Transaction simulation (Sale, Void, Reversal, Authorization)
-  - Real-time message validation
-  - Custom field definitions
-  - Configurable message templates
-  - Test scenario generation
-  - Rich output formatting
+- **Performance Optimized**:
+  - Optional Cython extensions for 2x speedup
+  - Object pooling for high-throughput scenarios
+  - See [Performance Guide](docs/performance.md)
 
 ## Installation
 
 ```bash
 pip install iso8583sim
+
+# For Cython performance extensions
+pip install iso8583sim[perf]
+python setup.py build_ext --inplace
 ```
 
 ## Quick Start
 
-### CLI Usage
-
-1. Parse an ISO 8583 message:
-```bash
-iso8583sim parse "0100..." --version 1987 --output parsed.json
-```
-
-2. Build a message:
-```bash
-iso8583sim build --mti 0100 --fields fields.json --output message.txt
-```
-
-3. Validate a message:
-```bash
-iso8583sim validate "0100..."
-```
-
-4. Generate sample messages:
-```bash
-iso8583sim generate --type auth --pan 4111111111111111 --amount 000000001000
-```
-
-5. Start interactive shell:
-```bash
-iso8583sim shell
-```
-
-### Python SDK Usage
+### Python SDK
 
 ```python
-from iso8583sim.core import ISO8583Parser, ISO8583Builder, ISO8583Validator
+from iso8583sim.core.parser import ISO8583Parser
+from iso8583sim.core.builder import ISO8583Builder
+from iso8583sim.core.validator import ISO8583Validator
+from iso8583sim.core.types import ISO8583Message
 
-# Parse message
-parser = ISO8583Parser()
-message = parser.parse("0100...")
-
-# Build message
+# Build a message
 builder = ISO8583Builder()
-result = builder.build(message)
+message = ISO8583Message(
+    mti="0100",
+    fields={
+        0: "0100",
+        2: "4111111111111111",
+        3: "000000",
+        4: "000000001000",
+        11: "123456",
+        41: "TERM0001",
+        42: "MERCHANT123456 ",
+    }
+)
+raw = builder.build(message)
 
-# Validate message
+# Parse a message
+parser = ISO8583Parser()
+parsed = parser.parse(raw)
+
+# Validate a message
 validator = ISO8583Validator()
-errors = validator.validate_message(message)
+errors = validator.validate_message(parsed)
 ```
 
-## Configuration
+### CLI Usage
 
-The simulator can be configured through:
-- Command line arguments
-- Configuration file (`~/.config/iso8583sim/config.json`)
-- Environment variables
+```bash
+# Parse a message
+iso8583sim parse "0100..." --version 1987
+
+# Build a message
+iso8583sim build --mti 0100 --fields fields.json
+
+# Validate a message
+iso8583sim validate "0100..."
+
+# Generate sample messages
+iso8583sim generate --type auth --pan 4111111111111111 --amount 1000
+```
+
+## Interactive Notebooks
+
+Learn ISO 8583 with our Jupyter notebooks:
+
+| Notebook | Description |
+|----------|-------------|
+| [01_getting_started.ipynb](notebooks/01_getting_started.ipynb) | Basic concepts and quick start |
+| [02_parsing_messages.ipynb](notebooks/02_parsing_messages.ipynb) | Deep dive into message parsing |
+| [03_building_messages.ipynb](notebooks/03_building_messages.ipynb) | Building various message types |
+| [04_network_specifics.ipynb](notebooks/04_network_specifics.ipynb) | VISA, Mastercard, and other networks |
+| [05_emv_data.ipynb](notebooks/05_emv_data.ipynb) | Working with EMV/chip card data |
+| [06_benchmarking.ipynb](notebooks/06_benchmarking.ipynb) | Performance testing and benchmarks |
+
+Run locally:
+```bash
+pip install jupyter
+jupyter notebook notebooks/
+```
+
+## Performance
+
+Benchmarks on Apple Silicon (M-series), Python 3.12:
+
+| Operation | Pure Python | With Cython |
+|-----------|-------------|-------------|
+| Parse | ~105k TPS | ~182k TPS |
+| Build | ~150k TPS | ~150k TPS |
+| Roundtrip | ~49k TPS | ~63k TPS |
+
+See [benchmarks/BASELINE.md](benchmarks/BASELINE.md) for detailed results.
 
 ## Documentation
 
-For detailed documentation, please visit [documentation link].
+- [Performance Guide](docs/performance.md) - Optimization techniques and configuration
+- [API Reference](docs/) - Detailed API documentation
+
+## Development
+
+```bash
+# Clone and setup
+git clone https://github.com/anthropics/iso8583sim.git
+cd iso8583sim
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+
+# Run tests
+pytest
+
+# Run benchmarks
+python benchmarks/bench_parser.py
+python benchmarks/bench_roundtrip.py
+```
 
 ## Contributing
 
@@ -93,20 +146,8 @@ For detailed documentation, please visit [documentation link].
 2. Create your feature branch (`git checkout -b feature/my-feature`)
 3. Commit your changes (`git commit -am 'Add new feature'`)
 4. Push to the branch (`git push origin feature/my-feature`)
-5. Create a new Pull Request
-
-## Testing
-
-```bash
-pytest tests/
-```
+5. Create a Pull Request
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-
-- Original ISO 8583 Simulator project that inspired this modernization
-- ISO 8583 specification and documentation
-- Financial messaging standards community
+MIT License - see [LICENSE](LICENSE) for details.
