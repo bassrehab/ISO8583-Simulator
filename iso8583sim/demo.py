@@ -146,9 +146,8 @@ def explain_field(field_number: int, value: str | None = None) -> None:
         field_number: The field number to explain
         value: Optional field value to interpret
     """
-    try:
-        field_def = get_field_definition(field_number)
-    except KeyError:
+    field_def = get_field_definition(field_number)
+    if field_def is None:
         print(f"Field {field_number}: Unknown field")
         return
 
