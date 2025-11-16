@@ -57,6 +57,25 @@ dev = [
 perf = [
     "cython>=3.0.0",
 ]
+# LLM providers for AI-powered features
+llm = [
+    "anthropic>=0.40.0",
+    "openai>=1.50.0",
+    "google-generativeai>=0.8.0",
+    "ollama>=0.4.0",
+]
+anthropic = [
+    "anthropic>=0.40.0",
+]
+openai = [
+    "openai>=1.50.0",
+]
+google = [
+    "google-generativeai>=0.8.0",
+]
+ollama = [
+    "ollama>=0.4.0",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
