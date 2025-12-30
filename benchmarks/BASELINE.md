@@ -1,6 +1,6 @@
 # ISO8583 Simulator - Performance Benchmarks
 
-**Date:** 2025-11-01 (v0.3.0 optimizations + Cython)
+**Date:** 2025-11-02 (v0.3.0 final)
 **System:** macOS 15.7.2 arm64, Python 3.12.6, Apple Silicon
 
 ## Summary
@@ -11,9 +11,9 @@
 | Parse (VISA) | ~64,000 | ~75,000 | ~121,000 | +89% |
 | Parse (EMV) | ~104,000 | ~113,000 | ~197,000 | +89% |
 | Build | ~143,000 | ~150,000 | ~150,000 | +5% |
-| Build + Validate | ~106,000 | ~116,000 | ~116,000 | +9% |
-| Roundtrip (full) | ~45,000 | ~49,000 | ~65,000 | +44% |
-| Roundtrip (no validate) | ~54,000 | ~58,000 | ~81,000 | +50% |
+| Roundtrip (full) | ~45,000 | ~49,000 | ~63,000 | +40% |
+| Roundtrip (no validate) | ~54,000 | ~58,000 | ~78,000 | +44% |
+| Pooled roundtrip | - | - | ~63,000 | N/A |
 | Request/Response | ~25,000 | ~27,000 | ~32,000 | +28% |
 
 ## Optimizations Applied (v0.3.0)
@@ -29,8 +29,12 @@
 ### Phase 2: Cython Compilation
 7. **Compiled bitmap parsing** - `_bitmap.pyx` with optimized bit manipulation
 8. **Compiled field parsing** - `_parser_fast.pyx` with C-level string operations
+9. **Compiled validation** - `_validator_fast.pyx` with Luhn algorithm and string checks
 
-## Detailed Results (v0.3.0 + Cython)
+### Phase 3: Object Pooling
+10. **MessagePool** - Thread-safe object pool for high-throughput scenarios
+
+## Detailed Results (v0.3.0 Final)
 
 ### Parser Benchmarks
 
@@ -45,9 +49,10 @@ EMV messages:       196,828 TPS (min: 190,087, max: 200,059)
 
 ```
 --- Batch size: 10,000 messages ---
-Build->Parse->Validate:   64,994 TPS (min: 63,751, max: 65,459)
-Build->Parse only:        81,089 TPS (min: 80,475, max: 81,894)
-Request->Response flow:   32,122 TPS (min: 31,684, max: 32,383)
+Build->Parse->Validate:   62,752 TPS (min: 61,159, max: 63,774)
+Build->Parse only:        78,376 TPS (min: 76,552, max: 79,410)
+Pooled (with validate):   62,858 TPS (min: 62,184, max: 63,536)
+Request->Response flow:   31,493 TPS (min: 31,126, max: 31,819)
 ```
 
 ## Targets vs Actual
@@ -56,7 +61,21 @@ Request->Response flow:   32,122 TPS (min: 31,684, max: 32,383)
 |--------|--------|--------|---------------|--------|
 | 100k TPS generation | 143k | 150k | 150k | ✅ Exceeded |
 | 100k TPS parsing | 95k | 105k | 182k | ✅ Exceeded |
-| 100k TPS roundtrip | 45k | 49k | 65k | 🟡 65% of target |
+| 100k TPS roundtrip | 45k | 49k | 63k | 🟡 63% of target |
+
+## Notes on Object Pooling
+
+Object pooling shows minimal improvement in benchmarks because:
+- Python's memory allocator is already efficient for small objects
+- The `slots=True` dataclasses have very low allocation overhead
+- Pool lock contention can offset allocation savings
+
+Pooling is most beneficial for:
+- Long-running applications processing millions of messages
+- Scenarios where memory fragmentation is a concern
+- Applications that can explicitly manage message lifecycle
+
+See [docs/performance.md](../docs/performance.md) for detailed usage guidance.
 
 ## Previous Baseline (v0.2.0)
 
