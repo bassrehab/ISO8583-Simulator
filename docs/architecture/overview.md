@@ -2,6 +2,8 @@
 
 iso8583sim is designed with a focus on performance, extensibility, and ease of use.
 
+![Architecture](../images/architecture.png)
+
 ## Design Principles
 
 ### 1. Network-Agnostic Core

@@ -22,8 +22,6 @@ A modern, high-performance ISO 8583 message simulator with CLI, Python SDK, and 
   - Network-specific field validation
   - EMV/chip card data handling (Field 55)
 
-![Supported Networks](docs/images/networks.png)
-
 - **Multiple Interfaces**:
   - Command Line Interface (CLI)
   - Python SDK for programmatic usage
@@ -33,6 +31,10 @@ A modern, high-performance ISO 8583 message simulator with CLI, Python SDK, and 
   - Optional Cython extensions for 2x speedup
   - Object pooling for high-throughput scenarios
   - See [Performance Guide](docs/performance.md)
+
+## Architecture
+
+![Architecture](docs/images/architecture.png)
 
 ## Installation
 

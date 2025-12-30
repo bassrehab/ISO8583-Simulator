@@ -2,6 +2,8 @@
 
 This document describes how ISO 8583 messages flow through iso8583sim.
 
+![Message Flow](../images/message_flow.png)
+
 ## Parsing Flow
 
 ```
