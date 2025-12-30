@@ -22,6 +22,8 @@ A modern, high-performance ISO 8583 message simulator with CLI, Python SDK, and 
   - Network-specific field validation
   - EMV/chip card data handling (Field 55)
 
+![Supported Networks](docs/images/networks.png)
+
 - **Multiple Interfaces**:
   - Command Line Interface (CLI)
   - Python SDK for programmatic usage
@@ -122,6 +124,8 @@ Benchmarks on Apple Silicon (M-series), Python 3.12:
 | Parse | ~105k TPS | ~182k TPS |
 | Build | ~150k TPS | ~150k TPS |
 | Roundtrip | ~49k TPS | ~63k TPS |
+
+![Performance Chart](docs/images/performance_chart.png)
 
 See [benchmarks/BASELINE.md](benchmarks/BASELINE.md) for detailed results.
 
