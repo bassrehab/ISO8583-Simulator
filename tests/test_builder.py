@@ -285,21 +285,21 @@ def test_message_recreation(builder, parser, test_messages, create_message):
         if field_def.field_type not in [FieldType.LLVAR, FieldType.LLLVAR]:
             if field_def.field_type == FieldType.BINARY:
                 # For binary fields, string length should be twice max_length
-                assert (
-                    len(parsed_value) == field_def.max_length * 2
-                ), f"Field {field_num} length mismatch: {len(parsed_value)} != {field_def.max_length * 2}"
+                assert len(parsed_value) == field_def.max_length * 2, (
+                    f"Field {field_num} length mismatch: {len(parsed_value)} != {field_def.max_length * 2}"
+                )
             else:
-                assert (
-                    len(parsed_value) == field_def.max_length
-                ), f"Field {field_num} length mismatch: {len(parsed_value)} != {field_def.max_length}"
+                assert len(parsed_value) == field_def.max_length, (
+                    f"Field {field_num} length mismatch: {len(parsed_value)} != {field_def.max_length}"
+                )
 
         # Check field type-specific validations
         if field_def.field_type == FieldType.NUMERIC:
             assert parsed_value.isdigit(), f"Field {field_num} should be numeric"
         elif field_def.field_type == FieldType.BINARY:
-            assert all(
-                c in "0123456789ABCDEF" for c in parsed_value.upper()
-            ), f"Field {field_num} should be hexadecimal"
+            assert all(c in "0123456789ABCDEF" for c in parsed_value.upper()), (
+                f"Field {field_num} should be hexadecimal"
+            )
         elif field_def.field_type == FieldType.ALPHA:
             assert parsed_value.replace(" ", "").isalpha(), f"Field {field_num} should be alphabetic"
 
