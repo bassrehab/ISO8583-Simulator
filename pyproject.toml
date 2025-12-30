@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "iso8583sim"
-version = "1.0.0"
+version = "1.1.0"
 description = "High-performance ISO 8583 message simulator with CLI, Python SDK, and LLM features"
 readme = "README.md"
 authors = [
