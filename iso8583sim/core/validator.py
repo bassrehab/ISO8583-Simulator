@@ -453,7 +453,7 @@ class ISO8583Validator:
 
         # Check type compatibility
         if field_def.field_type == FieldType.BINARY and not _HEX_PATTERN.match(value):
-            errors.append(f"Field {field_number} must be hexadecimal " f"in version {version.value}")
+            errors.append(f"Field {field_number} must be hexadecimal in version {version.value}")
 
         # Version-specific validations
         if version == ISO8583Version.V1987:

@@ -49,7 +49,7 @@ class GoogleProvider(LLMProvider):
         self._api_key = api_key or os.environ.get("GOOGLE_API_KEY")
         if not self._api_key:
             raise ProviderConfigError(
-                "Google API key not found. " "Set GOOGLE_API_KEY environment variable or pass api_key parameter."
+                "Google API key not found. Set GOOGLE_API_KEY environment variable or pass api_key parameter."
             )
 
         self._model_name = model or self.DEFAULT_MODEL

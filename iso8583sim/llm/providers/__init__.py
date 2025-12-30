@@ -82,7 +82,7 @@ def get_provider(name: str | None = None, **kwargs) -> LLMProvider:
         provider_class, is_available = _import_provider(name.lower())
         if provider_class is None:
             raise ProviderConfigError(
-                f"{name} provider package is not installed. " f"Install with: pip install iso8583sim[{name.lower()}]"
+                f"{name} provider package is not installed. Install with: pip install iso8583sim[{name.lower()}]"
             )
         return provider_class(**kwargs)
 

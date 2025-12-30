@@ -25,7 +25,6 @@ from .types import (
     MessageClass,
     MessageFunction,
     ParseError,
-    detect_network,
     get_field_definition,
 )
 from .validator import ISO8583Validator
@@ -48,7 +47,6 @@ __all__ = [
     "ParseError",
     "BuildError",
     "get_field_definition",
-    "detect_network",
     # EMV
     "parse_emv_data",
     "build_emv_data",

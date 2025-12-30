@@ -419,7 +419,7 @@ def explain_emv(emv_hex: str) -> None:
         tag_name = EMV_TAGS.get(tag, "Unknown")
         print(f"\nTag {tag}: {tag_name}")
         print(f"  Value: {value}")
-        print(f"  Length: {len(value)//2} bytes")
+        print(f"  Length: {len(value) // 2} bytes")
 
         # Special interpretations
         if tag == "9F27":  # CID

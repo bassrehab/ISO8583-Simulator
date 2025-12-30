@@ -138,7 +138,7 @@ class ISO8583Builder:
                 length_indicator_size = 2 if field_def.field_type == FieldType.LLVAR else 3
 
                 if length > field_def.max_length:
-                    raise BuildError(f"Value too long for field {field_number}: " f"{length} > {field_def.max_length}")
+                    raise BuildError(f"Value too long for field {field_number}: {length} > {field_def.max_length}")
 
                 length_str = str(length).zfill(length_indicator_size)
                 return length_str + formatted_value
