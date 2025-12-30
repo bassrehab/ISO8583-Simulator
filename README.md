@@ -1,5 +1,12 @@
 # ISO8583 Simulator
 
+[![PyPI version](https://img.shields.io/pypi/v/iso8583sim.svg)](https://pypi.org/project/iso8583sim/)
+[![Python versions](https://img.shields.io/pypi/pyversions/iso8583sim.svg)](https://pypi.org/project/iso8583sim/)
+[![License](https://img.shields.io/github/license/bassrehab/ISO8583-Simulator.svg)](https://github.com/bassrehab/ISO8583-Simulator/blob/main/LICENSE)
+[![CI](https://github.com/bassrehab/ISO8583-Simulator/actions/workflows/ci.yml/badge.svg)](https://github.com/bassrehab/ISO8583-Simulator/actions/workflows/ci.yml)
+[![Documentation](https://img.shields.io/badge/docs-iso8583.subhadipmitra.com-blue.svg)](https://iso8583.subhadipmitra.com)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+
 A modern, high-performance ISO 8583 message simulator with CLI, Python SDK, and interactive Jupyter notebooks.
 
 ## Features
@@ -119,8 +126,12 @@ See [benchmarks/BASELINE.md](benchmarks/BASELINE.md) for detailed results.
 
 ## Documentation
 
-- [Performance Guide](docs/performance.md) - Optimization techniques and configuration
-- [API Reference](docs/) - Detailed API documentation
+Full documentation is available at **[iso8583.subhadipmitra.com](https://iso8583.subhadipmitra.com)**
+
+- [Getting Started](https://iso8583.subhadipmitra.com/getting-started/quickstart/) - Quick start guide
+- [Architecture](https://iso8583.subhadipmitra.com/architecture/overview/) - System design and decisions
+- [API Reference](https://iso8583.subhadipmitra.com/api/core/) - Complete API documentation
+- [Performance Guide](https://iso8583.subhadipmitra.com/performance/) - Optimization techniques
 
 ## Development
 
@@ -147,6 +158,13 @@ python benchmarks/bench_roundtrip.py
 3. Commit your changes (`git commit -am 'Add new feature'`)
 4. Push to the branch (`git push origin feature/my-feature`)
 5. Create a Pull Request
+
+## Author
+
+**Subhadip Mitra** - [subhadipmitra.com](https://subhadipmitra.com)
+
+- GitHub: [@bassrehab](https://github.com/bassrehab)
+- LinkedIn: [subhadipmitra](https://linkedin.com/in/subhadipmitra)
 
 ## License
 
