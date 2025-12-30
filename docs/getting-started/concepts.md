@@ -6,6 +6,8 @@ ISO 8583 is the international standard for financial transaction card-originated
 
 An ISO 8583 message consists of three main parts:
 
+![Message Structure](../images/message_structure.png)
+
 ```
 ┌─────────┬──────────┬────────────────┐
 │   MTI   │  Bitmap  │  Data Fields   │
