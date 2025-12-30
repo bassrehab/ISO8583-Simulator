@@ -52,7 +52,7 @@ class OpenAIProvider(LLMProvider):
         self._api_key = api_key or os.environ.get("OPENAI_API_KEY")
         if not self._api_key:
             raise ProviderConfigError(
-                "OpenAI API key not found. " "Set OPENAI_API_KEY environment variable or pass api_key parameter."
+                "OpenAI API key not found. Set OPENAI_API_KEY environment variable or pass api_key parameter."
             )
 
         self._model = model or self.DEFAULT_MODEL

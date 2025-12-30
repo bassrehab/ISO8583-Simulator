@@ -149,7 +149,7 @@ def parse_emv_data(data: str) -> dict[str, str]:
         if (tag_byte1 & 0x1F) == 0x1F:
             if pos + 2 > len(data):
                 break
-            tag = f"{tag_byte1:02X}{data[pos:pos+2]}"
+            tag = f"{tag_byte1:02X}{data[pos : pos + 2]}"
             pos += 2
         else:
             tag = f"{tag_byte1:02X}"

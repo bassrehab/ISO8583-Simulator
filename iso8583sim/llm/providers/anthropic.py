@@ -52,7 +52,7 @@ class AnthropicProvider(LLMProvider):
         self._api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
         if not self._api_key:
             raise ProviderConfigError(
-                "Anthropic API key not found. " "Set ANTHROPIC_API_KEY environment variable or pass api_key parameter."
+                "Anthropic API key not found. Set ANTHROPIC_API_KEY environment variable or pass api_key parameter."
             )
 
         self._model = model or self.DEFAULT_MODEL

@@ -487,7 +487,7 @@ class ISO8583Parser:
                 expected_length *= 2  # Each byte is 2 hex chars
             if len(value) != expected_length:
                 raise ParseError(
-                    f"Field {field_number} has incorrect length: " f"got {len(value)}, expected {expected_length}"
+                    f"Field {field_number} has incorrect length: got {len(value)}, expected {expected_length}"
                 )
 
         # Validate content type
@@ -521,9 +521,7 @@ class ISO8583Parser:
         # For variable length fields, base_length is from length indicator
         if field_def.field_type in [FieldType.LLVAR, FieldType.LLLVAR]:
             if base_length > field_def.max_length:
-                raise ParseError(
-                    f"Field {field_number} length {base_length} " f"exceeds maximum {field_def.max_length}"
-                )
+                raise ParseError(f"Field {field_number} length {base_length} exceeds maximum {field_def.max_length}")
             return base_length
 
         # For binary fields, each byte is represented by 2 hex characters
