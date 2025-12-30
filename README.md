@@ -105,6 +105,7 @@ Learn ISO 8583 with our Jupyter notebooks:
 | [04_network_specifics.ipynb](notebooks/04_network_specifics.ipynb) | VISA, Mastercard, and other networks |
 | [05_emv_data.ipynb](notebooks/05_emv_data.ipynb) | Working with EMV/chip card data |
 | [06_benchmarking.ipynb](notebooks/06_benchmarking.ipynb) | Performance testing and benchmarks |
+| [07_llm_features.ipynb](notebooks/07_llm_features.ipynb) | AI-powered message explanation and generation |
 
 Run locally:
 ```bash
