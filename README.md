@@ -7,7 +7,7 @@
 [![Documentation](https://img.shields.io/badge/docs-iso8583.subhadipmitra.com-blue.svg)](https://iso8583.subhadipmitra.com)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 
-A modern, high-performance ISO 8583 message simulator with CLI, Python SDK, and interactive Jupyter notebooks.
+A modern, high-performance ISO 8583 message simulator with CLI, Python SDK, and AI-powered message explanation and generation.
 
 ## Features
 
@@ -26,6 +26,11 @@ A modern, high-performance ISO 8583 message simulator with CLI, Python SDK, and 
   - Command Line Interface (CLI)
   - Python SDK for programmatic usage
   - Interactive Jupyter notebooks
+
+- **AI-Powered Features**:
+  - Explain ISO 8583 messages in plain English using LLMs
+  - Generate messages from natural language descriptions
+  - Supports OpenAI, Anthropic, Google, and Ollama (local/offline)
 
 - **Performance Optimized**:
   - Optional Cython extensions for 2x speedup
@@ -96,6 +101,46 @@ iso8583sim validate "0100..."
 # Generate sample messages
 iso8583sim generate --type auth --pan 4111111111111111 --amount 1000
 ```
+
+## AI-Powered Features
+
+Use LLMs to understand, explain, and generate ISO 8583 messages.
+
+### Explain Messages in Plain English
+
+```python
+from iso8583sim.llm import MessageExplainer
+
+explainer = MessageExplainer()  # Auto-detects available provider
+explanation = explainer.explain(message)
+```
+
+> This is a $100.00 VISA purchase authorization request at a gas station.
+> The card expires December 2026 and was read via chip (EMV).
+> Expected response: MTI 0110 with response code 00 (approved) or 51 (insufficient funds).
+
+### Generate Messages from Natural Language
+
+```python
+from iso8583sim.llm import MessageGenerator
+
+generator = MessageGenerator()
+message = generator.generate("$50 refund to Mastercard at ACME Store")
+# Returns a fully-formed ISO8583Message ready to use
+```
+
+### Supported Providers
+
+| Provider | Type | Installation |
+|----------|------|--------------|
+| OpenAI (GPT-4o) | Cloud | `pip install iso8583sim[openai]` |
+| Anthropic (Claude) | Cloud | `pip install iso8583sim[anthropic]` |
+| Google (Gemini) | Cloud | `pip install iso8583sim[google]` |
+| Ollama (Llama, Qwen, Mistral) | Local | `pip install iso8583sim[ollama]` |
+
+Ollama runs completely offline with no API keys needed.
+
+See the [OpenAI notebook](notebooks/07_llm_features.ipynb) or [Ollama notebook](notebooks/08_llm_features_ollama.ipynb) for complete examples.
 
 ## Interactive Notebooks
 
