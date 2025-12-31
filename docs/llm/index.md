@@ -116,6 +116,15 @@ iso8583sim.llm/
     └── ollama.py       # Ollama provider
 ```
 
+## Interactive Notebooks
+
+Explore LLM features with our Jupyter notebooks:
+
+| Notebook | Description |
+|----------|-------------|
+| [07_llm_features.ipynb](https://github.com/bassrehab/ISO8583-Simulator/blob/main/notebooks/07_llm_features.ipynb) | LLM features with OpenAI (cloud API) |
+| [08_llm_features_ollama.ipynb](https://github.com/bassrehab/ISO8583-Simulator/blob/main/notebooks/08_llm_features_ollama.ipynb) | LLM features with Ollama (local, offline, private) |
+
 ## Next Steps
 
 - [Providers](providers.md) - Configure and customize LLM providers

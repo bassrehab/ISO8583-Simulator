@@ -129,17 +129,41 @@ response = provider.complete("Explain ISO 8583 Field 55")
 
 ### Ollama (Local)
 
+Ollama runs completely locally - no API keys, no data sent externally, works offline.
+
+**Setup:**
+```bash
+# Install Ollama: https://ollama.com
+ollama serve              # Start the server
+ollama pull llama3.1      # Pull a model
+ollama pull qwen3-coder   # Or a coding-focused model
+```
+
+**Usage:**
 ```python
 from iso8583sim.llm.providers.ollama import OllamaProvider
 
-# Requires Ollama running locally
+# Default model (llama3.2)
+provider = OllamaProvider()
+
+# Specific model
 provider = OllamaProvider(
-    model="llama3.2",
+    model="qwen3-coder:30b",
     host="http://localhost:11434",
 )
 
 response = provider.complete("Explain ISO 8583 Field 55")
 ```
+
+**Recommended Models:**
+| Model | Size | Best For |
+|-------|------|----------|
+| `llama3.1` | 8B | General purpose, fast |
+| `qwen3-coder` | 30B | Code-focused, detailed explanations |
+| `mistral` | 7B | Fast, good quality |
+| `devstral-small-2` | 24B | Coding tasks |
+
+See the [Ollama notebook](https://github.com/bassrehab/ISO8583-Simulator/blob/main/notebooks/08_llm_features_ollama.ipynb) for working examples.
 
 ## Using with Explainer/Generator
 
