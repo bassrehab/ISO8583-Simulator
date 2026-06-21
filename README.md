@@ -217,7 +217,7 @@ python benchmarks/bench_roundtrip.py
 **Subhadip Mitra** - [subhadipmitra.com](https://subhadipmitra.com)
 
 - GitHub: [@bassrehab](https://github.com/bassrehab)
-- LinkedIn: [subhadipmitra](https://linkedin.com/in/subhadipmitra)
+- LinkedIn: [subhadipmitra](https://linkedin.com/in/subhadip-mitra)
 
 ## License
 
