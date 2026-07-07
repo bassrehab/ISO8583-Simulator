@@ -4,7 +4,7 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/iso8583sim.svg)](https://pypi.org/project/iso8583sim/)
 [![License](https://img.shields.io/github/license/bassrehab/ISO8583-Simulator.svg)](https://github.com/bassrehab/ISO8583-Simulator/blob/main/LICENSE)
 [![CI](https://github.com/bassrehab/ISO8583-Simulator/actions/workflows/ci.yml/badge.svg)](https://github.com/bassrehab/ISO8583-Simulator/actions/workflows/ci.yml)
-[![Documentation](https://img.shields.io/badge/docs-iso8583.subhadipmitra.com-blue.svg)](https://iso8583.subhadipmitra.com)
+[![Documentation](https://img.shields.io/badge/docs-iso8583sim.com-blue.svg)](https://iso8583sim.com)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 
 A modern, high-performance ISO 8583 message simulator with CLI, Python SDK, and AI-powered message explanation and generation.
@@ -179,12 +179,12 @@ See [benchmarks/BASELINE.md](benchmarks/BASELINE.md) for detailed results.
 
 ## Documentation
 
-Full documentation is available at **[iso8583.subhadipmitra.com](https://iso8583.subhadipmitra.com)**
+Full documentation is available at **[iso8583sim.com](https://iso8583sim.com)**
 
-- [Getting Started](https://iso8583.subhadipmitra.com/getting-started/quickstart/) - Quick start guide
-- [Architecture](https://iso8583.subhadipmitra.com/architecture/overview/) - System design and decisions
-- [API Reference](https://iso8583.subhadipmitra.com/api/core/) - Complete API documentation
-- [Performance Guide](https://iso8583.subhadipmitra.com/performance/) - Optimization techniques
+- [Getting Started](https://iso8583sim.com/docs/getting-started/quickstart/) - Quick start guide
+- [Architecture](https://iso8583sim.com/docs/architecture/overview/) - System design and decisions
+- [API Reference](https://iso8583sim.com/docs/api/core/) - Complete API documentation
+- [Performance Guide](https://iso8583sim.com/docs/performance/) - Optimization techniques
 
 ## Development
 
