@@ -1,0 +1,18 @@
+---
+title: "REST API"
+sidebarTitle: "Overview"
+description: "Run iso8583sim as an HTTP service and try every endpoint from this page."
+---
+
+The REST API exposes parsing, building, validation, explanation, generation and version conversion over HTTP. Start it locally, then use the playground on each endpoint page to send requests to it.
+
+```bash
+pip install "iso8583sim[web]"
+iso8583sim web          # http://127.0.0.1:8000, interactive docs at /docs
+```
+
+<Warning>
+The API has no authentication. It listens on `127.0.0.1` by default; don't expose it on a public network.
+</Warning>
+
+See [REST API guide](../web) for running it in Docker, error codes and examples.
