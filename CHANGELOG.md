@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `iso8583sim.wire`: encode messages to bytes and decode them back in configurable wire formats. Binary or hex bitmaps, packed BCD, EBCDIC, binary length prefixes and raw binary fields, with presets `ascii_hex`, `ascii_binary`, `bcd` and `ebcdic`. Decoded messages match what the string parser returns, so all existing features work on them. `ISO8583Builder.build_bytes` and `ISO8583Parser.parse_bytes` are shortcuts. The string API is unchanged.
+
 ## [1.3.1] - 2026-09-27
 
 ### Fixed
