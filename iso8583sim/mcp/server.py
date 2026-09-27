@@ -13,13 +13,12 @@ from mcp.server.mcpserver.exceptions import ResourceError, ToolError
 from .. import __version__
 from ..core.builder import ISO8583Builder
 from ..core.codes import (
-    CURRENCY_CODES,
-    NETWORK_MANAGEMENT_CODES,
     PROCESSING_CODES,
     RESPONSE_CODES,
     detect_network_from_pan,
 )
-from ..core.emv import EMV_TAGS, explain_cid, explain_tvr, get_tag_name, parse_emv_data
+from ..core.describe import decode_emv_tags, describe_message, field_entries, field_name
+from ..core.emv import EMV_TAGS
 from ..core.parser import ISO8583Parser
 from ..core.types import (
     ISO8583_FIELDS,
@@ -27,9 +26,6 @@ from ..core.types import (
     ISO8583Error,
     ISO8583Message,
     ISO8583Version,
-    MessageClass,
-    MessageFunction,
-    MessageOrigin,
     get_field_definition,
 )
 from ..core.validator import ISO8583Validator
@@ -101,105 +97,11 @@ def _parse(message: str, network: str | None = None, version: str = "1987") -> I
     return ISO8583Parser(version=_version(version)).parse(message.rstrip("\r\n"), network=_network(network))
 
 
-def _field_name(field_number: int, network: CardNetwork | None, version: ISO8583Version) -> str:
-    field_def = get_field_definition(field_number, network, version)
-    return field_def.description if field_def else "Unknown"
-
-
-def _fields_out(message: ISO8583Message) -> list[dict[str, Any]]:
-    return [
-        {"number": n, "name": _field_name(n, message.network, message.version), "value": v}
-        for n, v in sorted(message.fields.items())
-        if n != 0
-    ]
-
-
 def _fields_in(fields: dict[str, str]) -> dict[int, str]:
     try:
         return {int(k): str(v) for k, v in fields.items()}
     except ValueError:
         raise ValueError('Field numbers must be integers, e.g. {"2": "4111111111111111"}') from None
-
-
-def _mask_pan(pan: str) -> str:
-    if len(pan) < 10:
-        return pan
-    return pan[:6] + "*" * (len(pan) - 10) + pan[-4:]
-
-
-def _format_amount(amount: str, currency: str | None) -> str:
-    code, exponent = CURRENCY_CODES.get(currency or "", (currency or "", 2))
-    value = int(amount) / (10**exponent) if amount.isdigit() else amount
-    if isinstance(value, float):
-        return f"{value:,.{exponent}f} {code}".strip()
-    return f"{value} {code}".strip()
-
-
-def _decode_emv(data: str) -> list[dict[str, Any]]:
-    tags = []
-    for tag, value in parse_emv_data(data).items():
-        entry: dict[str, Any] = {"tag": tag, "name": get_tag_name(tag), "value": value}
-        if tag == "95":
-            entry["explanation"] = explain_tvr(value)
-        elif tag == "9F27":
-            entry["explanation"] = explain_cid(value)
-        tags.append(entry)
-    return tags
-
-
-def _describe_mti(mti: str) -> dict[str, str]:
-    def lookup(enum: Any, char: str) -> str:
-        try:
-            return enum(char).name.replace("_", " ").lower()
-        except ValueError:
-            return "unknown"
-
-    return {
-        "class": lookup(MessageClass, mti[1]),
-        "function": lookup(MessageFunction, mti[2]),
-        "origin": lookup(MessageOrigin, mti[3]),
-    }
-
-
-def _explain(message: ISO8583Message) -> dict[str, Any]:
-    fields = message.fields
-    mti_info = _describe_mti(message.mti)
-    facts: list[str] = [f"MTI {message.mti}: {mti_info['class']} {mti_info['function']} from {mti_info['origin']}."]
-
-    if message.network:
-        facts.append(f"Card network: {message.network.value}.")
-    if 2 in fields:
-        facts.append(f"Card: {_mask_pan(fields[2])}.")
-    if 3 in fields:
-        kind = PROCESSING_CODES.get(fields[3][:2], f"processing code {fields[3]}")
-        facts.append(f"Transaction type: {kind}.")
-    if 4 in fields:
-        facts.append(f"Amount: {_format_amount(fields[4], fields.get(49))}.")
-    if 39 in fields:
-        meaning = RESPONSE_CODES.get(fields[39], "unrecognised response code")
-        facts.append(f"Response code {fields[39]}: {meaning}.")
-    if 38 in fields:
-        facts.append(f"Approval code: {fields[38].strip()}.")
-    if 70 in fields:
-        facts.append(f"Network management: {NETWORK_MANAGEMENT_CODES.get(fields[70], fields[70])}.")
-    if 41 in fields:
-        facts.append(f"Terminal: {fields[41].strip()}.")
-    if 42 in fields:
-        facts.append(f"Merchant: {fields[42].strip()}.")
-    if 55 in fields:
-        facts.append("Chip (EMV) data is present in field 55.")
-
-    result: dict[str, Any] = {
-        "summary": " ".join(facts),
-        "mti": {"value": message.mti, **mti_info},
-        "fields": _fields_out(message),
-    }
-    if 55 in fields:
-        try:
-            result["emv"] = _decode_emv(fields[55])
-        except Exception as e:
-            result["emv_error"] = str(e)
-    return result
 
 
 def create_server() -> MCPServer:
@@ -223,11 +125,11 @@ def create_server() -> MCPServer:
             "version": parsed.version.value,
             "network": parsed.network.value if parsed.network else None,
             "bitmap": parsed.bitmap,
-            "fields": _fields_out(parsed),
+            "fields": field_entries(parsed),
         }
         if 55 in parsed.fields:
             try:
-                result["emv"] = _decode_emv(parsed.fields[55])
+                result["emv"] = decode_emv_tags(parsed.fields[55])
             except Exception as e:
                 result["emv_error"] = str(e)
         return result
@@ -268,13 +170,13 @@ def create_server() -> MCPServer:
 
         Rule-based, so it needs no LLM API key.
         """
-        return _explain(_parse(message, network, version))
+        return describe_message(_parse(message, network, version))
 
     @server.tool()
     @tool_errors
     def decode_emv(data: str) -> dict[str, Any]:
         """Decode EMV chip data (field 55, hex TLV) into named tags, including TVR and CID explanations."""
-        return {"tags": _decode_emv(data.strip())}
+        return {"tags": decode_emv_tags(data.strip())}
 
     @server.tool()
     @tool_errors
@@ -319,7 +221,7 @@ def create_server() -> MCPServer:
 
         message = ISO8583Message(mti=mti, fields=fields, network=net)
         raw = builder_for[ISO8583Version.V1987].build(message)
-        return {"message": raw, "mti": mti, "network": net.value if net else None, "fields": _fields_out(message)}
+        return {"message": raw, "mti": mti, "network": net.value if net else None, "fields": field_entries(message)}
 
     @server.tool()
     @tool_errors
@@ -337,7 +239,7 @@ def create_server() -> MCPServer:
             response_fields[38] = approval_code.ljust(6)[:6]
         response = builder_for[v].create_response(request, response_fields)
         raw = builder_for[v].build(response)
-        return {"message": raw, "mti": response.mti, "fields": _fields_out(response)}
+        return {"message": raw, "mti": response.mti, "fields": field_entries(response)}
 
     @server.tool()
     @tool_errors
@@ -347,7 +249,7 @@ def create_server() -> MCPServer:
         original = _parse(message, version=version)
         reversal = builder_for[v].create_reversal(original)
         raw = builder_for[v].build(reversal)
-        return {"message": raw, "mti": reversal.mti, "fields": _fields_out(reversal)}
+        return {"message": raw, "mti": reversal.mti, "fields": field_entries(reversal)}
 
     @server.tool()
     @tool_errors
@@ -382,7 +284,7 @@ def create_server() -> MCPServer:
         numbers = sorted((set(a.fields) | set(b.fields)) - {0})
         added, removed, changed = [], [], []
         for n in numbers:
-            name = _field_name(n, a.network or b.network, a.version)
+            name = field_name(n, a.network or b.network, a.version)
             if n not in a.fields:
                 added.append({"number": n, "name": name, "value": b.fields[n]})
             elif n not in b.fields:
