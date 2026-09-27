@@ -67,6 +67,17 @@ class ISO8583Builder:
         except Exception as e:
             raise BuildError(f"Failed to build message: {str(e)}") from e
 
+    def build_with_mac(self, message: ISO8583Message, key: str | bytes, algorithm: int = 3, padding: int = 1) -> str:
+        """Build a message and fill in its MAC (field 64, or 128 with a secondary bitmap).
+
+        Requires the security extra. See iso8583sim.security.sign_message.
+        """
+        # subhadipmitra@: Imported here so the builder works without the optional
+        # cryptography dependency until a MAC is actually requested.
+        from ..security import sign_message
+
+        return sign_message(message, key, builder=self, algorithm=algorithm, padding=padding)
+
     def _format_field_value(self, field_number: int, value: str, field_def: FieldDefinition) -> str:
         """Format field value based on type and rules"""
         try:

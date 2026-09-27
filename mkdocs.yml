@@ -79,6 +79,7 @@ nav:
     - Builder: core/builder.md
     - Validator: core/validator.md
     - EMV Data: core/emv.md
+    - PIN Blocks and MACs: core/security.md
     - Object Pool: core/pool.md
   - Card Networks:
     - Overview: networks/index.md
