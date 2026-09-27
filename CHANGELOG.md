@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-09-27
+
 ### Added
 
 - `iso8583sim.security` (install with `pip install iso8583sim[security]`): ISO 9564-1 PIN blocks in formats 0, 1, 3 and 4 (`encrypt_pin_block`, `decrypt_pin_block`, and clear `encode_pin_block` / `decode_pin_block`), and ISO 9797-1 MACs with algorithm 1 (CBC-MAC) and algorithm 3 (retail MAC) and padding methods 1 and 2.
@@ -110,7 +112,8 @@ First stable release.
 - MkDocs documentation site.
 - GitHub Actions for CI, PyPI publishing and docs deployment.
 
-[Unreleased]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.1.3...v1.2.0
 [1.1.3]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.1.1...v1.1.2
