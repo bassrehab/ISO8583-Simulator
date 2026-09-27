@@ -1,6 +1,7 @@
 # iso8583sim/core/validator.py
 
 import re
+from dataclasses import replace
 
 from .types import (
     MTI_VERSION_DIGITS,
@@ -301,6 +302,22 @@ class ISO8583Validator:
         if _USE_CYTHON:
             return _is_valid_hex_fast(value)
         return all(c in "0123456789ABCDEFabcdef" for c in value)
+
+    def validate_for_network(self, message: ISO8583Message, network: CardNetwork) -> list[str]:
+        """Validate a message as if it were sent on another network.
+
+        The message is not changed. Useful to check whether a message built for one
+        network also meets another network's required fields and formats.
+        """
+        # subhadipmitra@: Network rules key off message.network, so validate a copy with the
+        # network swapped instead of mutating the caller's message.
+        return self.validate_message(replace(message, fields=dict(message.fields), network=network))
+
+    def validate_for_networks(
+        self, message: ISO8583Message, networks: list[CardNetwork] | None = None
+    ) -> dict[CardNetwork, list[str]]:
+        """Validate a message against several networks at once (all networks by default)."""
+        return {net: self.validate_for_network(message, net) for net in (networks or list(CardNetwork))}
 
     def verify_mac(self, raw_message: str, key: str | bytes, algorithm: int = 3, padding: int = 1) -> bool:
         """Check the MAC in field 64 or 128 of a raw message. Requires the security extra."""
