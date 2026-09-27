@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Notebook `04_network_specifics` failed since 1.5.0, because it built a Mastercard field 48 in the old made-up `MC...` format. It now uses a real layout (transaction category code, then subelements).
+- Decrypting a format 4 PIN block with the wrong PAN returned a wrong PIN about 1 time in 1,000 instead of raising `SecurityError`, and format 3 blocks with a wrong key could do the same. Decoding now also checks the fill (A for format 4, A to F for format 3). The docs now state that a wrong PAN is only partly detectable in formats 0 and 3, by design of those formats.
 - README images, notebook links and the license link were relative, so they were broken on the PyPI page. They are now absolute. The development instructions changed into the wrong directory after cloning.
 
 ### Changed

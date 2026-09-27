@@ -91,3 +91,12 @@ def decrypt_pin_block(
 ```
 
 Recover the PIN from an encrypted PIN block (formats 0, 1, 3 and 4).
+
+A wrong key is detected in every format, because it scrambles the whole block. A wrong
+PAN is always detected in format 4, but only sometimes in formats 0 and 3: there the PAN
+is applied with a single XOR, so a different PAN can still decode to a well-formed block
+with a different PIN. This is a property of those formats, not of this implementation.
+
+**Raises**
+
+- `SecurityError`: The block doesn't decode to a valid PIN block
