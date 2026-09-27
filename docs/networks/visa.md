@@ -52,16 +52,18 @@ Additional transaction data:
 
 ## POS Entry Modes (Field 22)
 
-| Value | Description |
-|-------|-------------|
-| 010 | Manual/Key Entry (No PIN) |
-| 011 | Manual/Key Entry (PIN Entry) |
-| 051 | Chip Card (No PIN) |
-| 052 | Chip Card (PIN Entry) |
-| 071 | Contactless (No PIN) |
-| 072 | Contactless (PIN Entry) |
-| 901 | Magnetic Stripe (No PIN) |
-| 902 | Magnetic Stripe (PIN Entry) |
+Common VISA values:
+
+| Value | Meaning |
+|-------|---------|
+| 011 | Manual entry, terminal accepts PINs |
+| 012 | Manual entry, no PIN entry |
+| 051 | Chip, terminal accepts PINs |
+| 071 | Contactless chip, terminal accepts PINs |
+| 901 | Magnetic stripe (full track), terminal accepts PINs |
+| 951 | Chip with unreliable CVV (VISA only), terminal accepts PINs |
+
+The third digit is PIN entry capability: `1` means the terminal can accept PINs, `2` means it can't. See [Field 22](index.md#field-22-pos-entry-mode) for every code the validator accepts.
 
 ## Response Codes (Field 39)
 

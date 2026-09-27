@@ -39,13 +39,13 @@ Note: Field 14 (Expiration) is optional but recommended.
 
 ### Field 48 - Additional Data
 
-Mastercard uses Field 48 for additional private data:
+Mastercard's field 48 starts with a one-character **transaction category code** (for example `R` for retail), followed by any number of subelements. Each subelement is a 2-digit ID, a 2-digit length, then that many characters:
 
-| Sub-element | Description |
-|-------------|-------------|
-| 01 | Additional Response Data |
-| 14 | Transaction Category Code |
-| 26 | Wallet Program Data |
+```python
+message.fields[48] = "R0103ABC"  # TCC "R", then subelement 01 with 3 characters "ABC"
+```
+
+The validator checks this layout and reports truncated or misaligned subelements.
 
 ### Field 61 - POS Data Extended
 
@@ -62,15 +62,18 @@ Mastercard's Data Element 127 contains subfields for network data.
 
 ## POS Entry Modes (Field 22)
 
-| Value | Description |
-|-------|-------------|
-| 010 | Manual/Key Entry |
-| 051 | ICC Read, CVV Reliable |
-| 052 | ICC Read, CVV Unreliable |
-| 071 | Contactless M/Chip |
-| 072 | Contactless Magnetic Stripe |
-| 801 | E-commerce Manual |
-| 812 | E-commerce Secure |
+Common Mastercard values:
+
+| Value | Meaning |
+|-------|---------|
+| 011 | Manual entry, terminal accepts PINs |
+| 051 | Chip, terminal accepts PINs |
+| 071 | Contactless M/Chip, terminal accepts PINs |
+| 801 | Chip fallback to magnetic stripe, terminal accepts PINs |
+| 812 | E-commerce, no PIN entry |
+| 911 | Contactless magnetic stripe, terminal accepts PINs |
+
+The third digit is PIN entry capability (`1` accepts PINs, `2` doesn't, `8` PIN pad not working). `95x` is a VISA-only code and is rejected for Mastercard. See [Field 22](index.md#field-22-pos-entry-mode) for every code the validator accepts.
 
 ## Response Codes (Field 39)
 

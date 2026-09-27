@@ -43,7 +43,7 @@ A modern, high-performance ISO 8583 message simulator with CLI, Python SDK, and 
   - MCP server so Claude, Cursor and other AI assistants can parse, build and validate messages
 
 - **Performance Optimized**:
-  - Optional Cython extensions for 2x speedup
+  - Compiled Cython extensions for 2x speedup, included in the PyPI wheels
   - Object pooling for high-throughput scenarios
   - See [Performance Guide](docs/performance.md)
 
@@ -55,11 +55,9 @@ A modern, high-performance ISO 8583 message simulator with CLI, Python SDK, and 
 
 ```bash
 pip install iso8583sim
-
-# For Cython performance extensions
-pip install iso8583sim[perf]
-python setup.py build_ext --inplace
 ```
+
+Wheels for Linux, macOS and Windows include the compiled Cython extensions (about 2x faster parsing), so nothing else is needed. On other platforms pip builds from source: with a C compiler you get the extensions, without one it falls back to pure Python.
 
 ## Quick Start
 

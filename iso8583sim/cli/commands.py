@@ -1,9 +1,16 @@
 import code
-import readline
 from pathlib import Path
 from typing import Any
 
 import typer
+
+# subhadipmitra@: readline is not available on Windows. Importing it unconditionally made the
+# whole CLI fail to start there. Only the interactive shell uses it (history and tab
+# completion), so the shell simply runs without those when it's missing.
+try:
+    import readline
+except ImportError:  # pragma: no cover - platform dependent
+    readline = None  # type: ignore[assignment]
 from rich.console import Console
 from rich.markup import escape
 from rich.panel import Panel
@@ -54,6 +61,8 @@ class ISO8583Shell(code.InteractiveConsole):
 
     def _setup_readline(self):
         """Setup readline with history and tab completion"""
+        if readline is None:
+            return
         # Enable tab completion
         readline.parse_and_bind("tab: complete")
 
@@ -73,7 +82,8 @@ class ISO8583Shell(code.InteractiveConsole):
             super().interact(banner, exitmsg)
         finally:
             # Save history on exit
-            readline.write_history_file(str(self.history_file))
+            if readline is not None:
+                readline.write_history_file(str(self.history_file))
 
     def _get_default_banner(self) -> str:
         """Generate default banner with help text"""
