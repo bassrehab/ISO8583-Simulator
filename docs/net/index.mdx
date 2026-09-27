@@ -125,7 +125,7 @@ The client matches responses to requests by STAN (field 11), so many requests ca
 
 ## From an AI assistant
 
-The [MCP server](../mcp) has a `send_to_host` tool. To stop an assistant from being used to reach arbitrary machines, it only connects to hosts listed in the `ISO8583SIM_ALLOWED_HOSTS` environment variable of the MCP server. The default is this machine only (`127.0.0.1,localhost,::1`). Entries can be a host (any port) or `host:port`:
+The [MCP server](../mcp-server) has a `send_to_host` tool. To stop an assistant from being used to reach arbitrary machines, it only connects to hosts listed in the `ISO8583SIM_ALLOWED_HOSTS` environment variable of the MCP server. The default is this machine only (`127.0.0.1,localhost,::1`). Entries can be a host (any port) or `host:port`:
 
 ```json
 {

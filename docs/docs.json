@@ -80,7 +80,7 @@
               "cli/index",
               "net/index",
               "web/index",
-              "mcp/index"
+              "mcp-server/index"
             ]
           },
           {
