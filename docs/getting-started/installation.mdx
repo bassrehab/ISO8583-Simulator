@@ -83,7 +83,7 @@ The compiled Cython extensions (about 2x faster parsing) are included in the whe
 - macOS: Intel and Apple Silicon
 - Windows: x64
 
-On other platforms pip builds from source. With a C compiler the extensions are compiled; without one, iso8583sim installs as pure Python and works the same, only slower. To check which you have:
+On other platforms pip installs the pure-Python wheel, which works the same, only slower. It also runs in Pyodide (Python in the browser, and Cloudflare Python Workers). To compile the extensions yourself, install a C compiler and run `pip install --no-binary iso8583sim iso8583sim`. To check which you have:
 
 ```bash
 python -c "import iso8583sim.core.parser as p; print(p._USE_CYTHON)"

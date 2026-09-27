@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.2] - 2026-09-27
+
+### Added
+
+- A pure-Python wheel (`py3-none-any`) next to the compiled ones, for platforms without a compiled wheel, including Pyodide. pip still picks a compiled wheel when one matches.
+- Public mode for the REST API (`ISO8583SIM_PUBLIC=1`): LLM features are turned off (403) and CORS allows any origin
+- A public demo of the REST API at https://api.iso8583sim.com. The docs playground calls it by default.
+
+### Changed
+
+- The REST API rejects oversized requests: messages over 32,768 characters, field values over 1,998 and descriptions over 2,000
+- REST API endpoints are async, so the API runs where there are no threads (Pyodide). LLM calls still run in a thread.
+
 ## [1.5.1] - 2026-09-27
 
 ### Added
@@ -174,7 +187,8 @@ First stable release.
 - MkDocs documentation site.
 - GitHub Actions for CI, PyPI publishing and docs deployment.
 
-[Unreleased]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.5.1...HEAD
+[Unreleased]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.5.2...HEAD
+[1.5.2]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.3.1...v1.4.0

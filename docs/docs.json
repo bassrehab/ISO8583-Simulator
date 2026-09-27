@@ -203,6 +203,11 @@
       ]
     }
   },
+  "api": {
+    "playground": {
+      "proxy": false
+    }
+  },
   "redirects": [
     {
       "source": "/api/core",

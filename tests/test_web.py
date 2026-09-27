@@ -177,3 +177,45 @@ class TestConvert:
         result = client.post("/convert", json={"message": raw, "target_version": "1993"}).json()
         assert "52" in result["dropped"]
         assert result["lossless"] is False
+
+
+class TestPublicMode:
+    @pytest.fixture(scope="class")
+    def public_client(self):
+        return TestClient(create_app(public=True))
+
+    def test_llm_explain_is_refused(self, public_client, auth_message, monkeypatch):
+        use_llm(monkeypatch, response="should not be called")
+        response = public_client.post("/explain", json={"message": auth_message, "llm": True})
+        assert response.status_code == 403
+        assert "turned off" in response.json()["detail"]
+
+    def test_llm_generate_is_refused(self, public_client, monkeypatch):
+        use_llm(monkeypatch, response="should not be called")
+        response = public_client.post("/generate", json={"description": "a VISA auth for $10"})
+        assert response.status_code == 403
+
+    def test_rule_based_features_still_work(self, public_client, auth_message):
+        assert public_client.post("/explain", json={"message": auth_message}).json()["source"] == "rules"
+        assert public_client.post("/generate", json={}).status_code == 200
+
+    def test_cors_allows_any_origin(self, public_client):
+        response = public_client.options(
+            "/build",
+            headers={"Origin": "https://example.com", "Access-Control-Request-Method": "POST"},
+        )
+        assert response.status_code == 200
+        assert response.headers["access-control-allow-origin"] == "*"
+
+    def test_cors_is_off_by_default(self, client):
+        response = client.get("/health", headers={"Origin": "https://example.com"})
+        assert "access-control-allow-origin" not in response.headers
+
+    def test_env_var_turns_it_on(self, monkeypatch):
+        monkeypatch.setenv("ISO8583SIM_PUBLIC", "1")
+        assert create_app().user_middleware
+
+
+def test_oversized_message_is_rejected(client):
+    response = client.post("/parse", json={"message": "0" * 40_000})
+    assert response.status_code == 422

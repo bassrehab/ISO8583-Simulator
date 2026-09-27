@@ -4,7 +4,9 @@ sidebarTitle: "Overview"
 description: "Run iso8583sim as an HTTP service and try every endpoint from this page."
 ---
 
-The REST API exposes parsing, building, validation, explanation, generation and version conversion over HTTP. Start it locally, then use the playground on each endpoint page to send requests to it.
+The REST API exposes parsing, building, validation, explanation, generation and version conversion over HTTP. The playground on each endpoint page sends requests to the public demo at `https://api.iso8583sim.com`, so you can try it without installing anything. The demo has LLM features turned off and is rate limited. Only send test card numbers.
+
+To use LLM features, or to run it against your own systems, start it locally and switch the playground's server to `http://127.0.0.1:8000`:
 
 ```bash
 pip install "iso8583sim[web]"
@@ -12,7 +14,7 @@ iso8583sim web          # http://127.0.0.1:8000, interactive docs at /docs
 ```
 
 <Warning>
-The API has no authentication. It listens on `127.0.0.1` by default; don't expose it on a public network.
+The API has no authentication. It listens on `127.0.0.1` by default. Don't expose it on a public network unless you run it in [public mode](../web#public-mode).
 </Warning>
 
 See [REST API guide](../web) for running it in Docker, error codes and examples.

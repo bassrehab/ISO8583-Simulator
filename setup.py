@@ -3,6 +3,8 @@
 Package metadata lives in pyproject.toml. This file only declares the compiled modules.
 """
 
+import os
+
 from setuptools import Extension, setup
 
 try:
@@ -22,7 +24,11 @@ EXTENSIONS = [Extension(f"iso8583sim.core.{name}", [f"iso8583sim/core/{name}.pyx
 
 def get_extensions():
     """Cythonize the extensions, or build none when Cython isn't installed."""
-    if not USE_CYTHON:
+    # subhadipmitra@: ISO8583SIM_PURE=1 builds the pure-Python wheel (py3-none-any). It is
+    # published next to the compiled wheels for platforms that have none, such as Pyodide,
+    # which runs the public REST API demo on Cloudflare. pip always prefers a compiled wheel
+    # when one matches.
+    if not USE_CYTHON or os.environ.get("ISO8583SIM_PURE") == "1":
         return []
     extensions = cythonize(
         EXTENSIONS,
