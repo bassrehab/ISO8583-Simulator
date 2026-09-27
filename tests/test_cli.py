@@ -297,3 +297,16 @@ class TestCLIHelp:
         result = runner.invoke(app, ["generate", "--help"])
         assert result.exit_code == 0
         assert "Generate a sample ISO 8583 message" in result.stdout
+
+
+class TestMcpCommand:
+    """Tests for the mcp command."""
+
+    def test_mcp_without_extra_shows_install_hint(self, monkeypatch):
+        """Test that a missing mcp extra gives an install hint instead of a traceback."""
+        import sys
+
+        monkeypatch.setitem(sys.modules, "iso8583sim.mcp", None)
+        result = runner.invoke(app, ["mcp"])
+        assert result.exit_code == 1
+        assert "iso8583sim[mcp]" in result.stdout
