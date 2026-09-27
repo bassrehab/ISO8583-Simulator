@@ -2,7 +2,15 @@
 
 import re
 
-from .types import CardNetwork, FieldDefinition, FieldType, ISO8583Message, ISO8583Version, get_field_definition
+from .types import (
+    MTI_VERSION_DIGITS,
+    CardNetwork,
+    FieldDefinition,
+    FieldType,
+    ISO8583Message,
+    ISO8583Version,
+    get_field_definition,
+)
 
 # Pre-compiled regex patterns for performance
 _HEX_16_PATTERN = re.compile(r"^[0-9A-F]{16}$")
@@ -215,8 +223,8 @@ class ISO8583Validator:
             return False, "MTI must contain only digits"
 
         version = mti[0]
-        if version not in ["0", "1"]:
-            return False, "MTI version must be 0 or 1"
+        if version not in MTI_VERSION_DIGITS.values():
+            return False, "MTI version must be 0 (1987), 1 (1993) or 2 (2003)"
 
         message_class = mti[1]
         if message_class not in ["1", "2", "3", "4", "5", "6", "8", "9"]:
