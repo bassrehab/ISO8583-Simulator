@@ -59,7 +59,10 @@ def test_validate_mti(validator):
     assert error is None
 
     # Invalid cases
-    valid, error = validator.validate_mti("2100")  # invalid version
+    valid, error = validator.validate_mti("2100")  # 2003 version
+    assert valid
+
+    valid, error = validator.validate_mti("3100")  # undefined version
     assert not valid
 
     valid, error = validator.validate_mti("0700")  # invalid message class
