@@ -104,10 +104,41 @@ errors = validator.validate_message(message)
 
 ### Field 22 - POS Entry Mode
 
-| Network | Values |
-|---------|--------|
-| VISA | 01x=Manual, 05x=Chip, 07x=Contactless |
-| Mastercard | 01x=Manual, 05x=Chip, 07x=Contactless |
+Three digits: the first two are the **PAN entry mode** (how the card number was captured), the third is the terminal's **PIN entry capability**. For example, `051` is a chip read at a terminal that accepts PINs, and `812` is e-commerce with no PIN entry.
+
+| PAN entry mode | Meaning |
+|----------------|---------|
+| 00 | Unknown |
+| 01 | Manual entry |
+| 02 | Magnetic stripe |
+| 03 | Barcode |
+| 04 | OCR |
+| 05 | Chip (ICC) |
+| 06 | Contactless, mapping service applied |
+| 07 | Contactless chip |
+| 09 | E-commerce with DSRP cryptogram |
+| 10 | Credential on file |
+| 51 | Chip plus PIN at ATM |
+| 71 | Contactless chip plus PIN at ATM |
+| 79 | Chip fallback, hybrid terminal failure |
+| 80 | Chip fallback to magnetic stripe |
+| 81 | E-commerce |
+| 82 | Auto entry via server |
+| 90 | Magnetic stripe, full track read |
+| 91 | Contactless magnetic stripe |
+| 95 | Chip with unreliable CVV (Visa only) |
+
+| PIN capability | Meaning |
+|----------------|---------|
+| 0 | Unknown |
+| 1 | Terminal can accept PINs |
+| 2 | Terminal cannot accept PINs |
+| 3 | Software-based PIN entry (mPOS) |
+| 8 | PIN pad not working |
+
+For VISA and Mastercard messages the validator checks field 22 against these codes, and reports `95` on a Mastercard message as a Visa-only code. Other networks use their own field 22 schemes, so their values aren't checked.
+
+Source: the DE022 code reference aligned to the Mastercard Customer Interface Specification and Visa VisaNet Authorization-Only Online Messages ([link](https://docs.tech.sofi.com/pro/reference/api-reference-de022-codes)).
 
 ### Field 39 - Response Codes
 

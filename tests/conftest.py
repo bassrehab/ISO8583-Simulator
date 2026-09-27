@@ -81,7 +81,7 @@ def test_messages():
                 25: "00",
                 41: "TEST1234",
                 42: "MERCHANT12345  ",  # Exactly 15 chars with spaces
-                48: "MC123",
+                48: "R0103ABC",  # Retail TCC, then subelement 01 (3 chars)
             },
         },
         "emv_auth": {

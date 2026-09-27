@@ -1231,21 +1231,11 @@ NETWORK_REQUIRED_FIELDS = {
     CardNetwork.UNIONPAY: [2, 3, 4, 11, 22, 25, 49],
 }
 
-# Network-specific field format validations
-NETWORK_FIELD_FORMATS = {
-    CardNetwork.VISA: {
-        44: r"^[0-9A-F]+$",  # Hex format for field 44
-        105: r"^[A-Za-z0-9\s]+$",  # Alphanumeric with spaces
-    },
-    CardNetwork.MASTERCARD: {
-        48: r"^MC[0-9]+$",  # MC prefix followed by numbers
-        104: r"^MC\s.*$",  # MC prefix followed by space and any chars
-    },
-    CardNetwork.AMEX: {
-        44: r"^[0-9A-F]+$",  # Hex format
-        112: r"^AX.*$",  # AX prefix
-    },
-}
+# Network-specific field format patterns (regular expressions), keyed by network and field.
+# subhadipmitra@: Emptied in 1.5.0. The previous entries (such as Mastercard field 48 starting
+# with "MC") were not real network formats, and nothing in the library used them. Verified
+# field rules are in iso8583sim.core.network_rules. Kept for backward compatibility.
+NETWORK_FIELD_FORMATS: dict[CardNetwork, dict[int, str]] = {}
 
 # Version-specific field variations
 VERSION_SPECIFIC_FIELDS = {

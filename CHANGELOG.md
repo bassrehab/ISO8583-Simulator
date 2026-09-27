@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Network field rules were rewritten from published sources (`iso8583sim.core.network_rules`). For VISA and Mastercard, field 22 must now use a known PAN entry mode and PIN entry capability, and Mastercard rejects the Visa-only mode `95`. Mastercard field 48 must be a transaction category code followed by well-formed subelements.
+- `NETWORK_FIELD_FORMATS` is now empty. Its old patterns were not real network formats and were never used.
+
+### Fixed
+
+- VISA field 44 was rejected unless it was hexadecimal, although it holds response data such as a CVV2 result (`M`). The check is removed.
+- Mastercard field 48 was rejected unless it started with `MC`. Real field 48 values start with a transaction category code.
+- The network pages of the docs had the field 22 PIN capability digit reversed for VISA and several wrong Mastercard codes.
+
+### Removed
+
+- Unused validator methods that held unverified rules (`_validate_visa_compliance`, `_validate_mastercard_compliance`, `_validate_network_field` and the per-network `_validate_*_specific` methods).
+
 ## [1.4.0] - 2026-09-27
 
 ### Added

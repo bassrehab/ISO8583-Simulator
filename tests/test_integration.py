@@ -46,7 +46,7 @@ def test_network_specific_processing(builder, parser, validator, test_messages, 
     built_mc = builder.build(mc_msg)
     parsed_mc = parser.parse(built_mc)
     assert parsed_mc.network == CardNetwork.MASTERCARD
-    assert parsed_mc.fields[48] == "MC123"
+    assert parsed_mc.fields[48] == "R0103ABC"
 
 
 def test_response_message_flow(builder, parser, validator, test_messages, create_message):
