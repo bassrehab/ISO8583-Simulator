@@ -162,12 +162,12 @@ def create_app() -> FastAPI:
         # they are client errors (422) with the library's explanation, not 500s.
         return JSONResponse(status_code=422, content={"detail": str(exc)})
 
-    @app.get("/health", response_model=HealthResponse, tags=["meta"])
+    @app.get("/health", response_model=HealthResponse, tags=["Meta"])
     def health() -> dict[str, Any]:
         """Liveness check."""
         return {"status": "ok", "version": __version__}
 
-    @app.post("/parse", response_model=ParseResponse, tags=["messages"])
+    @app.post("/parse", response_model=ParseResponse, tags=["Messages"])
     def parse(request: MessageRequest) -> dict[str, Any]:
         """Parse a raw message into its MTI, bitmap and named fields."""
         parsed = _parse(request)
@@ -182,7 +182,7 @@ def create_app() -> FastAPI:
             result["emv"] = decode_emv_tags(parsed.fields[55])
         return result
 
-    @app.post("/build", response_model=BuildResponse, tags=["messages"])
+    @app.post("/build", response_model=BuildResponse, tags=["Messages"])
     def build(request: BuildRequest) -> dict[str, Any]:
         """Build a raw message from an MTI and field values."""
         message = ISO8583Message(
@@ -191,7 +191,7 @@ def create_app() -> FastAPI:
         raw = ISO8583Builder(version=request.version).build(message)
         return {"message": raw, "length": len(raw)}
 
-    @app.post("/validate", response_model=ValidateResponse, tags=["messages"])
+    @app.post("/validate", response_model=ValidateResponse, tags=["Messages"])
     def validate(request: ValidateRequest) -> dict[str, Any]:
         """Validate a message, optionally against other networks' rules too.
 
@@ -209,7 +209,7 @@ def create_app() -> FastAPI:
             result["networks"] = {net: {"passed": not errs, "errors": errs} for net, errs in checks.items()}
         return result
 
-    @app.post("/explain", response_model=ExplainResponse, tags=["messages"])
+    @app.post("/explain", response_model=ExplainResponse, tags=["Messages"])
     def explain(request: ExplainRequest) -> dict[str, Any]:
         """Explain a message in plain English, with rules (default) or an LLM."""
         parsed = _parse(request)
@@ -235,7 +235,7 @@ def create_app() -> FastAPI:
             "fields": field_entries(parsed),
         }
 
-    @app.post("/generate", response_model=GenerateResponse, tags=["messages"])
+    @app.post("/generate", response_model=GenerateResponse, tags=["Messages"])
     def generate(request: GenerateRequest) -> dict[str, Any]:
         """Generate a valid test message from options, or from a description with an LLM."""
         if request.description:
@@ -269,7 +269,7 @@ def create_app() -> FastAPI:
             "source": source,
         }
 
-    @app.post("/convert", response_model=ConvertResponse, tags=["messages"])
+    @app.post("/convert", response_model=ConvertResponse, tags=["Messages"])
     def convert(request: ConvertRequest) -> dict[str, Any]:
         """Convert a message to another ISO 8583 version, listing dropped fields and notes."""
         parsed = _parse(request)

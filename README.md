@@ -45,7 +45,7 @@ A modern, high-performance ISO 8583 message simulator with CLI, Python SDK, and 
 - **Performance Optimized**:
   - Compiled Cython extensions for 2x speedup, included in the PyPI wheels
   - Object pooling for high-throughput scenarios
-  - See [Performance Guide](docs/performance.md)
+  - See [Performance Guide](https://iso8583sim.com/docs/performance)
 
 ## Architecture
 
@@ -177,7 +177,7 @@ For Claude Desktop or Cursor, add this to the client's MCP config:
 }
 ```
 
-Then ask things like *"Why was this transaction declined?"* or *"Generate a Mastercard auth and the matching approval."* The server provides 18 tools, including parse, build, validate, explain, EMV decoding, test message generation, responses, reversals, message diffs, version conversion, network rule checks, PIN blocks, MACs and sending to a (local, allowlisted) host. It runs locally and needs no LLM API key. See the [MCP docs](https://iso8583sim.com/docs/mcp/) for all tools, resources and prompts.
+Then ask things like *"Why was this transaction declined?"* or *"Generate a Mastercard auth and the matching approval."* The server provides 18 tools, including parse, build, validate, explain, EMV decoding, test message generation, responses, reversals, message diffs, version conversion, network rule checks, PIN blocks, MACs and sending to a (local, allowlisted) host. It runs locally and needs no LLM API key. See the [MCP docs](https://iso8583sim.com/docs/mcp-server) for all tools, resources and prompts.
 
 ## Interactive Notebooks
 

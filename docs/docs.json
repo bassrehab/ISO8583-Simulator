@@ -1,0 +1,251 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "iso8583sim",
+  "description": "Parse, build, validate and simulate ISO 8583 payment messages in Python.",
+  "colors": {
+    "primary": "#5f7500",
+    "light": "#a6c433",
+    "dark": "#4a5c00"
+  },
+  "background": {
+    "color": {
+      "light": "#f4f5f2",
+      "dark": "#0f120f"
+    }
+  },
+  "fonts": {
+    "family": "IBM Plex Sans"
+  },
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg",
+    "href": "https://iso8583sim.com"
+  },
+  "favicon": "/favicon.svg",
+  "navbar": {
+    "links": [
+      {
+        "label": "PyPI",
+        "href": "https://pypi.org/project/iso8583sim/"
+      }
+    ],
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/bassrehab/ISO8583-Simulator"
+    }
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Guides",
+        "groups": [
+          {
+            "group": "Get started",
+            "pages": [
+              "index",
+              "getting-started/installation",
+              "getting-started/quickstart",
+              "getting-started/concepts",
+              "getting-started/upgrading"
+            ]
+          },
+          {
+            "group": "Core",
+            "pages": [
+              "core/index",
+              "core/types",
+              "core/parser",
+              "core/builder",
+              "core/validator",
+              "core/emv",
+              "core/security",
+              "core/convert",
+              "core/wire",
+              "core/pool"
+            ]
+          },
+          {
+            "group": "Card networks",
+            "pages": [
+              "networks/index",
+              "networks/visa",
+              "networks/mastercard",
+              "networks/others"
+            ]
+          },
+          {
+            "group": "Tools and interfaces",
+            "pages": [
+              "cli/index",
+              "net/index",
+              "web/index",
+              "mcp-server/index"
+            ]
+          },
+          {
+            "group": "LLM features",
+            "pages": [
+              "llm/index",
+              "llm/providers",
+              "llm/explainer",
+              "llm/generator"
+            ]
+          },
+          {
+            "group": "Architecture",
+            "pages": [
+              "architecture/overview",
+              "architecture/message-flow",
+              "architecture/module-structure"
+            ]
+          },
+          {
+            "group": "Operations",
+            "pages": [
+              "performance",
+              "troubleshooting"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Python API",
+        "groups": [
+          {
+            "group": "Core",
+            "pages": [
+              "api/core/types",
+              "api/core/parser",
+              "api/core/builder",
+              "api/core/validator",
+              "api/core/network_rules",
+              "api/core/emv",
+              "api/core/codes",
+              "api/core/describe",
+              "api/core/convert",
+              "api/core/samples",
+              "api/core/pool"
+            ]
+          },
+          {
+            "group": "Security",
+            "pages": [
+              "api/security/pinblock",
+              "api/security/mac"
+            ]
+          },
+          {
+            "group": "Wire formats",
+            "pages": [
+              "api/wire/format",
+              "api/wire/codec"
+            ]
+          },
+          {
+            "group": "Networking",
+            "pages": [
+              "api/net/framing",
+              "api/net/client",
+              "api/net/host",
+              "api/net/load"
+            ]
+          },
+          {
+            "group": "LLM",
+            "pages": [
+              "api/llm/base",
+              "api/llm/explainer",
+              "api/llm/generator",
+              "api/llm/providers"
+            ]
+          },
+          {
+            "group": "Servers",
+            "pages": [
+              "api/mcp/server",
+              "api/web/app"
+            ]
+          },
+          {
+            "group": "Demo",
+            "pages": [
+              "api/demo"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "REST API",
+        "groups": [
+          {
+            "group": "REST API",
+            "openapi": "/rest/openapi.json",
+            "pages": [
+              "rest/index"
+            ]
+          }
+        ]
+      }
+    ],
+    "global": {
+      "anchors": [
+        {
+          "anchor": "Website",
+          "icon": "globe",
+          "href": "https://iso8583sim.com"
+        },
+        {
+          "anchor": "Changelog",
+          "icon": "list",
+          "href": "https://github.com/bassrehab/ISO8583-Simulator/blob/main/CHANGELOG.md"
+        }
+      ]
+    }
+  },
+  "redirects": [
+    {
+      "source": "/api/core",
+      "destination": "/api/core/types"
+    },
+    {
+      "source": "/api/llm",
+      "destination": "/api/llm/base"
+    },
+    {
+      "source": "/api/security",
+      "destination": "/api/security/pinblock"
+    },
+    {
+      "source": "/api/wire",
+      "destination": "/api/wire/format"
+    },
+    {
+      "source": "/api/net",
+      "destination": "/api/net/framing"
+    },
+    {
+      "source": "/api/servers",
+      "destination": "/api/mcp/server"
+    }
+  ],
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "cursor",
+      "vscode"
+    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/bassrehab/ISO8583-Simulator",
+      "website": "https://iso8583sim.com"
+    }
+  },
+  "icons": {
+    "library": "lucide"
+  }
+}
