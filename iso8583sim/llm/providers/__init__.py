@@ -7,7 +7,7 @@ and configured API keys.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from iso8583sim.llm.base import LLMProvider, ProviderConfigError
 
@@ -55,7 +55,7 @@ def _import_provider(name: str) -> tuple[type[LLMProvider], bool]:
         return None, False  # type: ignore
 
 
-def get_provider(name: str | None = None, **kwargs) -> LLMProvider:
+def get_provider(name: str | None = None, **kwargs: Any) -> LLMProvider:
     """Get an LLM provider instance.
 
     If name is provided, creates that specific provider.
