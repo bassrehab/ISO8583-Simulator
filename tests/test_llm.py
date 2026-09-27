@@ -2,6 +2,7 @@
 """Tests for the LLM module."""
 
 import json
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
@@ -364,6 +365,90 @@ class TestAnthropicProvider:
             pytest.skip("anthropic module not available")
 
 
+class FakeAnthropicClient:
+    """Records requests made to messages.create and beta.messages.create."""
+
+    def __init__(self, response):
+        self.calls = []
+        client = self
+
+        class Endpoint:
+            def __init__(self, endpoint):
+                self.endpoint = endpoint
+
+            def create(self, **kwargs):
+                client.calls.append((self.endpoint, kwargs))
+                return response
+
+        self.messages = Endpoint("messages")
+        self.beta = SimpleNamespace(messages=Endpoint("beta"))
+
+
+def anthropic_response(*blocks, stop_reason="end_turn", category=None):
+    """Build a response object shaped like the Anthropic SDK's Message."""
+    return SimpleNamespace(
+        content=[SimpleNamespace(type=kind, text=text) for kind, text in blocks],
+        stop_reason=stop_reason,
+        stop_details=SimpleNamespace(category=category) if stop_reason == "refusal" else None,
+        model="claude-opus-5",
+        usage=SimpleNamespace(input_tokens=10, output_tokens=5),
+    )
+
+
+class TestAnthropicRequests:
+    """Tests for how the Anthropic provider builds requests and reads responses."""
+
+    @pytest.fixture(autouse=True)
+    def _requires_anthropic(self):
+        pytest.importorskip("anthropic")
+
+    def make(self, response, **kwargs):
+        from iso8583sim.llm.providers.anthropic import AnthropicProvider
+
+        provider = AnthropicProvider(api_key="test-key", **kwargs)
+        # subhadipmitra@: Swap the SDK client for a fake so no request leaves the machine.
+        provider._client = FakeAnthropicClient(response)
+        return provider
+
+    def test_defaults(self):
+        provider = self.make(anthropic_response(("text", "ok")))
+        assert provider.model == "claude-opus-5"
+        assert provider._max_tokens == 16000
+
+    def test_default_model_uses_refusal_fallbacks(self):
+        provider = self.make(anthropic_response(("text", "ok")))
+        provider.complete("hello", system="be brief")
+
+        endpoint, kwargs = provider._client.calls[0]
+        assert endpoint == "beta"
+        assert kwargs["fallbacks"] == "default"
+        assert kwargs["betas"] == ["server-side-fallback-2026-07-01"]
+        assert kwargs["system"] == "be brief"
+
+    def test_other_models_skip_fallbacks(self):
+        provider = self.make(anthropic_response(("text", "ok")), model="claude-haiku-4-5")
+        provider.complete("hello")
+
+        endpoint, kwargs = provider._client.calls[0]
+        assert endpoint == "messages"
+        assert "fallbacks" not in kwargs
+        assert "system" not in kwargs
+
+    def test_text_is_joined_and_thinking_skipped(self):
+        response = anthropic_response(("thinking", ""), ("text", "Hello "), ("text", "world"))
+        assert self.make(response).complete("hi") == "Hello world"
+
+    def test_refusal_raises_llm_error(self):
+        provider = self.make(anthropic_response(stop_reason="refusal", category="cyber"))
+        with pytest.raises(LLMError, match="declined.*cyber"):
+            provider.complete("hi")
+
+    def test_complete_with_metadata(self):
+        result = self.make(anthropic_response(("thinking", ""), ("text", "ok"))).complete_with_metadata("hi")
+        assert result.content == "ok"
+        assert result.usage == {"input_tokens": 10, "output_tokens": 5}
+
+
 class TestOpenAIProvider:
     """Tests for OpenAI provider."""
 
@@ -391,7 +476,91 @@ class TestGoogleProvider:
             with pytest.raises(ProviderConfigError):
                 GoogleProvider()
         except ProviderNotAvailableError:
-            pytest.skip("google-generativeai package not installed")
+            pytest.skip("google-genai package not installed")
+
+
+class TestOpenAIRequests:
+    """Tests for how the OpenAI provider builds requests and reads responses."""
+
+    @pytest.fixture(autouse=True)
+    def _requires_openai(self):
+        pytest.importorskip("openai")
+
+    def make(self, content="ok", refusal=None):
+        from iso8583sim.llm.providers.openai import OpenAIProvider
+
+        provider = OpenAIProvider(api_key="test-key")
+        calls = []
+        response = SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content=content, refusal=refusal))],
+            model="gpt-6-astra",
+            usage=SimpleNamespace(prompt_tokens=10, completion_tokens=5),
+        )
+
+        def create(**kwargs):
+            calls.append(kwargs)
+            return response
+
+        # subhadipmitra@: Replace the SDK client with a stub so no request leaves the machine.
+        provider._client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
+        return provider, calls
+
+    def test_defaults_and_completion_token_limit(self):
+        provider, calls = self.make()
+        assert provider.complete("hi", system="be brief") == "ok"
+        assert provider.model == "gpt-6-astra"
+        assert calls[0]["max_completion_tokens"] == 16000
+        assert "max_tokens" not in calls[0]
+        assert calls[0]["messages"][0] == {"role": "system", "content": "be brief"}
+
+    def test_refusal_raises_llm_error(self):
+        provider, _ = self.make(content=None, refusal="I can't help with that.")
+        with pytest.raises(LLMError, match="declined"):
+            provider.complete("hi")
+
+
+class TestGoogleRequests:
+    """Tests for how the Google provider builds requests and reads responses."""
+
+    @pytest.fixture(autouse=True)
+    def _requires_google_genai(self):
+        pytest.importorskip("google.genai")
+
+    def make(self, text="ok", block_reason=None):
+        from iso8583sim.llm.providers.google import GoogleProvider
+
+        provider = GoogleProvider(api_key="test-key")
+        calls = []
+        response = SimpleNamespace(
+            text=text,
+            prompt_feedback=SimpleNamespace(block_reason=block_reason) if block_reason else None,
+            usage_metadata=SimpleNamespace(prompt_token_count=10, candidates_token_count=5),
+        )
+
+        def generate_content(**kwargs):
+            calls.append(kwargs)
+            return response
+
+        provider._client = SimpleNamespace(models=SimpleNamespace(generate_content=generate_content))
+        return provider, calls
+
+    def test_defaults_and_system_instruction(self):
+        provider, calls = self.make()
+        assert provider.complete("hi", system="be brief") == "ok"
+        assert calls[0]["model"] == "gemini-3.8-flash"
+        assert calls[0]["contents"] == "hi"
+        assert calls[0]["config"].system_instruction == "be brief"
+        assert calls[0]["config"].max_output_tokens == 16000
+
+    def test_metadata(self):
+        provider, _ = self.make()
+        result = provider.complete_with_metadata("hi")
+        assert result.usage == {"input_tokens": 10, "output_tokens": 5}
+
+    def test_blocked_prompt_raises_llm_error(self):
+        provider, _ = self.make(text=None, block_reason="SAFETY")
+        with pytest.raises(LLMError, match="blocked.*SAFETY"):
+            provider.complete("hi")
 
 
 class TestOllamaProvider:
