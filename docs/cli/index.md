@@ -267,6 +267,36 @@ iso8583sim generate --llm "$50 refund to a Mastercard at ACME Store"
 
 With `--llm`, the generated message is validated before it's shown, and common problems are fixed automatically.
 
+### serve
+
+Run a mock issuer host that answers requests by rules. See [Networking](../net/index.md) for the rules file format.
+
+```bash
+iso8583sim serve [--host 127.0.0.1] [--port 8583] [--rules rules.yaml] [--format bcd] [--header 2b] [--tpdu 6000010000]
+```
+
+Stops on Ctrl+C or SIGTERM and prints a summary of the requests it received and how it answered them.
+
+### send
+
+Send one message to a host and show the response.
+
+```bash
+iso8583sim send MESSAGE [--host 127.0.0.1] [--port 8583] [--format ascii-binary] [--header 2b] [--tpdu HEX] [--timeout 10]
+```
+
+Exits with status 1 on a timeout or connection error.
+
+### load
+
+Send many generated requests to a host and report throughput, latency percentiles and response codes.
+
+```bash
+iso8583sim load [--host 127.0.0.1] [--port 8583] [--count 1000] [--concurrency 10] [--connections 1] [--network VISA]
+```
+
+Takes the same `--format`, `--header`, `--tpdu` and `--timeout` options as `send`. Exits with status 1 if any request timed out or failed.
+
 ### web
 
 Run the REST API server. Requires `pip install iso8583sim[web]`.

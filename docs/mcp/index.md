@@ -118,6 +118,7 @@ With [uv](https://docs.astral.sh/uv/), a client can run the server without a sep
 | `decrypt_pin_block` | Recover the PIN from an encrypted PIN block. Needs the `security` extra. |
 | `sign_message` | Add or replace a message's MAC in field 64 or 128 (ISO 9797-1 algorithm 1 or 3). Needs the `security` extra. |
 | `verify_message_mac` | Check a message's MAC. Needs the `security` extra. |
+| `send_to_host` | Send a message to an ISO 8583 host over TCP and return the parsed response. Only allowed hosts (see below). |
 
 !!! warning "Test keys only"
     The PIN and MAC tools take keys and clear PINs as plain text, and anything you give the assistant is sent to your AI provider. Use them only with test keys and test PINs.
@@ -130,6 +131,24 @@ Conventions shared by all tools:
 - `network` is optional: `VISA`, `MASTERCARD`, `AMEX`, `DISCOVER`, `JCB` or `UNIONPAY`. Most tools detect it from the PAN when you leave it out.
 
 Invalid input returns a tool error that explains the problem, for example `Unknown network 'DINERS'` or `Invalid MTI format - must be numeric`.
+
+### Allowed hosts for `send_to_host`
+
+`send_to_host` only connects to hosts listed in the `ISO8583SIM_ALLOWED_HOSTS` environment variable of the MCP server, so an assistant can't be used to reach arbitrary machines. The default is this machine only. Entries are a host (any port) or `host:port`, comma separated:
+
+```json
+{
+  "mcpServers": {
+    "iso8583sim": {
+      "command": "iso8583sim",
+      "args": ["mcp"],
+      "env": {"ISO8583SIM_ALLOWED_HOSTS": "127.0.0.1,uat-switch.internal:9000"}
+    }
+  }
+}
+```
+
+Pair it with `iso8583sim serve` for a local mock issuer. See [Networking](../net/index.md).
 
 ## Resources
 
