@@ -93,6 +93,7 @@ nav:
     - Message Explainer: llm/explainer.md
     - Message Generator: llm/generator.md
   - MCP Server: mcp/index.md
+  - REST API: web/index.md
   - CLI Reference: cli/index.md
   - API Reference:
     - Core Module: api/core.md

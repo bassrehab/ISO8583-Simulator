@@ -21,10 +21,13 @@ A modern, high-performance ISO 8583 message simulator with CLI, Python SDK, and 
   - VISA, Mastercard, AMEX, Discover, JCB, UnionPay
   - Network-specific field validation
   - EMV/chip card data handling (Field 55)
+  - PIN blocks (ISO 9564 formats 0, 1, 3, 4) and MACs for fields 64 and 128
+  - Conversion between the 1987, 1993 and 2003 versions
 
 - **Multiple Interfaces**:
   - Command Line Interface (CLI)
   - Python SDK for programmatic usage
+  - REST API (`pip install iso8583sim[web]`, then `iso8583sim web`)
   - Interactive Jupyter notebooks
 
 - **AI-Powered Features**:

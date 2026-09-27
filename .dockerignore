@@ -1,0 +1,11 @@
+# Keep the build context small and free of local build output
+.git
+.venv
+**/__pycache__
+**/*.so
+**/*.c
+build
+dist
+site
+htmlcov
+notebooks
