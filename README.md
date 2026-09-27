@@ -4,10 +4,10 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/iso8583sim.svg)](https://pypi.org/project/iso8583sim/)
 [![License](https://img.shields.io/github/license/bassrehab/ISO8583-Simulator.svg)](https://github.com/bassrehab/ISO8583-Simulator/blob/main/LICENSE)
 [![CI](https://github.com/bassrehab/ISO8583-Simulator/actions/workflows/ci.yml/badge.svg)](https://github.com/bassrehab/ISO8583-Simulator/actions/workflows/ci.yml)
-[![Documentation](https://img.shields.io/badge/docs-iso8583sim.com-blue.svg)](https://iso8583sim.com)
+[![Documentation](https://img.shields.io/badge/docs-iso8583sim.com-blue.svg)](https://iso8583sim.com/docs)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 
-A modern, high-performance ISO 8583 message simulator with CLI, Python SDK, and AI-powered message explanation and generation.
+A high-performance ISO 8583 toolkit for Python: parse, build and validate card payment messages, simulate issuer hosts over TCP, and work with messages from the CLI, a REST API or AI assistants.
 
 ## Features
 
@@ -49,7 +49,7 @@ A modern, high-performance ISO 8583 message simulator with CLI, Python SDK, and 
 
 ## Architecture
 
-![Architecture](docs/images/architecture.png)
+![Architecture](https://raw.githubusercontent.com/bassrehab/ISO8583-Simulator/main/docs/images/architecture.png)
 
 ## Installation
 
@@ -114,7 +114,40 @@ iso8583sim explain "0100..."
 
 # Generate a message from a description
 iso8583sim generate --llm "$50 refund to a Mastercard at ACME Store"
+
+# Check a message against every card network's rules
+iso8583sim validate "0100..." --against all
+
+# Convert between ISO 8583 versions
+iso8583sim convert "0100..." --to 2003
+
+# Run a mock issuer host, then send to it and load test it
+iso8583sim serve --port 8583 --rules rules.yaml
+iso8583sim send "0100..." --port 8583
+iso8583sim load --port 8583 --count 10000 --concurrency 50
+
+# Serve the REST API, or run the MCP server for AI assistants
+iso8583sim web
+iso8583sim mcp
 ```
+
+### PIN Blocks, MACs and Wire Formats
+
+```python
+from iso8583sim.core.builder import ISO8583Builder
+from iso8583sim.core.samples import sample_message
+from iso8583sim.security import encrypt_pin_block
+from iso8583sim.wire import WireFormat
+
+key = "0123456789ABCDEFFEDCBA9876543210"  # test key
+message = sample_message()
+message.fields[52] = encrypt_pin_block("1234", "4111111111111111", key)  # ISO 9564 format 0
+
+raw = ISO8583Builder().build_with_mac(message, key)      # MAC in field 64 (ISO 9797-1)
+data = ISO8583Builder().build_bytes(message, WireFormat.bcd())  # BCD bytes for the wire
+```
+
+PIN blocks and MACs need `pip install iso8583sim[security]`. See [Wire Formats](https://iso8583sim.com/docs/core/wire) and [Networking](https://iso8583sim.com/docs/net) for talking to real hosts.
 
 ## AI-Powered Features
 
@@ -154,7 +187,7 @@ message = generator.generate("$50 refund to Mastercard at ACME Store")
 
 Ollama runs completely offline with no API keys needed.
 
-See the [OpenAI notebook](notebooks/07_llm_features.ipynb) or [Ollama notebook](notebooks/08_llm_features_ollama.ipynb) for complete examples.
+See the [OpenAI notebook](https://github.com/bassrehab/ISO8583-Simulator/blob/main/notebooks/07_llm_features.ipynb) or [Ollama notebook](https://github.com/bassrehab/ISO8583-Simulator/blob/main/notebooks/08_llm_features_ollama.ipynb) for complete examples.
 
 ### MCP Server for AI Assistants
 
@@ -185,14 +218,17 @@ Learn ISO 8583 with our Jupyter notebooks:
 
 | Notebook | Description |
 |----------|-------------|
-| [01_getting_started.ipynb](notebooks/01_getting_started.ipynb) | Basic concepts and quick start |
-| [02_parsing_messages.ipynb](notebooks/02_parsing_messages.ipynb) | Deep dive into message parsing |
-| [03_building_messages.ipynb](notebooks/03_building_messages.ipynb) | Building various message types |
-| [04_network_specifics.ipynb](notebooks/04_network_specifics.ipynb) | VISA, Mastercard, and other networks |
-| [05_emv_data.ipynb](notebooks/05_emv_data.ipynb) | Working with EMV/chip card data |
-| [06_benchmarking.ipynb](notebooks/06_benchmarking.ipynb) | Performance testing and benchmarks |
-| [07_llm_features.ipynb](notebooks/07_llm_features.ipynb) | AI-powered message explanation and generation (OpenAI) |
-| [08_llm_features_ollama.ipynb](notebooks/08_llm_features_ollama.ipynb) | AI-powered features with local Ollama (offline, private) |
+| [01_getting_started.ipynb](https://github.com/bassrehab/ISO8583-Simulator/blob/main/notebooks/01_getting_started.ipynb) | Basic concepts and quick start |
+| [02_parsing_messages.ipynb](https://github.com/bassrehab/ISO8583-Simulator/blob/main/notebooks/02_parsing_messages.ipynb) | Deep dive into message parsing |
+| [03_building_messages.ipynb](https://github.com/bassrehab/ISO8583-Simulator/blob/main/notebooks/03_building_messages.ipynb) | Building various message types |
+| [04_network_specifics.ipynb](https://github.com/bassrehab/ISO8583-Simulator/blob/main/notebooks/04_network_specifics.ipynb) | VISA, Mastercard, and other networks |
+| [05_emv_data.ipynb](https://github.com/bassrehab/ISO8583-Simulator/blob/main/notebooks/05_emv_data.ipynb) | Working with EMV/chip card data |
+| [06_benchmarking.ipynb](https://github.com/bassrehab/ISO8583-Simulator/blob/main/notebooks/06_benchmarking.ipynb) | Performance testing and benchmarks |
+| [07_llm_features.ipynb](https://github.com/bassrehab/ISO8583-Simulator/blob/main/notebooks/07_llm_features.ipynb) | AI-powered message explanation and generation (OpenAI) |
+| [08_llm_features_ollama.ipynb](https://github.com/bassrehab/ISO8583-Simulator/blob/main/notebooks/08_llm_features_ollama.ipynb) | AI-powered features with local Ollama (offline, private) |
+| [09_security_pin_mac.ipynb](https://github.com/bassrehab/ISO8583-Simulator/blob/main/notebooks/09_security_pin_mac.ipynb) | PIN blocks (ISO 9564) and MACs (ISO 9797-1) for fields 52, 64 and 128 |
+| [10_wire_formats.ipynb](https://github.com/bassrehab/ISO8583-Simulator/blob/main/notebooks/10_wire_formats.ipynb) | Binary, BCD and EBCDIC wire formats, and version conversion |
+| [11_network_simulation.ipynb](https://github.com/bassrehab/ISO8583-Simulator/blob/main/notebooks/11_network_simulation.ipynb) | Mock issuer host, TCP client and load testing |
 
 Run locally:
 ```bash
@@ -210,17 +246,19 @@ Benchmarks on Apple Silicon (M-series), Python 3.12:
 | Build | ~150k TPS | ~150k TPS |
 | Roundtrip | ~49k TPS | ~63k TPS |
 
-![Performance Chart](docs/images/performance_chart.png)
+![Performance Chart](https://raw.githubusercontent.com/bassrehab/ISO8583-Simulator/main/docs/images/performance_chart.png)
 
-See [benchmarks/BASELINE.md](benchmarks/BASELINE.md) for detailed results.
+See [benchmarks/BASELINE.md](https://github.com/bassrehab/ISO8583-Simulator/blob/main/benchmarks/BASELINE.md) for detailed results.
 
 ## Documentation
 
-Full documentation is available at **[iso8583sim.com](https://iso8583sim.com)**
+Full documentation is available at **[iso8583sim.com/docs](https://iso8583sim.com/docs)**, with search, a Python API reference generated from the code, and an interactive REST API reference.
 
 - [Getting Started](https://iso8583sim.com/docs/getting-started/quickstart) - Quick start guide
 - [Architecture](https://iso8583sim.com/docs/architecture/overview) - System design and decisions
 - [API Reference](https://iso8583sim.com/docs/api/core/types) - Complete API documentation
+- [Networking](https://iso8583sim.com/docs/net) - Mock host, TCP client and load testing
+- [MCP Server](https://iso8583sim.com/docs/mcp-server) - Using iso8583sim from AI assistants
 - [Performance Guide](https://iso8583sim.com/docs/performance) - Optimization techniques
 
 ## Development
@@ -228,7 +266,7 @@ Full documentation is available at **[iso8583sim.com](https://iso8583sim.com)**
 ```bash
 # Clone and setup
 git clone https://github.com/bassrehab/ISO8583-Simulator.git
-cd iso8583sim
+cd ISO8583-Simulator
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
@@ -239,6 +277,10 @@ pytest
 # Run benchmarks
 python benchmarks/bench_parser.py
 python benchmarks/bench_roundtrip.py
+python benchmarks/bench_network.py
+
+# Preview the docs (Mintlify, needs Node.js)
+cd docs && npx mint dev
 ```
 
 ## Contributing
@@ -258,4 +300,4 @@ python benchmarks/bench_roundtrip.py
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License - see [LICENSE](https://github.com/bassrehab/ISO8583-Simulator/blob/main/LICENSE) for details.
