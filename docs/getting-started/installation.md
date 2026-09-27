@@ -56,6 +56,22 @@ pip install iso8583sim[mcp]
 
 See [MCP Server](../mcp/index.md) for client setup.
 
+### REST API
+
+```bash
+pip install iso8583sim[web]
+```
+
+See [REST API](../web/index.md).
+
+### PIN Blocks and MACs
+
+```bash
+pip install iso8583sim[security]
+```
+
+See [PIN Blocks and MACs](../core/security.md).
+
 ### Performance Extensions
 
 For maximum throughput with Cython:

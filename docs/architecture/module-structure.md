@@ -11,7 +11,8 @@ iso8583sim/
 ├── llm/                        # LLM-powered features
 ├── cli/                        # Command-line interface
 ├── mcp/                        # MCP server for AI assistants
-├── web/                        # REST API (placeholder)
+├── security/                   # PIN blocks and MACs
+├── web/                        # REST API (FastAPI)
 └── demo.py                     # Interactive demo helpers
 ```
 

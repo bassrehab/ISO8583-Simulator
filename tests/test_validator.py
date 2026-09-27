@@ -59,7 +59,10 @@ def test_validate_mti(validator):
     assert error is None
 
     # Invalid cases
-    valid, error = validator.validate_mti("2100")  # invalid version
+    valid, error = validator.validate_mti("2100")  # 2003 version
+    assert valid
+
+    valid, error = validator.validate_mti("3100")  # undefined version
     assert not valid
 
     valid, error = validator.validate_mti("0700")  # invalid message class
@@ -234,3 +237,25 @@ def test_validate_field_compatibility(validator):
     # Test same field with 1987 version (too long)
     errors = validator.validate_field_compatibility(43, "A" * 256, ISO8583Version.V1987)
     assert len(errors) > 0
+
+
+def test_validate_for_network_does_not_change_message(validator):
+    """Validating against another network leaves the message untouched"""
+    from iso8583sim.core.types import CardNetwork, ISO8583Message
+
+    msg = ISO8583Message(mti="0100", fields={2: "4111111111111111", 3: "000000", 4: "000000001000", 11: "123456"})
+    errors = validator.validate_for_network(msg, CardNetwork.VISA)
+    assert any("Required field 14 missing for VISA" in e for e in errors)
+    assert msg.network is None
+    assert validator.validate_message(msg) == []
+
+
+def test_validate_for_networks_checks_every_network(validator):
+    """With no list, every network is checked"""
+    from iso8583sim.core.types import CardNetwork, ISO8583Message
+
+    fields = {2: "4111111111111111", 3: "000000", 4: "000000001000", 11: "123456", 22: "051"}
+    results = validator.validate_for_networks(ISO8583Message(mti="0100", fields=fields))
+    assert set(results) == set(CardNetwork)
+    assert results[CardNetwork.DISCOVER] == []
+    assert results[CardNetwork.UNIONPAY]

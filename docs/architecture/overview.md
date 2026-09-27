@@ -55,7 +55,8 @@ iso8583sim/
 ├── cli/                # Command-line interface
 │   └── commands.py     # Click-based CLI commands
 ├── mcp/                # MCP server for AI assistants
-├── web/                # REST API (future)
+├── security/           # PIN blocks and MACs
+├── web/                # REST API (FastAPI)
 └── demo.py             # Interactive demo helpers
 ```
 

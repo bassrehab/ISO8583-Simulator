@@ -129,8 +129,9 @@ iso8583sim validate MESSAGE [OPTIONS]
 
 | Option | Description |
 |--------|-------------|
-| `--network` | Validate against network requirements |
-| `--strict` | Enable strict validation mode |
+| `--network`, `-n` | Validate against one network's requirements |
+| `--against`, `-a` | Check against several networks: comma separated names, or `all` |
+| `--version`, `-v` | ISO 8583 version (1987, 1993, 2003) |
 
 **Examples:**
 
@@ -141,28 +142,49 @@ iso8583sim validate "0100..."
 # With network validation
 iso8583sim validate "0100..." --network visa
 
-# Strict mode
-iso8583sim validate "0100..." --strict
+# Which networks would accept this message?
+iso8583sim validate "0100..." --against all
 ```
 
-**Output:**
+**Output (`--against all`):**
 
 ```
-Validation Results:
-  Message is VALID
-
-  Fields validated: 7
-  Network: VISA (auto-detected)
-
-Or with errors:
-
-Validation Results:
-  Message is INVALID
-
-  Errors:
-    - Field 4 must contain only digits
-    - Missing required field: 11
+                       Network Compliance
+┏━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Network    ┃ Result ┃ Issues                                 ┃
+┡━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ VISA       │ PASS   │ -                                      │
+│ MASTERCARD │ PASS   │ -                                      │
+│ UNIONPAY   │ FAIL   │ Required field 49 missing for UNIONPAY │
+└────────────┴────────┴────────────────────────────────────────┘
 ```
+
+The command exits with status 1 when any check fails.
+
+### convert
+
+Convert a message to another ISO 8583 version.
+
+```bash
+iso8583sim convert MESSAGE --to VERSION [OPTIONS]
+```
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `--to`, `-t` | Target version (1987, 1993, 2003) |
+| `--from`, `-f` | Version of the input message (default 1987) |
+| `--network`, `-n` | Card network. Network rules are only enforced on the output when this is given |
+| `--output`, `-o` | Output file |
+
+**Example:**
+
+```bash
+iso8583sim convert "0400..." --to 2003
+```
+
+The output shows the converted message, notes about fields whose meaning differs between versions, and any fields that had to be dropped. See [Version Conversion](../core/convert.md) for the rules.
 
 ### explain
 
@@ -244,6 +266,16 @@ iso8583sim generate --llm "$50 refund to a Mastercard at ACME Store"
 ```
 
 With `--llm`, the generated message is validated before it's shown, and common problems are fixed automatically.
+
+### web
+
+Run the REST API server. Requires `pip install iso8583sim[web]`.
+
+```bash
+iso8583sim web [--host 127.0.0.1] [--port 8000] [--reload]
+```
+
+Interactive API docs are served at `/docs`. See [REST API](../web/index.md).
 
 ### mcp
 

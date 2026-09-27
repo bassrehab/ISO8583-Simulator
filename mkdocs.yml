@@ -79,6 +79,8 @@ nav:
     - Builder: core/builder.md
     - Validator: core/validator.md
     - EMV Data: core/emv.md
+    - PIN Blocks and MACs: core/security.md
+    - Version Conversion: core/convert.md
     - Object Pool: core/pool.md
   - Card Networks:
     - Overview: networks/index.md
@@ -91,6 +93,7 @@ nav:
     - Message Explainer: llm/explainer.md
     - Message Generator: llm/generator.md
   - MCP Server: mcp/index.md
+  - REST API: web/index.md
   - CLI Reference: cli/index.md
   - API Reference:
     - Core Module: api/core.md

@@ -61,6 +61,10 @@ dev = [
 mcp = [
     "mcp>=2.0.0",
 ]
+# PIN blocks and MACs
+security = [
+    "cryptography>=42.0.0",
+]
 # REST API server
 web = [
     "fastapi>=0.110.0",

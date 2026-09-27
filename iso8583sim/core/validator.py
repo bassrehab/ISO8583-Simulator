@@ -1,8 +1,17 @@
 # iso8583sim/core/validator.py
 
 import re
+from dataclasses import replace
 
-from .types import CardNetwork, FieldDefinition, FieldType, ISO8583Message, ISO8583Version, get_field_definition
+from .types import (
+    MTI_VERSION_DIGITS,
+    CardNetwork,
+    FieldDefinition,
+    FieldType,
+    ISO8583Message,
+    ISO8583Version,
+    get_field_definition,
+)
 
 # Pre-compiled regex patterns for performance
 _HEX_16_PATTERN = re.compile(r"^[0-9A-F]{16}$")
@@ -215,8 +224,8 @@ class ISO8583Validator:
             return False, "MTI must contain only digits"
 
         version = mti[0]
-        if version not in ["0", "1"]:
-            return False, "MTI version must be 0 or 1"
+        if version not in MTI_VERSION_DIGITS.values():
+            return False, "MTI version must be 0 (1987), 1 (1993) or 2 (2003)"
 
         message_class = mti[1]
         if message_class not in ["1", "2", "3", "4", "5", "6", "8", "9"]:
@@ -293,6 +302,28 @@ class ISO8583Validator:
         if _USE_CYTHON:
             return _is_valid_hex_fast(value)
         return all(c in "0123456789ABCDEFabcdef" for c in value)
+
+    def validate_for_network(self, message: ISO8583Message, network: CardNetwork) -> list[str]:
+        """Validate a message as if it were sent on another network.
+
+        The message is not changed. Useful to check whether a message built for one
+        network also meets another network's required fields and formats.
+        """
+        # subhadipmitra@: Network rules key off message.network, so validate a copy with the
+        # network swapped instead of mutating the caller's message.
+        return self.validate_message(replace(message, fields=dict(message.fields), network=network))
+
+    def validate_for_networks(
+        self, message: ISO8583Message, networks: list[CardNetwork] | None = None
+    ) -> dict[CardNetwork, list[str]]:
+        """Validate a message against several networks at once (all networks by default)."""
+        return {net: self.validate_for_network(message, net) for net in (networks or list(CardNetwork))}
+
+    def verify_mac(self, raw_message: str, key: str | bytes, algorithm: int = 3, padding: int = 1) -> bool:
+        """Check the MAC in field 64 or 128 of a raw message. Requires the security extra."""
+        from ..security import verify_message
+
+        return verify_message(raw_message, key, algorithm=algorithm, padding=padding)
 
     def validate_network_compliance(self, message: ISO8583Message) -> list[str]:
         """Validate network-specific requirements"""

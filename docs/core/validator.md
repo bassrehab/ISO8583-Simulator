@@ -102,6 +102,19 @@ errors = validator.validate_message(message)
 | JCB | 2, 3, 4, 11, 22, 25 |
 | UnionPay | 2, 3, 4, 11, 22, 25, 49 |
 
+### Checking Against Other Networks
+
+`validate_for_network` checks a message against another network's rules without changing it. `validate_for_networks` checks several at once, or every network when you pass no list:
+
+```python
+from iso8583sim.core.types import CardNetwork
+
+errors = validator.validate_for_network(message, CardNetwork.MASTERCARD)
+
+results = validator.validate_for_networks(message)  # {CardNetwork.VISA: [], CardNetwork.UNIONPAY: [...], ...}
+failing = [net.value for net, errs in results.items() if errs]
+```
+
 ### PAN Validation
 
 Luhn checksum validation for Field 2:
