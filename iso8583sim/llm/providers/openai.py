@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from typing import Any
 
 from iso8583sim.llm.base import LLMError, LLMProvider, LLMResponse, ProviderConfigError, ProviderNotAvailableError
 
@@ -83,7 +84,7 @@ class OpenAIProvider(LLMProvider):
             LLMError: If the API call fails
         """
         try:
-            messages = []
+            messages: list[Any] = []
             if system:
                 messages.append({"role": "system", "content": system})
             messages.append({"role": "user", "content": prompt})
@@ -110,7 +111,7 @@ class OpenAIProvider(LLMProvider):
             LLMResponse with content and usage metadata
         """
         try:
-            messages = []
+            messages: list[Any] = []
             if system:
                 messages.append({"role": "system", "content": system})
             messages.append({"role": "user", "content": prompt})

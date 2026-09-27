@@ -119,6 +119,8 @@ def pretty_print(message: ISO8583Message | str, show_raw: bool = False) -> None:
         value = message.fields[field_num]
         try:
             field_def = get_field_definition(field_num)
+            if field_def is None:
+                raise KeyError(field_num)
             desc = field_def.description[:35]
             ftype = field_def.field_type.name
         except (KeyError, AttributeError):

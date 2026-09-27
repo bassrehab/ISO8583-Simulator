@@ -60,13 +60,13 @@ class ISO8583Shell(code.InteractiveConsole):
         # Set history length
         readline.set_history_length(1000)
 
-    def interact(self, banner=None):
+    def interact(self, banner: str | None = None, exitmsg: str | None = None) -> None:
         """Start the interactive shell"""
         if banner is None:
             banner = self._get_default_banner()
 
         try:
-            super().interact(banner)
+            super().interact(banner, exitmsg)
         finally:
             # Save history on exit
             readline.write_history_file(str(self.history_file))

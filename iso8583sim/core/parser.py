@@ -57,9 +57,9 @@ class ISO8583Parser:
         self._pool = pool
         self._current_position = 0
         self._raw_message = ""
-        self._detected_network = None
+        self._detected_network: CardNetwork | None = None
         self._secondary_bitmap = False
-        self._network_fields = {}  # Cache for network-specific field definitions
+        self._network_fields: dict[int, FieldDefinition] = {}  # Cache for network-specific field definitions
         # Cache version-specific fields at init time (version doesn't change)
         self._version_fields = VERSION_SPECIFIC_FIELDS.get(version, {})
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
