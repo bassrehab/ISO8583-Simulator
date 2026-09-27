@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- API reference pages for `iso8583sim.security`, `iso8583sim.wire`, `iso8583sim.net`, the REST and MCP servers, and the newer core modules (`codes`, `describe`, `convert`, `samples`, `network_rules`).
+
 ### Changed
 
 - Network field rules were rewritten from published sources (`iso8583sim.core.network_rules`). For VISA and Mastercard, field 22 must now use a known PAN entry mode and PIN entry capability, and Mastercard rejects the Visa-only mode `95`. Mastercard field 48 must be a transaction category code followed by well-formed subelements.
