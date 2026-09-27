@@ -10,13 +10,14 @@ from typing import Any, TypeVar
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ResourceError, ToolError
 
-from .. import __version__
+from .. import __version__, security
 from ..core.builder import ISO8583Builder
 from ..core.codes import (
     PROCESSING_CODES,
     RESPONSE_CODES,
     detect_network_from_pan,
 )
+from ..core.convert import convert_message
 from ..core.describe import decode_emv_tags, describe_message, field_entries, field_name
 from ..core.emv import EMV_TAGS
 from ..core.parser import ISO8583Parser
@@ -322,6 +323,94 @@ def create_server() -> MCPServer:
             "changed": changed,
             "identical": a.mti == b.mti and not (added or removed or changed),
         }
+
+    @server.tool()
+    @tool_errors
+    def convert_version(
+        message: str, target_version: str, source_version: str = "1987", network: str | None = None
+    ) -> dict[str, Any]:
+        """Convert a message to another ISO 8583 version (1987, 1993, 2003).
+
+        Rewrites the MTI version digit and moves original data elements between fields 90
+        and 56. Fields that can't be carried over (e.g. PIN data, MACs) are listed in
+        "dropped" with a reason. "notes" lists fields whose meaning differs between versions.
+        """
+        parsed = _parse(message, network, source_version)
+        target = _version(target_version)
+        result = convert_message(parsed, target)
+        # subhadipmitra@: Same rule as the CLI. A network guessed from the PAN is not
+        # enforced on the output, so conversion never rejects a message the input accepted.
+        if not network:
+            result.message.network = None
+        raw = builder_for[target].build(result.message)
+        return {
+            "message": raw,
+            "mti": result.message.mti,
+            "dropped": {str(n): reason for n, reason in result.dropped.items()},
+            "notes": result.notes,
+            "lossless": result.lossless,
+        }
+
+    @server.tool()
+    @tool_errors
+    def check_network_rules(message: str, networks: list[str] | None = None, version: str = "1987") -> dict[str, Any]:
+        """Check a message against card networks' rules without changing it.
+
+        Checks every network when "networks" is omitted. Answers "which networks would accept this message?".
+        """
+        parsed = _parse(message, version=version)
+        targets = [net for net in (_network(name) for name in networks or []) if net]
+        results = validator.validate_for_networks(parsed, targets or None)
+        return {net.value: {"passed": not errors, "errors": errors} for net, errors in results.items()}
+
+    @server.tool()
+    @tool_errors
+    def encrypt_pin_block(pin: str, pan: str | None, key: str, block_format: int = 0) -> dict[str, Any]:
+        """Build an encrypted ISO 9564 PIN block for field 52. TEST KEYS AND PINS ONLY.
+
+        block_format 0, 1 or 3 uses a TDES key (32 or 48 hex characters) and gives 8 bytes.
+        Format 4 uses an AES key (32, 48 or 64 hex characters) and gives 16 bytes.
+        Format 1 does not use the PAN. Needs the security extra.
+        """
+        block = security.encrypt_pin_block(pin, pan, key, block_format)
+        return {"pin_block": block, "format": block_format, "bytes": len(block) // 2}
+
+    @server.tool()
+    @tool_errors
+    def decrypt_pin_block(pin_block: str, pan: str | None, key: str, block_format: int = 0) -> dict[str, Any]:
+        """Recover the PIN from an encrypted ISO 9564 PIN block. TEST KEYS AND PINS ONLY.
+
+        Fails with a clear error when the key, PAN or format is wrong. Needs the security extra.
+        """
+        return {"pin": security.decrypt_pin_block(pin_block, pan, key, block_format)}
+
+    @server.tool()
+    @tool_errors
+    def sign_message(
+        message: str, key: str, algorithm: int = 3, padding: int = 1, version: str = "1987"
+    ) -> dict[str, Any]:
+        """Add or replace the MAC of a message (field 64, or 128 with a secondary bitmap).
+
+        algorithm 3 is the ANSI X9.19 retail MAC (16-byte key), algorithm 1 is CBC-MAC.
+        TEST KEYS ONLY. Needs the security extra.
+        """
+        v = _version(version)
+        parsed = _parse(message, version=version)
+        # subhadipmitra@: Sign without the guessed network so the builder applies the same
+        # rules the message was built under.
+        parsed.network = None
+        raw = security.sign_message(parsed, key, builder=builder_for[v], algorithm=algorithm, padding=padding)
+        field = security.mac_field(parsed.fields)
+        return {"message": raw, "mac_field": field, "mac": parsed.fields[field]}
+
+    @server.tool()
+    @tool_errors
+    def verify_message_mac(
+        message: str, key: str, algorithm: int = 3, padding: int = 1, version: str = "1987"
+    ) -> dict[str, Any]:
+        """Check the MAC in field 64 or 128 of a message. TEST KEYS ONLY. Needs the security extra."""
+        valid = security.verify_message(message.rstrip("\r\n"), key, algorithm, padding, _version(version))
+        return {"valid": valid}
 
     # Resources
 

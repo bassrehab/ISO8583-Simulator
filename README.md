@@ -170,7 +170,7 @@ For Claude Desktop or Cursor, add this to the client's MCP config:
 }
 ```
 
-Then ask things like *"Why was this transaction declined?"* or *"Generate a Mastercard auth and the matching approval."* The server provides 11 tools, including parse, build, validate, explain, EMV decoding, test message generation, responses, reversals and message diffs. It runs locally and needs no LLM API key. See the [MCP docs](https://iso8583sim.com/docs/mcp/) for all tools, resources and prompts.
+Then ask things like *"Why was this transaction declined?"* or *"Generate a Mastercard auth and the matching approval."* The server provides 17 tools, including parse, build, validate, explain, EMV decoding, test message generation, responses, reversals, message diffs, version conversion, network rule checks, PIN blocks and MACs. It runs locally and needs no LLM API key. See the [MCP docs](https://iso8583sim.com/docs/mcp/) for all tools, resources and prompts.
 
 ## Interactive Notebooks
 
