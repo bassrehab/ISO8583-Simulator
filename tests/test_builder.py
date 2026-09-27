@@ -332,3 +332,15 @@ def test_field_padding_handling(builder):
     )
     value = builder._build_field(3, "123", field_def)
     assert value == "000123"
+
+
+def test_reversal_original_data_elements(builder, test_messages, create_message):
+    """Field 90 carries the original MTI, STAN, transmission time and institution IDs"""
+    original = create_message("basic_auth", test_messages)
+    original.fields[7] = "1225103000"
+    original.fields[11] = "123456"
+    original.fields[32] = "12345"
+
+    reversal = builder.create_reversal(original)
+
+    assert reversal.fields[90] == original.mti + "123456" + "1225103000" + "00000012345" + "00000000000"

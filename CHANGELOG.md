@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Python 3.13 and 3.14 support.
 
+### Fixed
+
+- Reversals built with `create_reversal` now fill field 90 (original data elements) with the original STAN, transmission date/time and institution IDs. Previously the STAN was always blank.
+- `iso8583sim version` reported `v0.1.0` instead of the installed version.
+
 ### Changed
 
 - `fastapi` and `uvicorn` are no longer installed by default. They moved to the new `web` extra (`pip install iso8583sim[web]`).

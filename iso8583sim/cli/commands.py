@@ -7,6 +7,7 @@ import typer
 from rich.console import Console
 from rich.panel import Panel
 
+from .. import __version__
 from ..core.builder import ISO8583Builder
 from ..core.parser import ISO8583Parser
 from ..core.types import (
@@ -110,7 +111,7 @@ class ISO8583Shell(code.InteractiveConsole):
 @app.command()
 def version():
     """Display version information"""
-    console.print("[cyan]ISO8583 Simulator[/] [green]v0.1.0[/]")
+    console.print(f"[cyan]ISO8583 Simulator[/] [green]v{__version__}[/]")
 
 
 @app.command("parse")
