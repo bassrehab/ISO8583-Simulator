@@ -516,3 +516,35 @@ class TestWebCommand:
         result = runner.invoke(app, ["web"])
         assert result.exit_code == 1
         assert "iso8583sim[web]" in result.stdout
+
+
+class TestGenerateAmount:
+    """Regression tests: --amount used to be multiplied by 100 twice."""
+
+    @staticmethod
+    def field_4(args, tmp_path):
+        from iso8583sim.core.parser import ISO8583Parser
+
+        output = tmp_path / "message.txt"
+        result = runner.invoke(app, ["generate", "--type", "auth", *args, "--output", str(output)])
+        assert result.exit_code == 0, result.stdout
+        return ISO8583Parser().parse(output.read_text()).fields[4]
+
+    @pytest.mark.parametrize(
+        "args,expected",
+        [
+            ([], "000000001000"),  # default is 10.00
+            (["--amount", "1000"], "000000001000"),
+            (["--amount", "10.00"], "000000001000"),
+            (["--amount", "0.29"], "000000000029"),
+            (["--amount", "1500", "--currency", "392"], "000000001500"),  # JPY has no decimals
+        ],
+    )
+    def test_amount_in_field_4(self, args, expected, tmp_path):
+        assert self.field_4(args, tmp_path) == expected
+
+    @pytest.mark.parametrize("amount", ["-5", "abc", "1.234", "9999999999999"])
+    def test_invalid_amount(self, amount):
+        result = runner.invoke(app, ["generate", "--type", "auth", "--amount", amount])
+        assert result.exit_code == 1
+        assert "Invalid amount" in result.stdout

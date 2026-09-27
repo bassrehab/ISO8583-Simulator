@@ -1,6 +1,7 @@
 # iso8583sim/cli/utils.py
 import json
 from datetime import datetime
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
@@ -45,15 +46,43 @@ def validate_file_path(file_path: Path, create_dir: bool = True) -> Path:
     return file_path
 
 
-def format_amount(amount: str) -> str:
-    """Format numeric amount with proper padding"""
-    try:
-        # Remove any decimal points and convert to integer
-        num = int(float(amount) * 100)
-        # Return 12-digit zero-padded string
-        return f"{num:012d}"
-    except ValueError:
-        raise typer.BadParameter("Invalid amount format") from None
+def format_amount(amount: str, exponent: int = 2) -> str:
+    """Format an amount for field 4: 12 digits in minor units.
+
+    Args:
+        amount: Minor units as digits ("1000" is 10.00), or a decimal amount ("10.00")
+        exponent: Number of decimal places in the currency (2 for USD, 0 for JPY)
+
+    Returns:
+        The amount as a 12-digit, zero-padded string
+    """
+    value = amount.strip()
+    # subhadipmitra@: Plain digits are already minor units, as the --amount help and the docs
+    # say. This used to multiply every input by 100, and generate applied it twice, so the
+    # default 000000001000 (10.00) went out as 100000.00.
+    if value.isdigit():
+        minor = int(value)
+    else:
+        # subhadipmitra@: A decimal amount is scaled with Decimal, not float, so "0.29" is
+        # exactly 29 minor units rather than 28.999... truncated to 28.
+        try:
+            major = Decimal(value)
+        except InvalidOperation:
+            raise typer.BadParameter(
+                f"Invalid amount {amount!r}: use minor units (1000) or a decimal (10.00)"
+            ) from None
+        if not major.is_finite() or major < 0:
+            raise typer.BadParameter(f"Invalid amount {amount!r}: must be zero or more") from None
+        scaled = major.scaleb(exponent)
+        if scaled != scaled.to_integral_value():
+            raise typer.BadParameter(
+                f"Invalid amount {amount!r}: this currency has {exponent} decimal places"
+            ) from None
+        minor = int(scaled)
+
+    if minor >= 10**12:
+        raise typer.BadParameter(f"Invalid amount {amount!r}: field 4 holds at most 12 digits")
+    return f"{minor:012d}"
 
 
 def validate_pan(pan: str) -> str:
@@ -93,8 +122,10 @@ def create_template_message(
     if pan:
         fields[2] = validate_pan(pan)
 
+    # subhadipmitra@: The amount arrives already formatted for field 4 (see format_amount),
+    # so it is stored as is. Formatting it again here was what doubled the scaling bug.
     if amount:
-        fields[4] = format_amount(amount)
+        fields[4] = amount
 
     if terminal_id:
         fields[41] = terminal_id

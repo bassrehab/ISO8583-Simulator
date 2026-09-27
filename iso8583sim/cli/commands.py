@@ -11,6 +11,7 @@ from rich.table import Table
 
 from .. import __version__
 from ..core.builder import ISO8583Builder
+from ..core.codes import CURRENCY_CODES
 from ..core.describe import describe_message
 from ..core.parser import ISO8583Parser
 from ..core.types import (
@@ -348,7 +349,9 @@ def explain_message(
 def generate_message(
     type: str | None = typer.Option(None, "--type", "-t", help="Message type (auth, financial, reversal)"),
     pan: str = typer.Option("4111111111111111", "--pan", "-p", help="Primary Account Number"),
-    amount: str = typer.Option("000000001000", "--amount", "-a", help="Transaction amount"),
+    amount: str = typer.Option(
+        "000000001000", "--amount", "-a", help="Amount in minor units (1000 = 10.00), or a decimal such as 10.00"
+    ),
     currency: str = typer.Option("840", "--currency", "-c", help="Currency code (ISO 4217)"),
     network: str | None = typer.Option(None, "--network", "-n", help="Card network (VISA, MASTERCARD, AMEX, etc.)"),
     output: Path | None = typer.Option(None, "--output", "-o", help="Output file for generated message"),
@@ -372,7 +375,10 @@ def generate_message(
 
     try:
         # Create message template
-        message = create_template_message(get_mti_for_type(type), pan=validate_pan(pan), amount=format_amount(amount))
+        exponent = CURRENCY_CODES.get(currency, ("", 2))[1]
+        message = create_template_message(
+            get_mti_for_type(type), pan=validate_pan(pan), amount=format_amount(amount, exponent)
+        )
 
         # Add network if specified
         if network:
