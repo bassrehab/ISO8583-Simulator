@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Subhadip Mitra <contact@subhadipmitra.com>
+# SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-iso8583sim-Commercial
+
 """Rule-based, human-readable descriptions of ISO 8583 messages.
 
 These helpers need no LLM. They power `iso8583sim explain --no-llm` and the

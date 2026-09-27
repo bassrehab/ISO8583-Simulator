@@ -1,4 +1,4 @@
-include LICENSE README.md CHANGELOG.md
+include LICENSE NOTICE COMMERCIAL-LICENSE.md CONTRIBUTING.md README.md CHANGELOG.md
 recursive-include iso8583sim *.pyx
 graft tests
 prune tests/__pycache__

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Subhadip Mitra <contact@subhadipmitra.com>
+# SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-iso8583sim-Commercial
+
 """Check that compiled wheels really load their Cython extensions.
 
 Skipped unless ISO8583SIM_REQUIRE_CYTHON=1, which the wheel build (cibuildwheel) sets.

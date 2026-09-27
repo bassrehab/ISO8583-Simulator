@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Subhadip Mitra <contact@subhadipmitra.com>
+# SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-iso8583sim-Commercial
+
 """Byte-level wire formats for sending ISO 8583 messages over a network.
 
 The rest of the library works with messages as strings (ASCII MTI, hex bitmap, binary
