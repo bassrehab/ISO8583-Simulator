@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Public mode for the REST API (`ISO8583SIM_PUBLIC=1`): LLM features are turned off (403) and CORS allows any origin
+- A public demo of the REST API at https://api.iso8583sim.com. The docs playground calls it by default.
+
+### Changed
+- The REST API rejects oversized requests: messages over 32,768 characters, field values over 1,998 and descriptions over 2,000
+
 ## [1.5.1] - 2026-09-27
 
 ### Added

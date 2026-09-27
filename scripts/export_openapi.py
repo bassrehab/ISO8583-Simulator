@@ -21,9 +21,12 @@ def build() -> str:
     from iso8583sim.web.app import create_app
 
     spec = create_app().openapi()
-    # subhadipmitra@: The API has no public deployment, so the docs playground targets a local
-    # server started with `iso8583sim web`.
-    spec["servers"] = [{"url": "http://127.0.0.1:8000", "description": "Local server (iso8583sim web)"}]
+    # subhadipmitra@: The docs playground calls the first server by default: the public demo,
+    # which has LLM features turned off. The local server is listed for everything else.
+    spec["servers"] = [
+        {"url": "https://api.iso8583sim.com", "description": "Public demo (LLM features off)"},
+        {"url": "http://127.0.0.1:8000", "description": "Local server (iso8583sim web)"},
+    ]
     # subhadipmitra@: A fixed version keeps the committed spec from changing on every release;
     # it only changes when the API itself does.
     spec["info"]["version"] = "1"
