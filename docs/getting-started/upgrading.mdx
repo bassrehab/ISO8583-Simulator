@@ -1,6 +1,9 @@
-# Upgrading
+---
+title: "Upgrading"
+description: "The string-based API (ISO8583Parser.parse, ISO8583Builder.build, ISO8583Validator) has not changed since 1.0."
+---
 
-The string-based API (`ISO8583Parser.parse`, `ISO8583Builder.build`, `ISO8583Validator`) has not changed since 1.0. Code written for 1.x keeps working. This page lists the changes in behaviour and dependencies that can still affect an upgrade.
+Code written for 1.x keeps working. This page lists the changes in behaviour and dependencies that can still affect an upgrade.
 
 ## From 1.1.x
 
@@ -36,13 +39,13 @@ Refusals now raise `LLMError` instead of returning an empty string. If you relie
 
 **Network validation changed.** Check VISA and Mastercard test data against the new rules:
 
-- **Stricter:** field 22 must use a known PAN entry mode (first two digits) and PIN entry capability (third digit). Mastercard rejects the Visa-only mode `95`. Mastercard field 48 must be a transaction category code followed by well-formed subelements, so values such as `MC123` are now rejected. See [Field 22](../networks/index.md#field-22-pos-entry-mode).
+- **Stricter:** field 22 must use a known PAN entry mode (first two digits) and PIN entry capability (third digit). Mastercard rejects the Visa-only mode `95`. Mastercard field 48 must be a transaction category code followed by well-formed subelements, so values such as `MC123` are now rejected. See [Field 22](../networks#field-22-pos-entry-mode).
 - **Looser:** VISA field 44 no longer has to be hexadecimal, and Mastercard field 48 no longer has to start with `MC`. Both rules were wrong.
 
 ## New in 1.4
 
 Additive only. See the changelog for details.
 
-- [Wire formats](../core/wire.md): encode and decode bytes with binary bitmaps, BCD and EBCDIC (`build_bytes`, `parse_bytes`).
-- [Networking](../net/index.md): TCP client, mock issuer host, and the `serve`, `send` and `load` commands.
+- [Wire formats](../core/wire): encode and decode bytes with binary bitmaps, BCD and EBCDIC (`build_bytes`, `parse_bytes`).
+- [Networking](../net): TCP client, mock issuer host, and the `serve`, `send` and `load` commands.
 - MCP `send_to_host` tool, limited to allowed hosts.

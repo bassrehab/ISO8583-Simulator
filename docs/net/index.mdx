@@ -1,13 +1,17 @@
-# Networking
+---
+title: "Networking"
+description: "iso8583sim can talk to real hosts over TCP, and can stand in for one."
+sidebarTitle: "Networking"
+---
 
-iso8583sim can talk to real hosts over TCP, and can stand in for one. Use it to test acquirer, switch or terminal software without a card network connection.
+Use it to test acquirer, switch or terminal software without a card network connection.
 
 - **`iso8583sim serve`** runs a mock issuer host that answers by rules.
 - **`iso8583sim send`** sends one message and shows the response.
 - **`iso8583sim load`** sends many requests and reports throughput and latency.
 - **`ISO8583Client`** and **`MockHost`** do the same from Python (asyncio).
 
-Messages travel in a [wire format](../core/wire.md) (ASCII, BCD, EBCDIC...), each preceded by a length header and, optionally, a TPDU.
+Messages travel in a [wire format](../core/wire) (ASCII, BCD, EBCDIC...), each preceded by a length header and, optionally, a TPDU.
 
 ## Quick start
 
@@ -121,7 +125,7 @@ The client matches responses to requests by STAN (field 11), so many requests ca
 
 ## From an AI assistant
 
-The [MCP server](../mcp/index.md) has a `send_to_host` tool. To stop an assistant from being used to reach arbitrary machines, it only connects to hosts listed in the `ISO8583SIM_ALLOWED_HOSTS` environment variable of the MCP server. The default is this machine only (`127.0.0.1,localhost,::1`). Entries can be a host (any port) or `host:port`:
+The [MCP server](../mcp) has a `send_to_host` tool. To stop an assistant from being used to reach arbitrary machines, it only connects to hosts listed in the `ISO8583SIM_ALLOWED_HOSTS` environment variable of the MCP server. The default is this machine only (`127.0.0.1,localhost,::1`). Entries can be a host (any port) or `host:port`:
 
 ```json
 {

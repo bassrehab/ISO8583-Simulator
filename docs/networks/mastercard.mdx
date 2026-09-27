@@ -1,6 +1,7 @@
-# Mastercard
-
-Mastercard-specific field definitions and requirements for iso8583sim.
+---
+title: "Mastercard"
+description: "Mastercard-specific field definitions and requirements for iso8583sim."
+---
 
 ## Network Detection
 
@@ -73,7 +74,7 @@ Common Mastercard values:
 | 812 | E-commerce, no PIN entry |
 | 911 | Contactless magnetic stripe, terminal accepts PINs |
 
-The third digit is PIN entry capability (`1` accepts PINs, `2` doesn't, `8` PIN pad not working). `95x` is a VISA-only code and is rejected for Mastercard. See [Field 22](index.md#field-22-pos-entry-mode) for every code the validator accepts.
+The third digit is PIN entry capability (`1` accepts PINs, `2` doesn't, `8` PIN pad not working). `95x` is a VISA-only code and is rejected for Mastercard. See [Field 22](.#field-22-pos-entry-mode) for every code the validator accepts.
 
 ## Response Codes (Field 39)
 

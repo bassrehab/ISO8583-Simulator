@@ -1,6 +1,7 @@
-# Version Conversion
-
-`convert_message` converts a message between the 1987, 1993 and 2003 versions of ISO 8583.
+---
+title: "Version Conversion"
+description: "convert_message converts a message between the 1987, 1993 and 2003 versions of ISO 8583."
+---
 
 ```python
 from iso8583sim.core.builder import ISO8583Builder
@@ -48,4 +49,4 @@ A message converted to another version and back reproduces the original exactly,
 iso8583sim convert "0400..." --to 2003
 ```
 
-See the [CLI reference](../cli/index.md#convert).
+See the [CLI reference](../cli#convert).

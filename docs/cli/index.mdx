@@ -1,6 +1,8 @@
-# CLI Reference
-
-iso8583sim provides a command-line interface for parsing, building, and validating ISO 8583 messages.
+---
+title: "CLI Reference"
+description: "iso8583sim provides a command-line interface for parsing, building, and validating ISO 8583 messages."
+sidebarTitle: "CLI"
+---
 
 ## Installation
 
@@ -184,7 +186,7 @@ iso8583sim convert MESSAGE --to VERSION [OPTIONS]
 iso8583sim convert "0400..." --to 2003
 ```
 
-The output shows the converted message, notes about fields whose meaning differs between versions, and any fields that had to be dropped. See [Version Conversion](../core/convert.md) for the rules.
+The output shows the converted message, notes about fields whose meaning differs between versions, and any fields that had to be dropped. See [Version Conversion](../core/convert) for the rules.
 
 ### explain
 
@@ -194,7 +196,7 @@ Explain a message in plain English.
 iso8583sim explain MESSAGE [OPTIONS]
 ```
 
-By default the explanation comes from an LLM (see [LLM Features](../llm/index.md) for provider setup). With `--no-llm` you get a rule-based summary instead, which works offline and needs no API key.
+By default the explanation comes from an LLM (see [LLM Features](../llm) for provider setup). With `--no-llm` you get a rule-based summary instead, which works offline and needs no API key.
 
 **Options:**
 
@@ -269,7 +271,7 @@ With `--llm`, the generated message is validated before it's shown, and common p
 
 ### serve
 
-Run a mock issuer host that answers requests by rules. See [Networking](../net/index.md) for the rules file format.
+Run a mock issuer host that answers requests by rules. See [Networking](../net) for the rules file format.
 
 ```bash
 iso8583sim serve [--host 127.0.0.1] [--port 8583] [--rules rules.yaml] [--format bcd] [--header 2b] [--tpdu 6000010000]
@@ -305,7 +307,7 @@ Run the REST API server. Requires `pip install iso8583sim[web]`.
 iso8583sim web [--host 127.0.0.1] [--port 8000] [--reload]
 ```
 
-Interactive API docs are served at `/docs`. See [REST API](../web/index.md).
+Interactive API docs are served at `/docs`. See [REST API](../web).
 
 ### mcp
 
@@ -315,7 +317,7 @@ Run the MCP server over stdio so AI assistants can use iso8583sim. Requires `pip
 iso8583sim mcp
 ```
 
-Your MCP client normally starts this command for you. See [MCP Server](../mcp/index.md) for setup.
+Your MCP client normally starts this command for you. See [MCP Server](../mcp) for setup.
 
 ## Output Formats
 

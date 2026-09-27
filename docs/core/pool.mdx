@@ -1,6 +1,7 @@
-# Object Pool
-
-The `MessagePool` class provides object pooling for high-throughput scenarios, reducing memory allocation overhead.
+---
+title: "Object Pool"
+description: "The MessagePool class provides object pooling for high-throughput scenarios, reducing memory allocation overhead."
+---
 
 ## Quick Start
 
@@ -191,10 +192,10 @@ pool.release(message)  # Error or undefined behavior
 - GC pauses are noticeable
 
 **Skip pooling when:**
-- Processing < 1k messages per second
+- Processing &lt; 1k messages per second
 - Messages need long-term storage
 - Simplicity is preferred
 
 ## API Reference
 
-See [Core API Reference](../api/core.md#iso8583simcorepool) for complete API documentation.
+See [Core API Reference](../api/core#iso8583simcorepool) for complete API documentation.

@@ -1,6 +1,10 @@
-# MCP Server
+---
+title: "MCP Server"
+description: "iso8583sim includes an MCP (Model Context Protocol) server."
+sidebarTitle: "MCP server"
+---
 
-iso8583sim includes an [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server. It lets AI assistants such as Claude, Cursor and other MCP clients parse, build, validate and explain ISO 8583 messages directly.
+It lets AI assistants such as Claude, Cursor and other MCP clients parse, build, validate and explain ISO 8583 messages directly.
 
 With the server connected you can ask things like:
 
@@ -94,8 +98,9 @@ With [uv](https://docs.astral.sh/uv/), a client can run the server without a sep
 }
 ```
 
-!!! tip "Virtual environments"
-    If you installed iso8583sim in a virtual environment, use the full path to the command, for example `/path/to/.venv/bin/iso8583sim`. GUI apps such as Claude Desktop don't see your shell's `PATH`.
+<Tip>
+**Virtual environments.** If you installed iso8583sim in a virtual environment, use the full path to the command, for example `/path/to/.venv/bin/iso8583sim`. GUI apps such as Claude Desktop don't see your shell's `PATH`.
+</Tip>
 
 ## Tools
 
@@ -120,8 +125,9 @@ With [uv](https://docs.astral.sh/uv/), a client can run the server without a sep
 | `verify_message_mac` | Check a message's MAC. Needs the `security` extra. |
 | `send_to_host` | Send a message to an ISO 8583 host over TCP and return the parsed response. Only allowed hosts (see below). |
 
-!!! warning "Test keys only"
-    The PIN and MAC tools take keys and clear PINs as plain text, and anything you give the assistant is sent to your AI provider. Use them only with test keys and test PINs.
+<Warning>
+**Test keys only.** The PIN and MAC tools take keys and clear PINs as plain text, and anything you give the assistant is sent to your AI provider. Use them only with test keys and test PINs.
+</Warning>
 
 Conventions shared by all tools:
 
@@ -148,7 +154,7 @@ Invalid input returns a tool error that explains the problem, for example `Unkno
 }
 ```
 
-Pair it with `iso8583sim serve` for a local mock issuer. See [Networking](../net/index.md).
+Pair it with `iso8583sim serve` for a local mock issuer. See [Networking](../net).
 
 ## Resources
 

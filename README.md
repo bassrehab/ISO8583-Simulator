@@ -45,7 +45,7 @@ A modern, high-performance ISO 8583 message simulator with CLI, Python SDK, and 
 - **Performance Optimized**:
   - Compiled Cython extensions for 2x speedup, included in the PyPI wheels
   - Object pooling for high-throughput scenarios
-  - See [Performance Guide](docs/performance.md)
+  - See [Performance Guide](https://iso8583sim.com/docs/performance)
 
 ## Architecture
 

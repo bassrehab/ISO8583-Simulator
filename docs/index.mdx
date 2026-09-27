@@ -1,80 +1,83 @@
-# ISO8583 Simulator
+---
+title: "iso8583sim"
+description: "Parse, build, validate and simulate ISO 8583 payment messages in Python."
+sidebarTitle: "Introduction"
+---
 
-A modern, high-performance ISO 8583 message simulator with CLI, Python SDK, and LLM-powered features.
-
-## Features
-
-- **Message Handling**: Parse, build, and validate ISO 8583 messages at 180k+ TPS
-- **Multi-Network Support**: VISA, Mastercard, AMEX, Discover, JCB, UnionPay
-- **EMV/Chip Card Data**: Full Field 55 TLV parsing and building
-- **LLM Integration**: AI-powered message explanation and generation
-- **Multiple Interfaces**: Python SDK, CLI, and interactive Jupyter notebooks
-
-## Quick Start
-
-```python
-from iso8583sim.core.parser import ISO8583Parser
-from iso8583sim.core.builder import ISO8583Builder
-from iso8583sim.core.types import ISO8583Message
-
-# Build a message
-builder = ISO8583Builder()
-message = ISO8583Message(
-    mti="0100",
-    fields={
-        0: "0100",
-        2: "4111111111111111",
-        3: "000000",
-        4: "000000001000",
-        11: "123456",
-        41: "TERM0001",
-        42: "MERCHANT123456 ",
-    }
-)
-raw = builder.build(message)
-
-# Parse a message
-parser = ISO8583Parser()
-parsed = parser.parse(raw)
-```
-
-## Installation
+iso8583sim is a toolkit for card payment messages. It covers the 1987, 1993 and 2003 versions of ISO 8583 and the VISA, Mastercard, AMEX, Discover, JCB and UnionPay networks, from a single message up to a mock issuer host under load.
 
 ```bash
 pip install iso8583sim
-
-# With LLM features
-pip install iso8583sim[anthropic]  # Claude
-pip install iso8583sim[openai]     # GPT
-pip install iso8583sim[llm]        # All providers
-
-# Compiled Cython extensions are included in the wheels for Linux, macOS and Windows
 ```
 
-## Documentation Overview
+```python
+from iso8583sim.core.builder import ISO8583Builder
+from iso8583sim.core.parser import ISO8583Parser
+from iso8583sim.core.samples import sample_message
 
-| Section | Description |
-|---------|-------------|
-| [Getting Started](getting-started/installation.md) | Installation and quick tutorial |
-| [Architecture](architecture/overview.md) | Design decisions and module structure |
-| [Core Module](core/index.md) | Parser, builder, validator, and types |
-| [Networks](networks/index.md) | VISA, Mastercard, and other card networks |
-| [LLM Features](llm/index.md) | AI-powered message explanation and generation |
-| [CLI Reference](cli/index.md) | Command-line interface usage |
-| [API Reference](api/core.md) | Auto-generated API documentation |
+# A VISA authorization request for 25.00
+raw = ISO8583Builder().build(sample_message(amount_minor_units=2500))
+
+message = ISO8583Parser().parse(raw)
+print(message.mti, message.network, message.fields[4])
+# 0100 CardNetwork.VISA 000000002500
+```
+
+## Start here
+
+<CardGroup cols={2}>
+  <Card title="Quick start" icon="rocket" href="./getting-started/quickstart">
+    Build, parse and validate your first messages in a few minutes.
+  </Card>
+  <Card title="ISO 8583 concepts" icon="book-open" href="./getting-started/concepts">
+    MTIs, bitmaps and data elements, explained with examples.
+  </Card>
+</CardGroup>
+
+## Work with messages
+
+<CardGroup cols={2}>
+  <Card title="Parse, build and validate" icon="code" href="./core">
+    The core API, with network-aware validation and EMV (field 55) support.
+  </Card>
+  <Card title="Card networks" icon="credit-card" href="./networks">
+    What each network requires, and the field 22 and field 48 rules the validator enforces.
+  </Card>
+  <Card title="PIN blocks and MACs" icon="shield-check" href="./core/security">
+    ISO 9564 PIN blocks and ISO 9797-1 MACs for fields 52, 64 and 128.
+  </Card>
+  <Card title="Version conversion" icon="arrow-left-right" href="./core/convert">
+    Convert messages between the 1987, 1993 and 2003 versions.
+  </Card>
+</CardGroup>
+
+## Simulate a network
+
+<CardGroup cols={2}>
+  <Card title="Wire formats" icon="binary" href="./core/wire">
+    Binary bitmaps, packed BCD and EBCDIC, byte for byte.
+  </Card>
+  <Card title="Mock host and load testing" icon="network" href="./net">
+    Run a rules-driven issuer, send over TCP and measure throughput.
+  </Card>
+</CardGroup>
+
+## Other ways in
+
+<CardGroup cols={3}>
+  <Card title="CLI" icon="terminal" href="./cli">
+    Parse, explain, convert, serve and load test from the shell.
+  </Card>
+  <Card title="REST API" icon="server" href="./web">
+    Every feature over HTTP, with an interactive playground.
+  </Card>
+  <Card title="MCP server" icon="bot" href="./mcp">
+    Let Claude, Cursor and other assistants work with messages.
+  </Card>
+</CardGroup>
 
 ## Performance
 
-Benchmarks on Apple Silicon (M-series), Python 3.12:
+With the compiled extensions (included in the wheels for Linux, macOS and Windows), iso8583sim parses about 180,000 messages per second on Apple Silicon. See [Performance](./performance) for the numbers and tuning.
 
-| Operation | Pure Python | With Cython |
-|-----------|-------------|-------------|
-| Parse | ~105k TPS | ~182k TPS |
-| Build | ~150k TPS | ~150k TPS |
-| Roundtrip | ~49k TPS | ~63k TPS |
-
-See the [Performance Guide](performance.md) for optimization techniques.
-
-## License
-
-MIT License - see [LICENSE](https://github.com/bassrehab/ISO8583-Simulator/blob/main/LICENSE) for details.
+iso8583sim is MIT licensed and developed on [GitHub](https://github.com/bassrehab/ISO8583-Simulator).

@@ -1,17 +1,19 @@
-# Core Module
-
-The core module provides all ISO 8583 message handling functionality.
+---
+title: "Core Module"
+description: "The core module provides all ISO 8583 message handling functionality."
+sidebarTitle: "Overview"
+---
 
 ## Components
 
 | Component | Description |
 |-----------|-------------|
-| [Types & Fields](types.md) | Data types, enums, and field definitions |
-| [Parser](parser.md) | Parse raw messages into structured objects |
-| [Builder](builder.md) | Build raw messages from objects |
-| [Validator](validator.md) | Validate message structure and content |
-| [EMV Data](emv.md) | Handle Field 55 chip card data |
-| [Object Pool](pool.md) | High-throughput object pooling |
+| [Types & Fields](./types) | Data types, enums, and field definitions |
+| [Parser](./parser) | Parse raw messages into structured objects |
+| [Builder](./builder) | Build raw messages from objects |
+| [Validator](./validator) | Validate message structure and content |
+| [EMV Data](./emv) | Handle Field 55 chip card data |
+| [Object Pool](./pool) | High-throughput object pooling |
 
 ## Quick Start
 
@@ -89,4 +91,4 @@ for raw in raw_messages:
 
 ## Architecture
 
-See [Module Structure](../architecture/module-structure.md) for detailed architecture documentation.
+See [Module Structure](../architecture/module-structure) for detailed architecture documentation.
