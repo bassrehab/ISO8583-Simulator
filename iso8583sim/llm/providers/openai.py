@@ -27,8 +27,11 @@ class OpenAIProvider(LLMProvider):
         >>> provider = OpenAIProvider(api_key="sk-...")
     """
 
-    DEFAULT_MODEL = "gpt-4o"
-    MAX_TOKENS = 4096
+    # subhadipmitra@: gpt-6-astra is OpenAI's recommended starting model. It is a reasoning
+    # model, and reasoning tokens count against the completion limit, so the limit leaves
+    # room for reasoning plus the reply.
+    DEFAULT_MODEL = "gpt-6-astra"
+    MAX_TOKENS = 16000
 
     def __init__(
         self,
@@ -40,8 +43,8 @@ class OpenAIProvider(LLMProvider):
 
         Args:
             api_key: OpenAI API key. If not provided, uses OPENAI_API_KEY env var.
-            model: Model to use. Defaults to gpt-4o.
-            max_tokens: Maximum tokens in response. Defaults to 4096.
+            model: Model to use. Defaults to gpt-6-astra.
+            max_tokens: Maximum tokens in response, including reasoning. Defaults to 16000.
 
         Raises:
             ProviderNotAvailableError: If openai package is not installed.
@@ -91,10 +94,14 @@ class OpenAIProvider(LLMProvider):
 
             response = self._client.chat.completions.create(
                 model=self._model,
-                max_tokens=self._max_tokens,
+                # subhadipmitra@: Reasoning models reject max_tokens with a 400.
+                # max_completion_tokens works on both reasoning and older chat models.
+                max_completion_tokens=self._max_tokens,
                 messages=messages,
             )
-            return response.choices[0].message.content or ""
+            return _text_of(response)
+        except LLMError:
+            raise
         except openai.APIError as e:
             raise LLMError(f"OpenAI API error: {e}") from e
         except Exception as e:
@@ -118,7 +125,9 @@ class OpenAIProvider(LLMProvider):
 
             response = self._client.chat.completions.create(
                 model=self._model,
-                max_tokens=self._max_tokens,
+                # subhadipmitra@: Reasoning models reject max_tokens with a 400.
+                # max_completion_tokens works on both reasoning and older chat models.
+                max_completion_tokens=self._max_tokens,
                 messages=messages,
             )
 
@@ -130,15 +139,28 @@ class OpenAIProvider(LLMProvider):
                 }
 
             return LLMResponse(
-                content=response.choices[0].message.content or "",
+                content=_text_of(response),
                 model=response.model,
                 provider=self.name,
                 usage=usage,
             )
+        except LLMError:
+            raise
         except openai.APIError as e:
             raise LLMError(f"OpenAI API error: {e}") from e
         except Exception as e:
             raise LLMError(f"Unexpected error calling OpenAI: {e}") from e
+
+
+def _text_of(response: Any) -> str:
+    """Return the reply text, raising LLMError if the model refused."""
+    message = response.choices[0].message
+    # subhadipmitra@: A refusal comes back as a normal response with content set to None and
+    # the reason in message.refusal. Surface it instead of returning an empty explanation.
+    refusal = getattr(message, "refusal", None)
+    if refusal:
+        raise LLMError(f"OpenAI declined this request: {refusal}")
+    return message.content or ""
 
 
 def is_available() -> bool:

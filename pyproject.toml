@@ -71,19 +71,19 @@ perf = [
 ]
 # LLM providers for AI-powered features
 llm = [
-    "anthropic>=0.40.0",
+    "anthropic>=1.0.0",
     "openai>=1.50.0",
-    "google-generativeai>=0.8.0",
+    "google-genai>=1.0.0",
     "ollama>=0.4.0",
 ]
 anthropic = [
-    "anthropic>=0.40.0",
+    "anthropic>=1.0.0",
 ]
 openai = [
     "openai>=1.50.0",
 ]
 google = [
-    "google-generativeai>=0.8.0",
+    "google-genai>=1.0.0",
 ]
 ollama = [
     "ollama>=0.4.0",

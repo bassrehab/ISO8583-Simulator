@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The OpenAI provider sends `max_completion_tokens` instead of `max_tokens`, which current OpenAI reasoning models reject.
+- The Anthropic provider reads every text block instead of `content[0]`, which fails when a model returns a thinking block first.
+- Model refusals from Anthropic and OpenAI, and blocked prompts from Gemini, now raise `LLMError` instead of returning an empty explanation.
 - The parser now detects Discover cards and Mastercard 2-series BINs (2221 to 2720).
 - The `iso8583sim` command is now installed with the package. Previously it was missing from the package entry points.
 - Reversals built with `create_reversal` now fill field 90 (original data elements) with the original STAN, transmission date/time and institution IDs. Previously the STAN was always blank.
@@ -25,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Default LLM models updated: Anthropic `claude-opus-5` (was `claude-sonnet-4-20250514`), OpenAI `gpt-6-astra` (was `gpt-4o`), Google `gemini-3.8-flash` (was `gemini-1.5-flash`, which is shut down). Ollama stays on `llama3.2`.
+- The Anthropic, OpenAI and Google providers now allow 16000 output tokens by default (was 4096), leaving room for thinking or reasoning tokens.
+- The Google provider uses the `google-genai` SDK instead of the deprecated `google-generativeai`, and sends the system prompt as a system instruction. The `google` extra installs `google-genai`.
+- The `anthropic` extra now requires `anthropic>=1.0.0`.
+- With `claude-opus-5` and Claude Fable models, Anthropic requests opt into server-side refusal fallbacks (`fallbacks: "default"`).
 - Type checking is stricter (`check_untyped_defs`), and mypy now runs in CI and pre-commit.
 - Removed the empty `iso8583sim.utils` package.
 - `fastapi` and `uvicorn` are no longer installed by default. They moved to the new `web` extra (`pip install iso8583sim[web]`).
