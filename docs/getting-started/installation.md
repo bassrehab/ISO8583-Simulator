@@ -74,14 +74,17 @@ See [PIN Blocks and MACs](../core/security.md).
 
 ### Performance Extensions
 
-For maximum throughput with Cython:
+The compiled Cython extensions (about 2x faster parsing) are included in the wheels on PyPI for CPython 3.10 to 3.14 on:
+
+- Linux: x86_64 and aarch64 (glibc and musl)
+- macOS: Intel and Apple Silicon
+- Windows: x64
+
+On other platforms pip builds from source. With a C compiler the extensions are compiled; without one, iso8583sim installs as pure Python and works the same, only slower. To check which you have:
 
 ```bash
-pip install iso8583sim[perf]
-python setup.py build_ext --inplace
+python -c "import iso8583sim.core.parser as p; print(p._USE_CYTHON)"
 ```
-
-This provides ~2x speedup for parsing operations.
 
 ### Development
 

@@ -288,3 +288,24 @@ class TestLoad:
 
         with pytest.raises(ValueError):
             run(run_load(lambda: ISO8583Client("127.0.0.1", 1), count=0))
+
+
+def test_connect_timeout_is_builtin_timeout_error(monkeypatch):
+    """A connect timeout must raise the built-in TimeoutError on every Python version.
+
+    On Python 3.10 asyncio.TimeoutError is a separate class. Windows was the first to hit this,
+    because a refused connection there takes longer than a short connect timeout.
+    """
+
+    async def never_connects(*args, **kwargs):
+        await asyncio.sleep(10)
+
+    monkeypatch.setattr(asyncio, "open_connection", never_connects)
+
+    async def test():
+        client = ISO8583Client("127.0.0.1", 8583, timeout=0.1)
+        with pytest.raises(TimeoutError, match="Could not connect") as info:
+            await client.connect()
+        assert type(info.value) is TimeoutError
+
+    run(test())

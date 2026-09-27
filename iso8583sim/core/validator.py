@@ -3,6 +3,7 @@
 import re
 from dataclasses import replace
 
+from .network_rules import check_network_fields
 from .types import (
     MTI_VERSION_DIGITS,
     CardNetwork,
@@ -14,7 +15,6 @@ from .types import (
 )
 
 # Pre-compiled regex patterns for performance
-_HEX_16_PATTERN = re.compile(r"^[0-9A-F]{16}$")
 _HEX_2_PATTERN = re.compile(r"^[0-9A-F]{2}$", re.IGNORECASE)
 _HEX_PATTERN = re.compile(r"^[0-9A-F]+$", re.IGNORECASE)
 
@@ -42,17 +42,6 @@ class ISO8583Validator:
             CardNetwork.DISCOVER: [2, 3, 4, 11, 22],
             CardNetwork.JCB: [2, 3, 4, 11, 22, 25],
             CardNetwork.UNIONPAY: [2, 3, 4, 11, 22, 25, 49],
-        }
-
-    def _load_custom_validators(self):
-        """Load network-specific validation rules"""
-        self.network_validators = {
-            CardNetwork.VISA: self._validate_visa_specific,
-            CardNetwork.MASTERCARD: self._validate_mastercard_specific,
-            CardNetwork.AMEX: self._validate_amex_specific,
-            CardNetwork.DISCOVER: self._validate_discover_specific,
-            CardNetwork.JCB: self._validate_jcb_specific,
-            CardNetwork.UNIONPAY: self._validate_unionpay_specific,
         }
 
     def validate_field(
@@ -102,24 +91,6 @@ class ISO8583Validator:
         except Exception as e:
             return False, f"Validation error for field {field_number}: {str(e)}"
 
-    def _validate_network_field(self, field_number: int, value: str, network: CardNetwork) -> tuple[bool, str | None]:
-        """Validate network-specific field format"""
-        if network == CardNetwork.VISA:
-            if field_number == 44:
-                if not all(c in "0123456789ABCDEF" for c in value):
-                    return False, "Invalid VISA field 44 format"
-
-            elif field_number == 48:
-                if not value.startswith("VISA"):
-                    return False, "VISA field 48 must start with 'VISA'"
-
-        elif network == CardNetwork.MASTERCARD:
-            if field_number == 48:
-                if not value.startswith("MC"):
-                    return False, "Mastercard field 48 must start with 'MC'"
-
-        return True, None
-
     def validate_message(self, message: ISO8583Message) -> list[str]:
         """Validate complete ISO 8583 message"""
         errors: list[str] = []
@@ -156,42 +127,6 @@ class ISO8583Validator:
             network_errors = self.validate_network_compliance(message)
             errors.extend(network_errors)
 
-        return errors
-
-    def _validate_visa_specific(self, field_number: int, value: str) -> list[str]:
-        """VISA specific validation rules"""
-        errors: list[str] = []
-        if field_number == 44:
-            if len(value) % 2 != 0:
-                errors.append("VISA field 44 must have even length")
-        return errors
-
-    def _validate_mastercard_specific(self, field_number: int, value: str) -> list[str]:
-        """Mastercard specific validation rules"""
-        errors: list[str] = []
-        if field_number == 55:
-            if not value.startswith("9F"):
-                errors.append("MC EMV data must start with '9F'")
-        return errors
-
-    def _validate_amex_specific(self, field_number: int, value: str) -> list[str]:
-        """AMEX specific validation rules"""
-        errors: list[str] = []
-        return errors
-
-    def _validate_discover_specific(self, field_number: int, value: str) -> list[str]:
-        """Discover specific validation rules"""
-        errors: list[str] = []
-        return errors
-
-    def _validate_jcb_specific(self, field_number: int, value: str) -> list[str]:
-        """JCB specific validation rules"""
-        errors: list[str] = []
-        return errors
-
-    def _validate_unionpay_specific(self, field_number: int, value: str) -> list[str]:
-        """UnionPay specific validation rules"""
-        errors: list[str] = []
         return errors
 
     @staticmethod
@@ -297,12 +232,6 @@ class ISO8583Validator:
 
         return (checksum % 10) == 0
 
-    def _validate_visa_field_44(self, value: str) -> bool:
-        """Validate VISA-specific field 44 format"""
-        if _USE_CYTHON:
-            return _is_valid_hex_fast(value)
-        return all(c in "0123456789ABCDEFabcdef" for c in value)
-
     def validate_for_network(self, message: ISO8583Message, network: CardNetwork) -> list[str]:
         """Validate a message as if it were sent on another network.
 
@@ -338,53 +267,10 @@ class ISO8583Validator:
             if field not in message.fields:
                 errors.append(f"Required field {field} missing for {message.network.value}")
 
-        # Network-specific validations
-        if message.network == CardNetwork.VISA:
-            if 44 in message.fields:
-                if not self._validate_visa_field_44(message.fields[44]):
-                    errors.append("Invalid format for VISA field 44")
-
-        elif message.network == CardNetwork.MASTERCARD:
-            if 48 in message.fields:
-                if not message.fields[48].startswith("MC"):
-                    errors.append("Mastercard field 48 must start with 'MC'")
-
-        return errors
-
-    def _validate_visa_compliance(self, message: ISO8583Message) -> list[str]:
-        """VISA specific compliance rules"""
-        errors: list[str] = []
-
-        # Check VISA PIN block format
-        if 52 in message.fields:
-            pin_block = message.fields[52]
-            if not _HEX_16_PATTERN.match(pin_block):
-                errors.append("Invalid VISA PIN block format")
-
-        # Check VISA CVV2 format
-        if 48 in message.fields:
-            cvv2_data = message.fields[48]
-            if len(cvv2_data) != 3 or not cvv2_data.isdigit():
-                errors.append("Invalid VISA CVV2 format")
-
-        return errors
-
-    def _validate_mastercard_compliance(self, message: ISO8583Message) -> list[str]:
-        """Mastercard specific compliance rules"""
-        errors: list[str] = []
-
-        # Check Mastercard specific fields
-        if 48 in message.fields:
-            field_48 = message.fields[48]
-            if not field_48.startswith("MC"):
-                errors.append("Mastercard field 48 must start with 'MC'")
-
-        # Check Mastercard POS Entry Mode
-        if 22 in message.fields:
-            pos_entry = message.fields[22]
-            if pos_entry not in ["02", "05", "07", "80", "90"]:
-                errors.append("Invalid Mastercard POS Entry Mode")
-
+        # subhadipmitra@: Field format rules live in network_rules, where each rule cites its
+        # source. The rules that used to be here (VISA field 44 as hex, Mastercard field 48
+        # starting with "MC") rejected valid messages and have been replaced.
+        errors.extend(check_network_fields(message.fields, message.network))
         return errors
 
     def validate_emv_data(self, emv_data: str) -> list[str]:

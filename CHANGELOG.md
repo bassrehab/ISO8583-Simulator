@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-09-27
+
+### Added
+
+- API reference pages for `iso8583sim.security`, `iso8583sim.wire`, `iso8583sim.net`, the REST and MCP servers, and the newer core modules (`codes`, `describe`, `convert`, `samples`, `network_rules`).
+
+### Changed
+
+- Wheels on PyPI now include the compiled Cython extensions for CPython 3.10 to 3.14 on Linux (x86_64, aarch64; glibc and musl), macOS (Intel, Apple Silicon) and Windows (x64). Previously only a pure-Python wheel was published, so pip users never got the speedups. The package now builds with setuptools instead of hatchling. Installing from source without a C compiler still works and falls back to pure Python.
+- The source distribution now includes the full test suite and no longer picks up untracked files from the build directory.
+- Network field rules were rewritten from published sources (`iso8583sim.core.network_rules`). For VISA and Mastercard, field 22 must now use a known PAN entry mode and PIN entry capability, and Mastercard rejects the Visa-only mode `95`. Mastercard field 48 must be a transaction category code followed by well-formed subelements.
+- `NETWORK_FIELD_FORMATS` is now empty. Its old patterns were not real network formats and were never used.
+
+### Fixed
+
+- The CLI failed to start on Windows, because it imported `readline`, which Windows doesn't have. The interactive shell now runs without history and tab completion when `readline` is missing. Found by the new Windows wheel tests.
+- On Python 3.10, a connection timeout in `ISO8583Client` raised `asyncio.TimeoutError` instead of the documented built-in `TimeoutError` (the two only merged in 3.11), so callers catching `TimeoutError` or `OSError` missed it.
+- VISA field 44 was rejected unless it was hexadecimal, although it holds response data such as a CVV2 result (`M`). The check is removed.
+- Mastercard field 48 was rejected unless it started with `MC`. Real field 48 values start with a transaction category code.
+- The network pages of the docs had the field 22 PIN capability digit reversed for VISA and several wrong Mastercard codes.
+
+### Removed
+
+- Seven private `ISO8583Parser` methods that were never called (`_calculate_field_length`, `_handle_network_specific`, `_handle_version_specific`, `_parse_length_indicator`, `_process_bitmap_fields`, `_process_emv_field`, `_validate_field_content`).
+- Unused validator methods that held unverified rules (`_validate_visa_compliance`, `_validate_mastercard_compliance`, `_validate_network_field` and the per-network `_validate_*_specific` methods).
+
 ## [1.4.0] - 2026-09-27
 
 ### Added
@@ -129,7 +155,8 @@ First stable release.
 - MkDocs documentation site.
 - GitHub Actions for CI, PyPI publishing and docs deployment.
 
-[Unreleased]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.2.0...v1.3.0

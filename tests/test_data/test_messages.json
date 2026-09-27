@@ -46,8 +46,8 @@
             "25": "00",
             "41": "TEST1234",
             "42": "MERCHANT12345  ",
-            "48": "MC123",
-            "104": "MC TEST"
+            "48": "R0103ABC",
+            "104": "TEST PURCHASE"
         }
     },
     "reversal": {

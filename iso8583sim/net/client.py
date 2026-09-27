@@ -69,9 +69,15 @@ class ISO8583Client:
         """Open the connection. send() also connects on demand."""
         if self.connected:
             return
-        self._reader, self._writer = await asyncio.wait_for(
-            asyncio.open_connection(self.host, self.port, ssl=self.ssl), self.timeout
-        )
+        try:
+            self._reader, self._writer = await asyncio.wait_for(
+                asyncio.open_connection(self.host, self.port, ssl=self.ssl), self.timeout
+            )
+        except asyncio.TimeoutError:
+            # subhadipmitra@: On Python 3.10 asyncio.TimeoutError is a different class from the
+            # built-in TimeoutError (they merged in 3.11), so convert it to keep the documented
+            # contract. The built-in is also an OSError, which callers already handle.
+            raise TimeoutError(f"Could not connect to {self.host}:{self.port} within {self.timeout}s") from None
         self._receiver = asyncio.create_task(self._receive())
 
     async def close(self) -> None:

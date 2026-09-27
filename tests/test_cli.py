@@ -617,3 +617,30 @@ class TestNetworkCommands:
         assert result.exit_code == 0, result.stdout
         assert "00: 200" in result.stdout
         assert "Throughput" in result.stdout
+
+
+def test_cli_works_without_readline(monkeypatch, tmp_path):
+    """readline doesn't exist on Windows; the CLI must still import and the shell still start."""
+    import builtins
+    import importlib
+    import sys
+
+    import iso8583sim.cli.commands as commands
+
+    real_import = builtins.__import__
+
+    def no_readline(name, *args, **kwargs):
+        if name == "readline":
+            raise ImportError("readline is not available")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", no_readline)
+    monkeypatch.delitem(sys.modules, "readline", raising=False)
+    try:
+        reloaded = importlib.reload(commands)
+        assert reloaded.readline is None
+        reloaded.ISO8583Shell({}, tmp_path / "history")
+        assert runner.invoke(reloaded.app, ["version"]).exit_code == 0
+    finally:
+        monkeypatch.undo()
+        importlib.reload(commands)

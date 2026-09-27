@@ -7,23 +7,14 @@ networks:
   visa:
     required_fields: [2, 3, 4, 11, 14, 22, 24, 25]
     optional_fields: [44, 105]
-    field_formats:
-      44: "^[0-9A-F]+$"
-      105: "^[A-Za-z0-9\\s]+$"
 
   mastercard:
     required_fields: [2, 3, 4, 11, 22, 24, 25]
     optional_fields: [48, 104]
-    field_formats:
-      48: "^MC[0-9]+$"
-      104: "^MC\\s.*$"
 
   amex:
     required_fields: [2, 3, 4, 11, 22, 25]
     optional_fields: [44, 47, 112, 124]
-    field_formats:
-      44: "^[0-9A-F]+$"
-      112: "^AX.*$"
 
 field_validations:
   field_lengths:

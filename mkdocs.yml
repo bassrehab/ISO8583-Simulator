@@ -100,6 +100,10 @@ nav:
   - CLI Reference: cli/index.md
   - API Reference:
     - Core Module: api/core.md
+    - Security: api/security.md
+    - Wire Formats: api/wire.md
+    - Networking: api/net.md
+    - REST and MCP Servers: api/servers.md
     - LLM Module: api/llm.md
     - Demo Module: api/demo.md
   - Performance: performance.md
