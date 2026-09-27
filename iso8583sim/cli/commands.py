@@ -5,9 +5,12 @@ from typing import Any
 
 import typer
 from rich.console import Console
+from rich.markup import escape
 from rich.panel import Panel
 
+from .. import __version__
 from ..core.builder import ISO8583Builder
+from ..core.describe import describe_message
 from ..core.parser import ISO8583Parser
 from ..core.types import (
     CardNetwork,
@@ -59,13 +62,13 @@ class ISO8583Shell(code.InteractiveConsole):
         # Set history length
         readline.set_history_length(1000)
 
-    def interact(self, banner=None):
+    def interact(self, banner: str | None = None, exitmsg: str | None = None) -> None:
         """Start the interactive shell"""
         if banner is None:
             banner = self._get_default_banner()
 
         try:
-            super().interact(banner)
+            super().interact(banner, exitmsg)
         finally:
             # Save history on exit
             readline.write_history_file(str(self.history_file))
@@ -110,7 +113,7 @@ class ISO8583Shell(code.InteractiveConsole):
 @app.command()
 def version():
     """Display version information"""
-    console.print("[cyan]ISO8583 Simulator[/] [green]v0.1.0[/]")
+    console.print(f"[cyan]ISO8583 Simulator[/] [green]v{__version__}[/]")
 
 
 @app.command("parse")
@@ -222,16 +225,87 @@ def validate_message(
         raise typer.Exit(1) from None
 
 
+@app.command("explain")
+def explain_message(
+    message: str = typer.Argument(..., help="ISO 8583 message to explain"),
+    version: str = typer.Option("1987", "--version", "-v", help="ISO 8583 version (1987, 1993, 2003)"),
+    network: str | None = typer.Option(None, "--network", "-n", help="Card network (VISA, MASTERCARD, AMEX, etc.)"),
+    provider: str | None = typer.Option(
+        None, "--provider", "-p", help="LLM provider (anthropic, openai, google, ollama). Auto-detected if omitted"
+    ),
+    model: str | None = typer.Option(None, "--model", "-m", help="Model name for the provider"),
+    verbose: bool = typer.Option(False, "--verbose", help="Ask the LLM for more technical detail"),
+    no_llm: bool = typer.Option(False, "--no-llm", help="Rule-based summary that needs no LLM or API key"),
+):
+    """Explain an ISO 8583 message in plain English"""
+    # subhadipmitra@: Parse here, not inside MessageExplainer, so --version and --network are
+    # honoured. The explainer's own parser always assumes 1987 with network auto-detection.
+    try:
+        parser = ISO8583Parser(version=ISO8583Version(version))
+        card_network = CardNetwork(network.upper()) if network else None
+        parsed = parser.parse(message, network=card_network)
+    except Exception as e:
+        console.print(f"[red]Error parsing message: {str(e)}")
+        raise typer.Exit(1) from None
+
+    # subhadipmitra@: --no-llm uses the same rule-based summary as the MCP server's
+    # explain_message tool, so the command stays useful offline and without an API key.
+    if no_llm:
+        description = describe_message(parsed)
+        console.print(Panel(description["summary"], title=f"Message {parsed.mti}", border_style="cyan"))
+        console.print(formatter.format_field_table(parsed.fields))
+        return
+
+    # subhadipmitra@: Import the LLM module lazily so commands that don't use an LLM
+    # start fast and never touch provider SDKs.
+    from ..llm import LLMError, MessageExplainer, get_provider
+
+    try:
+        # subhadipmitra@: Only pass model when given. Otherwise each provider keeps its own
+        # default model, and get_provider(None) auto-detects the first configured provider.
+        llm = get_provider(provider, model=model) if model else get_provider(provider)
+        with console.status(f"Asking {llm.name} ({llm.model})..."):
+            explanation = MessageExplainer(provider=llm).explain(parsed, verbose=verbose)
+    except LLMError as e:
+        # subhadipmitra@: Provider errors (no key, package missing, API failure) already carry
+        # an actionable message, so show it as is and point to the offline option. escape()
+        # keeps install hints like iso8583sim[google] from being read as Rich markup.
+        console.print(f"[red]{escape(str(e))}")
+        console.print("\n[yellow]Tip:[/] use --no-llm for a rule-based explanation that needs no API key.")
+        raise typer.Exit(1) from None
+    except Exception as e:
+        console.print(f"[red]Error explaining message: {str(e)}")
+        raise typer.Exit(1) from None
+
+    console.print(Panel(explanation, title=f"Message {parsed.mti} ({llm.name})", border_style="cyan"))
+
+
 @app.command("generate")
 def generate_message(
-    type: str = typer.Option(..., "--type", "-t", help="Message type (auth, financial, reversal)"),
+    type: str | None = typer.Option(None, "--type", "-t", help="Message type (auth, financial, reversal)"),
     pan: str = typer.Option("4111111111111111", "--pan", "-p", help="Primary Account Number"),
     amount: str = typer.Option("000000001000", "--amount", "-a", help="Transaction amount"),
     currency: str = typer.Option("840", "--currency", "-c", help="Currency code (ISO 4217)"),
     network: str | None = typer.Option(None, "--network", "-n", help="Card network (VISA, MASTERCARD, AMEX, etc.)"),
     output: Path | None = typer.Option(None, "--output", "-o", help="Output file for generated message"),
+    llm: str | None = typer.Option(
+        None, "--llm", "-l", help='Describe the message in plain English, e.g. "$50 Mastercard refund at ACME"'
+    ),
+    provider: str | None = typer.Option(
+        None, "--provider", help="LLM provider for --llm (anthropic, openai, google, ollama)"
+    ),
+    model: str | None = typer.Option(None, "--model", help="Model name for --llm"),
 ):
-    """Generate a sample ISO 8583 message"""
+    """Generate a sample ISO 8583 message from a template or, with --llm, from a description"""
+    # subhadipmitra@: --type became optional so that --llm can be used on its own. One of
+    # the two is still required, which is checked here rather than by Typer.
+    if llm:
+        _generate_with_llm(llm, provider, model, output)
+        return
+    if not type:
+        console.print("[red]Give a message type with --type, or describe the message with --llm")
+        raise typer.Exit(1)
+
     try:
         # Create message template
         message = create_template_message(get_mti_for_type(type), pan=validate_pan(pan), amount=format_amount(amount))
@@ -293,6 +367,46 @@ def interactive_shell():
     except Exception as e:
         console.print(f"[red]Error starting interactive shell: {str(e)}")
         raise typer.Exit(1) from None
+
+
+@app.command("mcp")
+def mcp_server():
+    """Run the MCP server over stdio for AI assistants (Claude, Cursor, etc.)"""
+    # subhadipmitra@: The MCP SDK is an optional extra, so import it only when this command
+    # runs. Without the extra, the user gets an install hint instead of a traceback.
+    try:
+        from ..mcp import main as run_mcp
+    except ImportError:
+        # subhadipmitra@: \\[ escapes the bracket so Rich doesn't swallow [mcp] as markup.
+        console.print("[red]The MCP server needs the mcp extra: pip install 'iso8583sim\\[mcp]'")
+        raise typer.Exit(1) from None
+    run_mcp()
+
+
+def _generate_with_llm(description: str, provider: str | None, model: str | None, output: Path | None) -> None:
+    """Generate a message from a natural language description using an LLM"""
+    from ..llm import LLMError, MessageGenerator, get_provider
+
+    try:
+        llm = get_provider(provider, model=model) if model else get_provider(provider)
+        with console.status(f"Asking {llm.name} ({llm.model})..."):
+            # subhadipmitra@: generate() validates the LLM output and retries common fixes,
+            # so anything that reaches the builder is already a valid message.
+            message = MessageGenerator(provider=llm).generate(description)
+        result = ISO8583Builder().build(message)
+    except LLMError as e:
+        console.print(f"[red]{escape(str(e))}")
+        raise typer.Exit(1) from None
+    except Exception as e:
+        console.print(f"[red]Error generating message: {str(e)}")
+        raise typer.Exit(1) from None
+
+    console.print(Panel(result, title=f"Generated Message {message.mti} ({llm.name})", border_style="cyan"))
+    console.print(formatter.format_field_table(message.fields))
+
+    if output:
+        output.write_text(result)
+        console.print(f"\n[green]Message saved to {output}")
 
 
 def get_mti_for_type(type: str) -> str:

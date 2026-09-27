@@ -5,23 +5,23 @@
 repos:
   # Ruff - Fast Python linter and formatter
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.0
+    rev: v0.14.10
     hooks:
-      - id: ruff
+      - id: ruff-check
         args: [--fix, --exit-non-zero-on-fix]
       - id: ruff-format
 
   # Mypy - Static type checking
-  # TODO: Re-enable in v0.3.0 after fixing type annotations
-  # - repo: https://github.com/pre-commit/mirrors-mypy
-  #   rev: v1.14.1
-  #   hooks:
-  #     - id: mypy
-  #       additional_dependencies:
-  #         - pydantic>=2.0
-  #         - typer>=0.9.0
-  #       args: [--ignore-missing-imports]
-  #       exclude: ^(tests|benchmarks)/
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.19.1
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - pydantic>=2.0
+          - typer>=0.9.0
+          - rich>=10.0.0
+        args: [--ignore-missing-imports, --check-untyped-defs]
+        files: ^iso8583sim/
 
   # Pre-commit hooks
   - repo: https://github.com/pre-commit/pre-commit-hooks

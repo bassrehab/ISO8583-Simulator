@@ -10,6 +10,7 @@ iso8583sim/
 ├── core/                       # Core message handling
 ├── llm/                        # LLM-powered features
 ├── cli/                        # Command-line interface
+├── mcp/                        # MCP server for AI assistants
 ├── web/                        # REST API (placeholder)
 └── demo.py                     # Interactive demo helpers
 ```
@@ -91,6 +92,19 @@ EMV/ICC chip card data handling.
 - `build_emv_data(tags)` - Build Field 55 from tags
 - `format_emv_tag()` - Format EMV tag for display
 
+### codes.py
+
+Reference tables and lookups for code values.
+
+**Constants:**
+- `RESPONSE_CODES` - Response codes (field 39) and meanings
+- `PROCESSING_CODES` - Transaction types (first two digits of field 3)
+- `NETWORK_MANAGEMENT_CODES` - Network management codes (field 70)
+- `CURRENCY_CODES` - Common ISO 4217 codes with minor unit exponents
+
+**Functions:**
+- `detect_network_from_pan(pan)` - Detect the card network from a PAN prefix
+
 ### pool.py
 
 Object pooling for high-throughput scenarios.
@@ -169,6 +183,17 @@ CLI command implementations.
 - `build` - Build a message from fields
 - `validate` - Validate a message
 - `generate` - Generate sample messages
+- `mcp` - Run the MCP server over stdio
+
+## MCP Module (`iso8583sim.mcp`)
+
+MCP server that exposes the core module to AI assistants. Requires the `mcp` extra.
+
+**Functions:**
+- `create_server()` - Build the server with its tools, resources and prompts
+- `main()` - Run the server over stdio
+
+See [MCP Server](../mcp/index.md) for the full tool list.
 
 ## Demo Module (`iso8583sim.demo`)
 

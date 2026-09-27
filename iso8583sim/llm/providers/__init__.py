@@ -75,7 +75,7 @@ def get_provider(name: str | None = None, **kwargs) -> LLMProvider:
     Example:
         >>> provider = get_provider()  # Auto-detect
         >>> provider = get_provider("anthropic")  # Specific provider
-        >>> provider = get_provider("openai", model="gpt-4-turbo")
+        >>> provider = get_provider("openai", model="gpt-6-luna")
     """
     if name:
         # Specific provider requested

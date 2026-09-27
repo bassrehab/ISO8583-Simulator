@@ -113,17 +113,17 @@ class ISO8583Validator:
 
     def validate_message(self, message: ISO8583Message) -> list[str]:
         """Validate complete ISO 8583 message"""
-        errors = []
+        errors: list[str] = []
 
         # Validate MTI
         mti_valid, mti_error = self.validate_mti(message.mti)
-        if not mti_valid:
+        if not mti_valid and mti_error:
             errors.append(mti_error)
 
         # Validate bitmap if present
         if message.bitmap:
             bitmap_valid, bitmap_error = self.validate_bitmap(message.bitmap)
-            if not bitmap_valid:
+            if not bitmap_valid and bitmap_error:
                 errors.append(bitmap_error)
 
         # Validate fields
@@ -139,7 +139,7 @@ class ISO8583Validator:
                 continue
 
             valid, error = self.validate_field(field_number, value, field_def)
-            if not valid:
+            if not valid and error:
                 errors.append(error)
 
         # Network-specific validation
@@ -151,7 +151,7 @@ class ISO8583Validator:
 
     def _validate_visa_specific(self, field_number: int, value: str) -> list[str]:
         """VISA specific validation rules"""
-        errors = []
+        errors: list[str] = []
         if field_number == 44:
             if len(value) % 2 != 0:
                 errors.append("VISA field 44 must have even length")
@@ -159,7 +159,7 @@ class ISO8583Validator:
 
     def _validate_mastercard_specific(self, field_number: int, value: str) -> list[str]:
         """Mastercard specific validation rules"""
-        errors = []
+        errors: list[str] = []
         if field_number == 55:
             if not value.startswith("9F"):
                 errors.append("MC EMV data must start with '9F'")
@@ -167,22 +167,22 @@ class ISO8583Validator:
 
     def _validate_amex_specific(self, field_number: int, value: str) -> list[str]:
         """AMEX specific validation rules"""
-        errors = []
+        errors: list[str] = []
         return errors
 
     def _validate_discover_specific(self, field_number: int, value: str) -> list[str]:
         """Discover specific validation rules"""
-        errors = []
+        errors: list[str] = []
         return errors
 
     def _validate_jcb_specific(self, field_number: int, value: str) -> list[str]:
         """JCB specific validation rules"""
-        errors = []
+        errors: list[str] = []
         return errors
 
     def _validate_unionpay_specific(self, field_number: int, value: str) -> list[str]:
         """UnionPay specific validation rules"""
-        errors = []
+        errors: list[str] = []
         return errors
 
     @staticmethod
@@ -296,7 +296,7 @@ class ISO8583Validator:
 
     def validate_network_compliance(self, message: ISO8583Message) -> list[str]:
         """Validate network-specific requirements"""
-        errors = []
+        errors: list[str] = []
 
         if not message.network:
             return errors
@@ -322,7 +322,7 @@ class ISO8583Validator:
 
     def _validate_visa_compliance(self, message: ISO8583Message) -> list[str]:
         """VISA specific compliance rules"""
-        errors = []
+        errors: list[str] = []
 
         # Check VISA PIN block format
         if 52 in message.fields:
@@ -340,7 +340,7 @@ class ISO8583Validator:
 
     def _validate_mastercard_compliance(self, message: ISO8583Message) -> list[str]:
         """Mastercard specific compliance rules"""
-        errors = []
+        errors: list[str] = []
 
         # Check Mastercard specific fields
         if 48 in message.fields:
@@ -361,7 +361,7 @@ class ISO8583Validator:
         if not emv_data:
             return ["Empty EMV data"]
 
-        errors = []
+        errors: list[str] = []
         position = 0
 
         try:
@@ -437,7 +437,7 @@ class ISO8583Validator:
         Returns:
             List of compatibility errors
         """
-        errors = []
+        errors: list[str] = []
 
         # Get version-specific field definition
         field_def = get_field_definition(field_number, version=version)

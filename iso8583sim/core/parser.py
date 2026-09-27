@@ -6,6 +6,7 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from .codes import detect_network_from_pan
 from .types import (
     ISO8583_FIELDS,
     NETWORK_SPECIFIC_FIELDS,
@@ -57,9 +58,9 @@ class ISO8583Parser:
         self._pool = pool
         self._current_position = 0
         self._raw_message = ""
-        self._detected_network = None
+        self._detected_network: CardNetwork | None = None
         self._secondary_bitmap = False
-        self._network_fields = {}  # Cache for network-specific field definitions
+        self._network_fields: dict[int, FieldDefinition] = {}  # Cache for network-specific field definitions
         # Cache version-specific fields at init time (version doesn't change)
         self._version_fields = VERSION_SPECIFIC_FIELDS.get(version, {})
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
@@ -404,16 +405,11 @@ class ISO8583Parser:
                 pan_length = int(message[bitmap_length:pan_start])
                 pan = message[pan_start : pan_start + pan_length]
 
-                if pan.startswith("4"):
-                    return CardNetwork.VISA
-                elif any(pan.startswith(prefix) for prefix in ["51", "52", "53", "54", "55"]):
-                    return CardNetwork.MASTERCARD
-                elif any(pan.startswith(prefix) for prefix in ["34", "37"]):
-                    return CardNetwork.AMEX
-                elif pan.startswith("62"):
-                    return CardNetwork.UNIONPAY
-                elif pan.startswith("35"):
-                    return CardNetwork.JCB
+                # subhadipmitra@: Share one PAN range table with the rest of the package so
+                # detection rules (Discover, Mastercard 2-series) are defined in one place.
+                network = detect_network_from_pan(pan)
+                if network is not None:
+                    return network
 
             # Look for network-specific patterns
             if "VISA" in message:

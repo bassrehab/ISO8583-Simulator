@@ -103,7 +103,7 @@ class CLIFormatter:
         # Just return the formatted JSON string
         return json.dumps(data, indent=2)
 
-    def print_json(self, data: dict[str, Any]):
+    def print_json(self, data: dict[Any, Any]):
         """Print data as syntax-highlighted JSON"""
         # Use Syntax for display but don't return it
         syntax = Syntax(json.dumps(data, indent=2), "json", theme="monokai", line_numbers=True)

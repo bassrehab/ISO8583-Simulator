@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "iso8583sim"
-version = "1.1.3"
+version = "1.2.0"
 description = "High-performance ISO 8583 message simulator with CLI, Python SDK, and LLM features"
 readme = "README.md"
 authors = [
@@ -19,19 +19,22 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Software Development :: Testing",
     "Topic :: Office/Business :: Financial",
 ]
 keywords = ["iso8583", "payment", "banking", "financial", "simulator"]
 dependencies = [
     "click>=8.0.0",
-    "fastapi>=0.68.0",
-    "uvicorn>=0.15.0",
     "pydantic>=2.0.0",
     "rich>=10.0.0",
     "typer>=0.4.0",
 ]
 requires-python = ">=3.10"
+
+[project.scripts]
+iso8583sim = "iso8583sim.cli.commands:main"
 
 [project.optional-dependencies]
 test = [
@@ -54,24 +57,33 @@ dev = [
     "pre-commit>=3.5.0",
     "cython>=3.0.0",
 ]
+# MCP server for AI assistants
+mcp = [
+    "mcp>=2.0.0",
+]
+# REST API server
+web = [
+    "fastapi>=0.110.0",
+    "uvicorn>=0.29.0",
+]
 perf = [
     "cython>=3.0.0",
 ]
 # LLM providers for AI-powered features
 llm = [
-    "anthropic>=0.40.0",
+    "anthropic>=1.0.0",
     "openai>=1.50.0",
-    "google-generativeai>=0.8.0",
+    "google-genai>=1.0.0",
     "ollama>=0.4.0",
 ]
 anthropic = [
-    "anthropic>=0.40.0",
+    "anthropic>=1.0.0",
 ]
 openai = [
     "openai>=1.50.0",
 ]
 google = [
-    "google-generativeai>=0.8.0",
+    "google-genai>=1.0.0",
 ]
 ollama = [
     "ollama>=0.4.0",
@@ -130,6 +142,5 @@ warn_return_any = false
 warn_unused_configs = true
 ignore_missing_imports = true
 exclude = ["tests", "benchmarks"]
-# Relaxed type checking for this phase - tighten in v0.3.0
-check_untyped_defs = false
+check_untyped_defs = true
 disallow_untyped_defs = false

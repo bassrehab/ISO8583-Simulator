@@ -84,25 +84,22 @@ def create_template_message(
     """Create template message with common fields"""
     now = datetime.now()
 
-    message = {
-        "mti": mti,
-        "fields": {
-            11: now.strftime("%H%M%S"),  # STAN
-            12: now.strftime("%H%M%S"),  # Time
-            13: now.strftime("%m%d"),  # Date
-        },
+    fields: dict[int, str] = {
+        11: now.strftime("%H%M%S"),  # STAN
+        12: now.strftime("%H%M%S"),  # Time
+        13: now.strftime("%m%d"),  # Date
     }
 
     if pan:
-        message["fields"][2] = validate_pan(pan)
+        fields[2] = validate_pan(pan)
 
     if amount:
-        message["fields"][4] = format_amount(amount)
+        fields[4] = format_amount(amount)
 
     if terminal_id:
-        message["fields"][41] = terminal_id
+        fields[41] = terminal_id
 
-    return message
+    return {"mti": mti, "fields": fields}
 
 
 def get_response_code_description(code: str) -> str:

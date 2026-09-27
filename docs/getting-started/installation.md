@@ -46,6 +46,16 @@ export OPENAI_API_KEY="sk-..."
 export GOOGLE_API_KEY="..."
 ```
 
+### MCP Server
+
+To use iso8583sim from Claude, Cursor or another MCP client:
+
+```bash
+pip install iso8583sim[mcp]
+```
+
+See [MCP Server](../mcp/index.md) for client setup.
+
 ### Performance Extensions
 
 For maximum throughput with Cython:
