@@ -93,10 +93,9 @@ google = [
 ollama = [
     "ollama>=0.4.0",
 ]
+# Tooling for generating the API reference in docs/ (scripts/generate_api_docs.py)
 docs = [
-    "mkdocs>=1.6.0",
-    "mkdocs-material>=9.5.0",
-    "mkdocstrings[python]>=0.24.0",
+    "griffe>=1.0",
 ]
 
 [tool.setuptools.packages.find]
