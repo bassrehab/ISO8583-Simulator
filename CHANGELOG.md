@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-09-27
+
 ### Added
 
 - `iso8583sim.wire`: encode messages to bytes and decode them back in configurable wire formats. Binary or hex bitmaps, packed BCD, EBCDIC, binary length prefixes and raw binary fields, with presets `ascii_hex`, `ascii_binary`, `bcd` and `ebcdic`. Decoded messages match what the string parser returns, so all existing features work on them. `ISO8583Builder.build_bytes` and `ISO8583Parser.parse_bytes` are shortcuts. The string API is unchanged.
@@ -127,7 +129,8 @@ First stable release.
 - MkDocs documentation site.
 - GitHub Actions for CI, PyPI publishing and docs deployment.
 
-[Unreleased]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.3.1...HEAD
+[Unreleased]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.1.3...v1.2.0
