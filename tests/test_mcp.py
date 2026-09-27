@@ -29,6 +29,7 @@ EXPECTED_TOOLS = {
     "decrypt_pin_block",
     "sign_message",
     "verify_message_mac",
+    "send_to_host",
 }
 
 
@@ -257,6 +258,59 @@ class TestSecurityTools:
         result = call("encrypt_pin_block", pin="1234", pan="4111111111111111", key=TEST_KEY)
         assert result.is_error
         assert "iso8583sim[security]" in result.content[0].text
+
+
+class TestSendToHost:
+    @staticmethod
+    def with_host(steps, rules=None):
+        """Run a mock host and the MCP client in one event loop."""
+        from iso8583sim.net import MockHost
+
+        async def runner():
+            host = MockHost(rules=rules)
+            await host.start("127.0.0.1", 0)
+            try:
+                async with Client(create_server()) as client:
+                    return await steps(client, host.port)
+            finally:
+                await host.stop()
+
+        return asyncio.run(runner())
+
+    def test_send(self, auth_message):
+        async def steps(client, port):
+            return await client.call_tool("send_to_host", {"message": auth_message, "port": port})
+
+        result = self.with_host(steps)
+        assert not result.is_error, result.content
+        assert result.structured_content["mti"] == "0110"
+        assert result.structured_content["response_code"] == "00"
+        assert "Approved" in result.structured_content["summary"]
+
+    def test_timeout_is_a_tool_error(self, auth_message):
+        from iso8583sim.net import Rule
+
+        async def steps(client, port):
+            return await client.call_tool("send_to_host", {"message": auth_message, "port": port, "timeout": 0.2})
+
+        result = self.with_host(steps, rules=[Rule(action="drop")])
+        assert result.is_error
+        assert "No response" in result.content[0].text
+
+    def test_remote_hosts_are_blocked_by_default(self, auth_message, monkeypatch):
+        monkeypatch.delenv("ISO8583SIM_ALLOWED_HOSTS", raising=False)
+        result = call("send_to_host", message=auth_message, host="10.0.0.5", port=8583)
+        assert result.is_error
+        assert "not an allowed host" in result.content[0].text
+
+    def test_allowlist_by_host_and_port(self, monkeypatch):
+        from iso8583sim.mcp.server import _host_allowed
+
+        monkeypatch.setenv("ISO8583SIM_ALLOWED_HOSTS", "switch.test:9000, 10.0.0.5")
+        assert _host_allowed("switch.test", 9000)
+        assert not _host_allowed("switch.test", 9001)
+        assert _host_allowed("10.0.0.5", 1234)
+        assert not _host_allowed("127.0.0.1", 8583)
 
 
 class TestResources:

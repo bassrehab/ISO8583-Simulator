@@ -2,6 +2,7 @@
 """Tests for CLI commands."""
 
 import json
+import re
 
 import pytest
 from typer.testing import CliRunner
@@ -548,3 +549,71 @@ class TestGenerateAmount:
         result = runner.invoke(app, ["generate", "--type", "auth", "--amount", amount])
         assert result.exit_code == 1
         assert "Invalid amount" in result.stdout
+
+
+@pytest.fixture
+def mock_host():
+    """A mock issuer host running in a background thread. Yields its port."""
+    import asyncio
+    import threading
+
+    from iso8583sim.net import MockHost, Rule
+
+    # subhadipmitra@: The CLI commands call asyncio.run themselves, so the host needs its own
+    # event loop in another thread rather than sharing the test's.
+    loop = asyncio.new_event_loop()
+    host = MockHost(rules=[Rule(amount_gt=100000, respond="51"), Rule(pan_prefix=["4999"], action="drop"), Rule()])
+    started = threading.Event()
+
+    def serve():
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(host.start("127.0.0.1", 0))
+        started.set()
+        loop.run_forever()
+
+    thread = threading.Thread(target=serve, daemon=True)
+    thread.start()
+    started.wait(5)
+    yield host.port
+    asyncio.run_coroutine_threadsafe(host.stop(), loop).result(5)
+    loop.call_soon_threadsafe(loop.stop)
+    thread.join(5)
+
+
+class TestNetworkCommands:
+    """Tests for send and load against a mock host."""
+
+    @staticmethod
+    def message(**kwargs):
+        from iso8583sim.core.samples import sample_message
+
+        return ISO8583Builder().build(sample_message(**kwargs))
+
+    def test_send(self, mock_host):
+        result = runner.invoke(app, ["send", self.message(amount_minor_units=250000), "--port", str(mock_host)])
+        assert result.exit_code == 0, result.stdout
+        # subhadipmitra@: Check the field table row rather than the summary panel, which
+        # wraps at the test terminal's width.
+        assert re.search(r"39\s+│ Response Code\s+│ 51", result.stdout)
+
+    def test_send_timeout(self, mock_host):
+        raw = self.message(pan="4999123412341234")
+        result = runner.invoke(app, ["send", raw, "--port", str(mock_host), "--timeout", "0.3"])
+        assert result.exit_code == 1
+        assert "No response" in result.stdout
+
+    def test_send_connection_refused(self):
+        result = runner.invoke(app, ["send", self.message(), "--port", "1"])
+        assert result.exit_code == 1
+        assert "Could not send" in result.stdout
+
+    def test_invalid_wire_options(self):
+        result = runner.invoke(app, ["send", self.message(), "--format", "json"])
+        assert result.exit_code == 1
+        assert "Unknown wire format" in result.stdout
+
+    def test_load(self, mock_host):
+        result = runner.invoke(app, ["load", "--port", str(mock_host), "-n", "200", "-c", "8", "--connections", "2"])
+        assert result.exit_code == 0, result.stdout
+        assert "00: 200" in result.stdout
+        assert "Throughput" in result.stdout

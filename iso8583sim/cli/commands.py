@@ -439,6 +439,183 @@ def interactive_shell():
         raise typer.Exit(1) from None
 
 
+def _wire_options(wire_format: str, header: str, tpdu: str | None) -> tuple[Any, Any]:
+    """Turn the shared --format / --header / --tpdu options into WireFormat and Framing."""
+    from ..net import Framing
+    from ..wire import WireFormat
+
+    try:
+        return WireFormat.preset(wire_format), Framing(header=header, tpdu=bytes.fromhex(tpdu) if tpdu else None)
+    except ValueError as e:
+        console.print(f"[red]{escape(str(e))}")
+        raise typer.Exit(1) from None
+
+
+FORMAT_HELP = "Wire format: ascii-hex, ascii-binary, bcd or ebcdic"
+HEADER_HELP = "Length header: 2b, 4b (binary) or 2a, 4a (ASCII digits)"
+TPDU_HELP = "TPDU as 10 hex digits, e.g. 6000010000"
+
+
+@app.command("serve")
+def serve_mock_host(
+    host: str = typer.Option("127.0.0.1", "--host", help="Address to bind"),
+    port: int = typer.Option(8583, "--port", "-p", help="Port to listen on"),
+    rules: Path | None = typer.Option(None, "--rules", "-r", help="Rules file (JSON or YAML). Default: approve all"),
+    wire_format: str = typer.Option("ascii-binary", "--format", "-f", help=FORMAT_HELP),
+    header: str = typer.Option("2b", "--header", help=HEADER_HELP),
+    tpdu: str | None = typer.Option(None, "--tpdu", help=TPDU_HELP),
+):
+    """Run a mock issuer host that answers requests by rules"""
+    import asyncio
+
+    from ..net import MockHost, load_rules
+
+    fmt, framing = _wire_options(wire_format, header, tpdu)
+    try:
+        rule_list = load_rules(rules) if rules else None
+    except (OSError, ValueError) as e:
+        console.print(f"[red]Could not load rules: {escape(str(e))}")
+        raise typer.Exit(1) from None
+    mock = MockHost(rules=rule_list, wire_format=fmt, framing=framing)
+
+    async def run() -> None:
+        import signal
+
+        await mock.start(host, port)
+        console.print(
+            f"[cyan]Mock host listening on {host}:{mock.port}[/] "
+            f"({wire_format}, {header} header{', TPDU' if tpdu else ''}, {len(mock.rules)} rules). Ctrl+C to stop."
+        )
+        stop = asyncio.Event()
+        # subhadipmitra@: Stop cleanly on SIGTERM as well as Ctrl+C, so `kill`, `docker stop`
+        # and process managers shut the host down and still get the summary below.
+        loop = asyncio.get_running_loop()
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            try:
+                loop.add_signal_handler(sig, stop.set)
+            except (NotImplementedError, RuntimeError):  # pragma: no cover - e.g. Windows
+                pass
+        await stop.wait()
+        await mock.stop()
+
+    try:
+        asyncio.run(run())
+    except KeyboardInterrupt:
+        pass
+    except OSError as e:
+        console.print(f"[red]Could not listen on {host}:{port}: {escape(str(e))}")
+        raise typer.Exit(1) from None
+    # subhadipmitra@: Print a summary on Ctrl+C so a test session ends with what was seen.
+    stats = mock.stats
+    console.print(
+        f"\nReceived {stats.received}, answered {stats.responded}, dropped {stats.dropped}, errors {stats.errors}. "
+        f"Response codes: {dict(stats.response_codes) or '-'}"
+    )
+
+
+@app.command("send")
+def send_message(
+    message: str = typer.Argument(..., help="ISO 8583 message to send (as printed by build or generate)"),
+    host: str = typer.Option("127.0.0.1", "--host", help="Host to connect to"),
+    port: int = typer.Option(8583, "--port", "-p", help="Port to connect to"),
+    wire_format: str = typer.Option("ascii-binary", "--format", "-f", help=FORMAT_HELP),
+    header: str = typer.Option("2b", "--header", help=HEADER_HELP),
+    tpdu: str | None = typer.Option(None, "--tpdu", help=TPDU_HELP),
+    timeout: float = typer.Option(10.0, "--timeout", "-t", help="Seconds to wait for the response"),
+    version: str = typer.Option("1987", "--version", "-v", help="ISO 8583 version (1987, 1993, 2003)"),
+):
+    """Send a message to a host and show the response"""
+    import asyncio
+
+    from ..net import ISO8583Client
+
+    fmt, framing = _wire_options(wire_format, header, tpdu)
+    try:
+        iso_version = ISO8583Version(version)
+        request = ISO8583Parser(version=iso_version).parse(message)
+        # subhadipmitra@: Send without the network guessed from the PAN, so the host gets
+        # exactly the fields the user gave rather than a network's required-field checks.
+        request.network = None
+    except Exception as e:
+        console.print(f"[red]Error parsing message: {escape(str(e))}")
+        raise typer.Exit(1) from None
+
+    async def run() -> ISO8583Message:
+        client = ISO8583Client(host, port, wire_format=fmt, framing=framing, timeout=timeout, version=iso_version)
+        try:
+            return await client.send(request)
+        finally:
+            await client.close()
+
+    try:
+        response = asyncio.run(run())
+    except TimeoutError as e:
+        console.print(f"[red]{escape(str(e))}")
+        raise typer.Exit(1) from None
+    except (OSError, ValueError) as e:
+        console.print(f"[red]Could not send to {host}:{port}: {escape(str(e))}")
+        raise typer.Exit(1) from None
+
+    console.print(Panel(describe_message(response)["summary"], title=f"Response {response.mti}", border_style="cyan"))
+    console.print(formatter.format_field_table(response.fields))
+
+
+@app.command("load")
+def load_test(
+    host: str = typer.Option("127.0.0.1", "--host", help="Host to connect to"),
+    port: int = typer.Option(8583, "--port", "-p", help="Port to connect to"),
+    count: int = typer.Option(1000, "--count", "-n", help="Number of requests"),
+    concurrency: int = typer.Option(10, "--concurrency", "-c", help="Requests in flight at once"),
+    connections: int = typer.Option(1, "--connections", help="TCP connections to spread requests over"),
+    network: str | None = typer.Option(None, "--network", help="Card network for generated requests"),
+    wire_format: str = typer.Option("ascii-binary", "--format", "-f", help=FORMAT_HELP),
+    header: str = typer.Option("2b", "--header", help=HEADER_HELP),
+    tpdu: str | None = typer.Option(None, "--tpdu", help=TPDU_HELP),
+    timeout: float = typer.Option(10.0, "--timeout", "-t", help="Seconds to wait for each response"),
+):
+    """Send many generated requests to a host and report throughput and latency"""
+    import asyncio
+
+    from ..net import ISO8583Client, run_load
+
+    fmt, framing = _wire_options(wire_format, header, tpdu)
+    try:
+        card_network = CardNetwork(network.upper()) if network else None
+        report = asyncio.run(
+            run_load(
+                lambda: ISO8583Client(host, port, wire_format=fmt, framing=framing, timeout=timeout),
+                count=count,
+                concurrency=concurrency,
+                connections=connections,
+                network=card_network,
+            )
+        )
+    except (OSError, ValueError) as e:
+        console.print(f"[red]Load test failed: {escape(str(e))}")
+        raise typer.Exit(1) from None
+
+    table = Table(title=f"Load test: {host}:{port}")
+    table.add_column("Metric", style="cyan")
+    table.add_column("Value", justify="right")
+    for label, value in [
+        ("Requests", f"{report.sent:,}"),
+        ("Responses", f"{report.responses:,}"),
+        ("Timeouts", f"{report.timeouts:,}"),
+        ("Errors", f"{report.errors:,}"),
+        ("Duration", f"{report.duration_s:.2f} s"),
+        ("Throughput", f"{report.throughput:,.0f} msg/s"),
+        ("Latency p50", f"{report.percentile(50):.2f} ms"),
+        ("Latency p95", f"{report.percentile(95):.2f} ms"),
+        ("Latency p99", f"{report.percentile(99):.2f} ms"),
+        ("Latency max", f"{max(report.latencies_ms, default=0):.2f} ms"),
+        ("Response codes", ", ".join(f"{rc}: {n:,}" for rc, n in sorted(report.response_codes.items())) or "-"),
+    ]:
+        table.add_row(label, value)
+    console.print(table)
+    if report.timeouts or report.errors:
+        raise typer.Exit(1)
+
+
 @app.command("mcp")
 def mcp_server():
     """Run the MCP server over stdio for AI assistants (Claude, Cursor, etc.)"""
