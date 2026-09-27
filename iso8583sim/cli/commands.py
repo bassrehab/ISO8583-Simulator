@@ -372,9 +372,12 @@ def interactive_shell():
 @app.command("mcp")
 def mcp_server():
     """Run the MCP server over stdio for AI assistants (Claude, Cursor, etc.)"""
+    # subhadipmitra@: The MCP SDK is an optional extra, so import it only when this command
+    # runs. Without the extra, the user gets an install hint instead of a traceback.
     try:
         from ..mcp import main as run_mcp
     except ImportError:
+        # subhadipmitra@: \\[ escapes the bracket so Rich doesn't swallow [mcp] as markup.
         console.print("[red]The MCP server needs the mcp extra: pip install 'iso8583sim\\[mcp]'")
         raise typer.Exit(1) from None
     run_mcp()

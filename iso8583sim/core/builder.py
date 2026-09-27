@@ -262,6 +262,10 @@ class ISO8583Builder:
 
         # Original data elements: MTI (4), STAN (6), transmission date/time (10),
         # acquiring institution ID (11), forwarding institution ID (11)
+        # subhadipmitra@: Fields are keyed by int. The old code used the string key '11', so the
+        # STAN was always blank. The issuer matches a reversal to the original transaction
+        # through these values, so each part is zero-filled to its fixed width (42 in total).
+        # It reads the original field 7 here, before the reversal's own field 7 is set below.
         original_data = (
             orig_mti
             + original.fields.get(11, "").zfill(6)

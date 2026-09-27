@@ -405,6 +405,8 @@ class ISO8583Parser:
                 pan_length = int(message[bitmap_length:pan_start])
                 pan = message[pan_start : pan_start + pan_length]
 
+                # subhadipmitra@: Share one PAN range table with the rest of the package so
+                # detection rules (Discover, Mastercard 2-series) are defined in one place.
                 network = detect_network_from_pan(pan)
                 if network is not None:
                     return network

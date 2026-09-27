@@ -50,6 +50,8 @@ NETWORK_MANAGEMENT_CODES = {
 }
 
 # Common ISO 4217 currency codes (field 49)
+# subhadipmitra@: Each entry is (alpha code, minor unit exponent). The exponent says where the
+# decimal point goes in field 4, which is sent in minor units: 1000 is 10.00 USD but 1000 JPY.
 CURRENCY_CODES = {
     "036": ("AUD", 2),
     "124": ("CAD", 2),
@@ -79,6 +81,8 @@ def detect_network_from_pan(pan: str) -> CardNetwork | None:
     Returns:
         The matching CardNetwork, or None if the prefix is not recognised
     """
+    # subhadipmitra@: Network ranges are defined on the first six digits (the BIN), so shorter
+    # or non-numeric input cannot be classified.
     if not pan.isdigit() or len(pan) < 6:
         return None
 
@@ -88,12 +92,17 @@ def detect_network_from_pan(pan: str) -> CardNetwork | None:
 
     if pan.startswith("4"):
         return CardNetwork.VISA
+    # subhadipmitra@: Mastercard also issues from the 2-series range 2221 to 2720, which the
+    # old prefix check missed.
     if 51 <= two <= 55 or 2221 <= four <= 2720:
         return CardNetwork.MASTERCARD
     if two in (34, 37):
         return CardNetwork.AMEX
+    # subhadipmitra@: Discover issues from 6011, 644 to 649 and 65. None of these overlap
+    # UnionPay's 62, so the order of the two checks doesn't matter.
     if four == 6011 or two == 65 or 644 <= three <= 649:
         return CardNetwork.DISCOVER
+    # subhadipmitra@: JCB is 3528 to 3589, not every 35 prefix.
     if 3528 <= four <= 3589:
         return CardNetwork.JCB
     if two == 62:
