@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The documentation moved from MkDocs to Mintlify, served at iso8583sim.com/docs. It adds search, a Python API reference generated from the docstrings (`scripts/generate_api_docs.py`), and an interactive REST API reference generated from the OpenAPI spec (`scripts/export_openapi.py`). A docs workflow checks that both are up to date and that the Mintlify build and links are valid.
+- The `docs` extra now installs `griffe` (for the API reference generator) instead of MkDocs.
+- REST API endpoint tags are capitalized (`Messages`, `Meta`).
+
 ## [1.5.0] - 2026-09-27
 
 ### Added
