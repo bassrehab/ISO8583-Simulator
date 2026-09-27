@@ -2,13 +2,18 @@
 
 Run with `iso8583sim web` or `uvicorn iso8583sim.web.app:app`. Interactive docs are served
 at /docs and the OpenAPI schema at /openapi.json.
+
+Set ISO8583SIM_PUBLIC=1 to run it as a public demo: LLM features are turned off, so nobody
+can spend the server's API keys, and browsers on any site may call it (CORS).
 """
 
 from __future__ import annotations
 
-from typing import Any, Literal
+import os
+from typing import Annotated, Any, Literal
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
@@ -21,6 +26,13 @@ from ..core.samples import sample_message
 from ..core.types import CardNetwork, ISO8583Error, ISO8583Message, ISO8583Version
 from ..core.validator import ISO8583Validator
 
+# subhadipmitra@: Input size limits. The longest field is LLLVAR (999 characters, or 1998
+# when binary data is written as hex), so real messages stay far below these. They stop a
+# single request from making the server parse megabytes of data.
+MAX_MESSAGE_LENGTH = 32_768
+MAX_FIELD_LENGTH = 1_998
+MAX_DESCRIPTION_LENGTH = 2_000
+
 # Request and response models
 
 
@@ -31,7 +43,11 @@ class FieldValue(BaseModel):
 
 
 class MessageRequest(BaseModel):
-    message: str = Field(..., description="Raw ISO 8583 message: MTI, hex bitmap, then field data")
+    message: str = Field(
+        ...,
+        max_length=MAX_MESSAGE_LENGTH,
+        description="Raw ISO 8583 message: MTI, hex bitmap, then field data",
+    )
     network: CardNetwork | None = Field(None, description="Card network. Detected from the PAN when omitted.")
     version: ISO8583Version = ISO8583Version.V1987
 
@@ -49,7 +65,9 @@ class BuildRequest(BaseModel):
     mti: str = Field(..., pattern=r"^\d{4}$", examples=["0100"])
     # subhadipmitra@: JSON object keys are strings. Pydantic converts "2" to 2 here, which is
     # what ISO8583Message expects, so clients can send {"2": "4111..."} naturally.
-    fields: dict[int, str] = Field(..., examples=[{"2": "4111111111111111", "3": "000000", "4": "000000001000"}])
+    fields: dict[int, Annotated[str, Field(max_length=MAX_FIELD_LENGTH)]] = Field(
+        ..., max_length=128, examples=[{"2": "4111111111111111", "3": "000000", "4": "000000001000"}]
+    )
     network: CardNetwork | None = None
     version: ISO8583Version = ISO8583Version.V1987
 
@@ -97,7 +115,9 @@ class GenerateRequest(BaseModel):
     currency: str = Field("840", pattern=r"^\d{3}$")
     stan: str = Field("123456", pattern=r"^\d{6}$")
     description: str | None = Field(
-        None, description="Describe the message in plain English and let an LLM build it. Overrides the other fields."
+        None,
+        max_length=MAX_DESCRIPTION_LENGTH,
+        description="Describe the message in plain English and let an LLM build it. Overrides the other fields.",
     )
     provider: str | None = None
     model: str | None = None
@@ -132,9 +152,21 @@ def _parse(request: MessageRequest) -> ISO8583Message:
     return ISO8583Parser(version=request.version).parse(request.message.rstrip("\r\n"), network=request.network)
 
 
-def _llm(provider: str | None, model: str | None) -> Any:
+def _public_from_env() -> bool:
+    return os.environ.get("ISO8583SIM_PUBLIC", "").strip().lower() in {"1", "true", "yes"}
+
+
+def _llm(provider: str | None, model: str | None, public: bool) -> Any:
     """Get an LLM provider, or raise 503 when none is available."""
     from ..llm import LLMError, get_provider
+
+    if public:
+        # subhadipmitra@: Checked before looking for a provider, so a public server never
+        # calls an LLM even if a key happens to be set in its environment.
+        raise HTTPException(
+            status_code=403,
+            detail="LLM features are turned off on this public server. Run `iso8583sim web` locally to use them.",
+        )
 
     try:
         return get_provider(provider, model=model) if model else get_provider(provider)
@@ -144,16 +176,27 @@ def _llm(provider: str | None, model: str | None) -> Any:
         raise HTTPException(status_code=503, detail=str(e)) from None
 
 
-def create_app() -> FastAPI:
-    """Create the REST API application."""
+def create_app(public: bool | None = None) -> FastAPI:
+    """Create the REST API application.
+
+    Args:
+        public: Run as a public demo, with LLM features off and CORS open to any origin.
+            Defaults to the ISO8583SIM_PUBLIC environment variable.
+    """
+    if public is None:
+        public = _public_from_env()
     app = FastAPI(
         title="ISO8583 Simulator API",
         version=__version__,
         description=(
             "Parse, build, validate, explain, generate and convert ISO 8583 messages. "
-            "Intended for testing: there is no authentication, so don't expose it publicly."
+            "Intended for testing: there is no authentication. Only use test card numbers."
         ),
     )
+    if public:
+        # subhadipmitra@: The API has no cookies or credentials, so allowing every origin only
+        # lets browser apps call it the same way curl already can.
+        app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET", "POST"], allow_headers=["*"])
 
     @app.exception_handler(ISO8583Error)
     @app.exception_handler(ValueError)
@@ -223,7 +266,7 @@ def create_app() -> FastAPI:
 
         from ..llm import LLMError, MessageExplainer
 
-        llm = _llm(request.provider, request.model)
+        llm = _llm(request.provider, request.model, public)
         try:
             summary = MessageExplainer(provider=llm).explain(parsed)
         except LLMError as e:
@@ -241,7 +284,7 @@ def create_app() -> FastAPI:
         if request.description:
             from ..llm import LLMError, MessageGenerator
 
-            llm = _llm(request.provider, request.model)
+            llm = _llm(request.provider, request.model, public)
             try:
                 message = MessageGenerator(provider=llm).generate(request.description)
             except LLMError as e:

@@ -5,6 +5,7 @@
         "properties": {
           "fields": {
             "additionalProperties": {
+              "maxLength": 1998,
               "type": "string"
             },
             "examples": [
@@ -14,6 +15,7 @@
                 "4": "000000001000"
               }
             ],
+            "maxProperties": 128,
             "title": "Fields",
             "type": "object"
           },
@@ -82,6 +84,7 @@
         "properties": {
           "message": {
             "description": "Raw ISO 8583 message: MTI, hex bitmap, then field data",
+            "maxLength": 32768,
             "title": "Message",
             "type": "string"
           },
@@ -160,6 +163,7 @@
           },
           "message": {
             "description": "Raw ISO 8583 message: MTI, hex bitmap, then field data",
+            "maxLength": 32768,
             "title": "Message",
             "type": "string"
           },
@@ -281,6 +285,7 @@
           "description": {
             "anyOf": [
               {
+                "maxLength": 2000,
                 "type": "string"
               },
               {
@@ -442,6 +447,7 @@
         "properties": {
           "message": {
             "description": "Raw ISO 8583 message: MTI, hex bitmap, then field data",
+            "maxLength": 32768,
             "title": "Message",
             "type": "string"
           },
@@ -570,6 +576,7 @@
           },
           "message": {
             "description": "Raw ISO 8583 message: MTI, hex bitmap, then field data",
+            "maxLength": 32768,
             "title": "Message",
             "type": "string"
           },
@@ -676,7 +683,7 @@
     }
   },
   "info": {
-    "description": "Parse, build, validate, explain, generate and convert ISO 8583 messages. Intended for testing: there is no authentication, so don't expose it publicly.",
+    "description": "Parse, build, validate, explain, generate and convert ISO 8583 messages. Intended for testing: there is no authentication. Only use test card numbers.",
     "title": "ISO8583 Simulator API",
     "version": "1"
   },
@@ -958,6 +965,10 @@
     }
   },
   "servers": [
+    {
+      "description": "Public demo (LLM features off)",
+      "url": "https://api.iso8583sim.com"
+    },
     {
       "description": "Local server (iso8583sim web)",
       "url": "http://127.0.0.1:8000"

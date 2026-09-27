@@ -5,8 +5,18 @@ sidebarTitle: "REST API"
 ---
 
 <Warning>
-**For test environments.** The API has no authentication. It listens on `127.0.0.1` by default. Don't expose it on a public network.
+**For test environments.** The API has no authentication. It listens on `127.0.0.1` by default. Don't expose it on a public network, except in public mode (below).
 </Warning>
+
+## Public demo
+
+A public demo runs at `https://api.iso8583sim.com`, and the [REST API reference](/rest) playground calls it by default. Try it without installing anything:
+
+```bash
+curl -s https://api.iso8583sim.com/generate -H "Content-Type: application/json" -d '{"network": "VISA"}'
+```
+
+It runs in public mode, so LLM features are off and requests are rate limited. Only send test card numbers. Switch the playground's server to `http://127.0.0.1:8000` to use your own instance.
 
 ## Running
 
@@ -99,6 +109,7 @@ curl -s -X POST localhost:8000/validate \
 | Status | When |
 |--------|------|
 | 422 | Invalid request, or a message that can't be parsed, built or converted. `detail` explains why. |
+| 403 | LLM features requested on a server in public mode |
 | 502 | The LLM failed or returned an unusable message (`/explain` and `/generate` with an LLM) |
 | 503 | No LLM provider is configured on the server |
 
@@ -122,3 +133,18 @@ docker run --rm -p 8000:8000 -e ANTHROPIC_API_KEY iso8583sim
 ```
 
 The image installs the `anthropic` extra only. Build with `--build-arg EXTRAS=web,security,llm` for all providers.
+
+## Public mode
+
+Set `ISO8583SIM_PUBLIC=1` to run the API as a public demo:
+
+```bash
+docker run --rm -p 8000:8000 -e ISO8583SIM_PUBLIC=1 iso8583sim
+```
+
+In public mode:
+
+- LLM features return 403, even when an API key is set, so nobody can spend your key.
+- Browsers on any site can call the API (CORS allows every origin). There are no cookies or credentials, so this allows nothing that `curl` can't already do.
+
+Every server rejects oversized requests: messages over 32,768 characters, field values over 1,998 characters and descriptions over 2,000 characters. Put rate limiting in front of a public server, for example at a reverse proxy.
