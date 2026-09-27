@@ -135,6 +135,5 @@ warn_return_any = false
 warn_unused_configs = true
 ignore_missing_imports = true
 exclude = ["tests", "benchmarks"]
-# Relaxed type checking for this phase - tighten in v0.3.0
-check_untyped_defs = false
+check_untyped_defs = true
 disallow_untyped_defs = false

@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Type checking is stricter (`check_untyped_defs`), and mypy now runs in CI and pre-commit.
+- Removed the empty `iso8583sim.utils` package.
 - `fastapi` and `uvicorn` are no longer installed by default. They moved to the new `web` extra (`pip install iso8583sim[web]`).
 - Documentation links now point to [iso8583sim.com](https://iso8583sim.com).
 - Fixed the author LinkedIn link in the README.
