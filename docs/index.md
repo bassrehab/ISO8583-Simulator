@@ -48,8 +48,7 @@ pip install iso8583sim[anthropic]  # Claude
 pip install iso8583sim[openai]     # GPT
 pip install iso8583sim[llm]        # All providers
 
-# With Cython performance extensions
-pip install iso8583sim[perf]
+# Compiled Cython extensions are included in the wheels for Linux, macOS and Windows
 ```
 
 ## Documentation Overview

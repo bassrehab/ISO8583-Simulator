@@ -97,14 +97,13 @@ def get_field_definition(field_number, network=None, version=ISO8583Version.V198
 
 For maximum performance, iso8583sim includes optional Cython extensions that compile hot paths to C code.
 
-#### Building Cython Extensions
+#### Getting the Extensions
+
+The wheels on PyPI for Linux, macOS and Windows already include them. From a source checkout, an editable install compiles them (needs a C compiler):
 
 ```bash
-# Install Cython
-pip install cython>=3.0.0
-
-# Build extensions
-python setup.py build_ext --inplace
+pip install -e .
+python -c "import iso8583sim.core.parser as p; print(p._USE_CYTHON)"  # True when the extensions are loaded
 ```
 
 The following modules are compiled:
@@ -194,10 +193,9 @@ For typical usage, the `slots=True` dataclasses are already efficient enough tha
 
 For maximum performance in production:
 
-1. **Install Cython extensions:**
+1. **Make sure the Cython extensions are loaded:**
    ```bash
-   pip install iso8583sim[perf]
-   python setup.py build_ext --inplace
+   python -c "import iso8583sim.core.parser as p; print(p._USE_CYTHON)"
    ```
 
 2. **Use object pooling for sustained loads:**

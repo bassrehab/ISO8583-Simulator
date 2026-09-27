@@ -1,0 +1,5 @@
+include LICENSE README.md CHANGELOG.md
+recursive-include iso8583sim *.pyx
+graft tests
+prune tests/__pycache__
+global-exclude *.so *.pyd *.c __pycache__ *.py[cod] test-results.xml

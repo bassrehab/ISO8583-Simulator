@@ -27,18 +27,17 @@ Common issues and solutions when using iso8583sim.
    pip install iso8583sim
    ```
 
-### Cython compilation fails
+### Cython extensions are not loaded
 
-**Problem:** `python setup.py build_ext --inplace` fails.
+**Problem:** `python -c "import iso8583sim.core.parser as p; print(p._USE_CYTHON)"` prints `False`.
+
+The PyPI wheels for Linux, macOS and Windows include the compiled extensions. If pip had no matching wheel, it built from source, and the extensions are skipped when no C compiler is available (iso8583sim still works, only slower).
 
 **Solutions:**
 
-1. Ensure Cython is installed:
-   ```bash
-   pip install cython>=3.0.0
-   ```
+1. Upgrade pip so it can pick a compiled wheel: `pip install --upgrade pip`, then reinstall iso8583sim.
 
-2. Check you have a C compiler:
+2. To build from source, install a C compiler and reinstall with `pip install --no-binary iso8583sim iso8583sim`:
    - **macOS:** `xcode-select --install`
    - **Linux:** `apt install build-essential`
    - **Windows:** Install Visual Studio Build Tools
@@ -276,11 +275,7 @@ if errors:
 
 **Solutions:**
 
-1. Install Cython extensions:
-   ```bash
-   pip install iso8583sim[perf]
-   python setup.py build_ext --inplace
-   ```
+1. Check the Cython extensions are loaded (see [Cython extensions are not loaded](#cython-extensions-are-not-loaded)).
 
 2. Reuse parser instances:
    ```python

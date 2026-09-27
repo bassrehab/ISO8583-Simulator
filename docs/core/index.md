@@ -65,12 +65,7 @@ builder = ISO8583Builder(version=ISO8583Version.V1993)
 
 ### Performance Optimization
 
-Optional Cython extensions provide ~2x speedup:
-
-```bash
-pip install iso8583sim[perf]
-python setup.py build_ext --inplace
-```
+Compiled Cython extensions provide ~2x speedup. They are included in the PyPI wheels for Linux, macOS and Windows, so `pip install iso8583sim` is enough.
 
 Detection is automatic - the parser/validator use Cython functions when available.
 

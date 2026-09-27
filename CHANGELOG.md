@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Wheels on PyPI now include the compiled Cython extensions for CPython 3.10 to 3.14 on Linux (x86_64, aarch64; glibc and musl), macOS (Intel, Apple Silicon) and Windows (x64). Previously only a pure-Python wheel was published, so pip users never got the speedups. The package now builds with setuptools instead of hatchling. Installing from source without a C compiler still works and falls back to pure Python.
+- The source distribution now includes the full test suite and no longer picks up untracked files from the build directory.
 - Network field rules were rewritten from published sources (`iso8583sim.core.network_rules`). For VISA and Mastercard, field 22 must now use a known PAN entry mode and PIN entry capability, and Mastercard rejects the Visa-only mode `95`. Mastercard field 48 must be a transaction category code followed by well-formed subelements.
 - `NETWORK_FIELD_FORMATS` is now empty. Its old patterns were not real network formats and were never used.
 
