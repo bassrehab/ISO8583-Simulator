@@ -9,12 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.5.1] - 2026-09-27
 
+### Added
+
+- Notebooks `09_security_pin_mac` (PIN blocks and MACs), `10_wire_formats` (binary, BCD and EBCDIC wire formats, and version conversion) and `11_network_simulation` (mock host, TCP client and load testing), with executed outputs.
+
+### Fixed
+
+- Notebook `04_network_specifics` failed since 1.5.0, because it built a Mastercard field 48 in the old made-up `MC...` format. It now uses a real layout (transaction category code, then subelements).
+- README images, notebook links and the license link were relative, so they were broken on the PyPI page. They are now absolute. The development instructions changed into the wrong directory after cloning.
+
 ### Changed
 
 - The documentation moved from MkDocs to Mintlify, served at iso8583sim.com/docs. It adds search, a Python API reference generated from the docstrings (`scripts/generate_api_docs.py`), and an interactive REST API reference generated from the OpenAPI spec (`scripts/export_openapi.py`). A docs workflow checks that both are up to date and that the Mintlify build and links are valid.
 - The `docs` extra now installs `griffe` (for the API reference generator) instead of MkDocs.
 - REST API endpoint tags are capitalized (`Messages`, `Meta`).
-- README links point at the new docs pages (the MCP guide is now `/docs/mcp-server`, because Mintlify reserves `/docs/mcp` for its MCP endpoint).
+- README: covers the CLI commands added since 1.2 (`convert`, `validate --against`, `serve`, `send`, `load`, `web`, `mcp`), PIN blocks, MACs and wire formats, and links point at the new docs pages (the MCP guide is now `/docs/mcp-server`, because Mintlify reserves `/docs/mcp` for its MCP endpoint).
 
 ## [1.5.0] - 2026-09-27
 
