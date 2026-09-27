@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.1] - 2026-10-02
+
+### Security
+
+- `Framing.read` read as many bytes as a frame's length header declared, so a peer could declare up to 4 GiB with a 4-byte header and make the reader buffer that much. Frames longer than `Framing.max_message` (1 MiB by default) are now refused with `ParseError` from the header alone, before any of the body is read.
+
+### Fixed
+
+- `MockHost` closes a connection whose frame can't be read (a bad or oversized length header), logging why, instead of ending its handler with an unhandled exception.
+- `ISO8583Client` fails the requests waiting on a connection whose frame can't be read at once, instead of leaving them to time out.
+
 ## [1.7.0] - 2026-10-01
 
 ### Fixed
@@ -209,7 +220,8 @@ First stable release.
 - MkDocs documentation site.
 - GitHub Actions for CI, PyPI publishing and docs deployment.
 
-[Unreleased]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.7.0...HEAD
+[Unreleased]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.7.1...HEAD
+[1.7.1]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.5.2...v1.6.0
 [1.5.2]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.5.1...v1.5.2
