@@ -7,6 +7,7 @@ This module provides convenient functions for:
 """
 
 from iso8583sim.core.builder import ISO8583Builder
+from iso8583sim.core.codes import PROCESSING_CODES, RESPONSE_CODES
 from iso8583sim.core.emv import EMV_TAGS, build_emv_data, parse_emv_data
 from iso8583sim.core.parser import ISO8583Parser
 from iso8583sim.core.types import (
@@ -20,46 +21,6 @@ from iso8583sim.core.validator import ISO8583Validator
 _builder = ISO8583Builder()
 _parser = ISO8583Parser()
 _validator = ISO8583Validator()
-
-
-# Response code descriptions
-RESPONSE_CODES = {
-    "00": "Approved",
-    "01": "Refer to card issuer",
-    "02": "Refer to card issuer, special condition",
-    "03": "Invalid merchant",
-    "04": "Pick up card",
-    "05": "Do not honor",
-    "06": "Error",
-    "10": "Partial approval",
-    "12": "Invalid transaction",
-    "13": "Invalid amount",
-    "14": "Invalid card number",
-    "15": "No such issuer",
-    "30": "Format error",
-    "41": "Lost card, pick up",
-    "43": "Stolen card, pick up",
-    "51": "Insufficient funds",
-    "54": "Expired card",
-    "55": "Incorrect PIN",
-    "57": "Transaction not permitted",
-    "61": "Exceeds withdrawal limit",
-    "65": "Exceeds frequency limit",
-    "75": "PIN tries exceeded",
-    "91": "Issuer unavailable",
-    "96": "System malfunction",
-}
-
-# Processing code descriptions
-PROCESSING_CODES = {
-    "00": "Purchase",
-    "01": "Cash withdrawal",
-    "09": "Purchase with cashback",
-    "20": "Refund",
-    "28": "Payment",
-    "30": "Balance inquiry",
-    "31": "Mini statement",
-}
 
 
 def pretty_print(message: ISO8583Message | str, show_raw: bool = False) -> None:
