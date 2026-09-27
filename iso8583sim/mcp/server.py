@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import functools
+import inspect
 import json
+import os
 from collections.abc import Callable
 from typing import Any, TypeVar
 
@@ -59,6 +61,19 @@ def _reported_as(error_type: type[Exception]) -> Callable[[F], F]:
     # each tool's input schema.
 
     def decorator(fn: F) -> F:
+        # subhadipmitra@: Async tools need an async wrapper, or the SDK would see a plain
+        # function returning a coroutine and never await it.
+        if inspect.iscoroutinefunction(fn):
+
+            @functools.wraps(fn)
+            async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
+                try:
+                    return await fn(*args, **kwargs)
+                except (ValueError, ISO8583Error) as e:
+                    raise error_type(str(e)) from e
+
+            return async_wrapper  # type: ignore[return-value]
+
         @functools.wraps(fn)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             try:
@@ -73,6 +88,18 @@ def _reported_as(error_type: type[Exception]) -> Callable[[F], F]:
 
 tool_errors = _reported_as(ToolError)
 resource_errors = _reported_as(ResourceError)
+
+# subhadipmitra@: send_to_host opens real TCP connections. An assistant that could reach any
+# address could be steered into probing internal services, so only listed hosts are allowed.
+# The default is this machine only; ISO8583SIM_ALLOWED_HOSTS widens it deliberately.
+ALLOWED_HOSTS_ENV = "ISO8583SIM_ALLOWED_HOSTS"
+DEFAULT_ALLOWED_HOSTS = "127.0.0.1,localhost,::1"
+
+
+def _host_allowed(host: str, port: int) -> bool:
+    entries = [e.strip().lower() for e in os.environ.get(ALLOWED_HOSTS_ENV, DEFAULT_ALLOWED_HOSTS).split(",")]
+    target = host.strip().lower()
+    return any(entry in (target, f"{target}:{port}") for entry in entries if entry)
 
 
 def _version(version: str) -> ISO8583Version:
@@ -287,6 +314,63 @@ def create_server() -> MCPServer:
             "removed": removed,
             "changed": changed,
             "identical": a.mti == b.mti and not (added or removed or changed),
+        }
+
+    @server.tool()
+    @tool_errors
+    async def send_to_host(
+        message: str,
+        host: str = "127.0.0.1",
+        port: int = 8583,
+        wire_format: str = "ascii-binary",
+        header: str = "2b",
+        tpdu: str | None = None,
+        timeout: float = 10.0,
+        version: str = "1987",
+    ) -> dict[str, Any]:
+        """Send a message to an ISO 8583 host over TCP and return the parsed response.
+
+        Only hosts in the ISO8583SIM_ALLOWED_HOSTS environment variable are allowed
+        (default: this machine). wire_format is ascii-hex, ascii-binary, bcd or ebcdic;
+        header is 2b, 4b, 2a or 4a; tpdu is 10 hex digits. Pair with `iso8583sim serve`
+        for a local mock issuer.
+        """
+        from ..net import Framing, ISO8583Client
+        from ..wire import WireFormat
+
+        if not _host_allowed(host, port):
+            raise ValueError(
+                f"{host}:{port} is not an allowed host. Add it to the {ALLOWED_HOSTS_ENV} environment "
+                f"variable of the MCP server (currently: {os.environ.get(ALLOWED_HOSTS_ENV, DEFAULT_ALLOWED_HOSTS)})."
+            )
+        v = _version(version)
+        request = _parse(message, version=version)
+        request.network = None
+        client = ISO8583Client(
+            host,
+            port,
+            wire_format=WireFormat.preset(wire_format),
+            framing=Framing(header=header, tpdu=bytes.fromhex(tpdu) if tpdu else None),
+            timeout=timeout,
+            version=v,
+        )
+        try:
+            response = await client.send(request)
+        except TimeoutError as e:
+            raise ValueError(str(e)) from None
+        except OSError as e:
+            raise ValueError(f"Could not reach {host}:{port}: {e}") from None
+        finally:
+            await client.close()
+        # subhadipmitra@: The decoder detects the network from the PAN, but network required
+        # fields describe requests. Render the response without them, as it was received.
+        response.network = None
+        return {
+            "response": builder_for[v].build(response),
+            "mti": response.mti,
+            "response_code": response.fields.get(39),
+            "summary": describe_message(response)["summary"],
+            "fields": field_entries(response),
         }
 
     @server.tool()

@@ -97,3 +97,34 @@ Request->Response flow:   25,264 TPS
 2. **`__slots__`** - Add to dataclasses for memory efficiency (requires Python 3.10+)
 3. **memoryview** - Zero-copy parsing for large messages
 4. **Cython** - Compile hot paths for 2-5x additional speedup
+
+## Wire Formats and Networking
+
+**Date:** 2026-09-27
+**System:** macOS arm64 (Apple M4 Pro), Python 3.12.6, pure Python (no Cython)
+**Script:** `python benchmarks/bench_network.py`
+
+### Wire encode/decode
+
+A sample authorization request in each wire format. Encoding builds and validates the message first, then re-encodes it, so it is slower than `build()` alone.
+
+| Format | Bytes | Encode msg/s | Decode msg/s |
+|--------|-------|--------------|--------------|
+| ascii-hex | 100 | ~36,700 | ~88,700 |
+| ascii-binary | 92 | ~36,800 | ~90,100 |
+| bcd | 63 | ~36,300 | ~85,700 |
+| ebcdic | 92 | ~33,700 | ~71,900 |
+
+### TCP round trips
+
+`ISO8583Client` against a local `MockHost`, 20,000 BCD requests. Client and host share one process and event loop, so these numbers show the library's own overhead, not network performance.
+
+| Concurrency | Connections | msg/s | p50 ms | p99 ms |
+|-------------|-------------|-------|--------|--------|
+| 1 | 1 | ~5,600 | 0.17 | 0.30 |
+| 10 | 1 | ~10,400 | 0.94 | 1.26 |
+| 50 | 1 | ~11,800 | 4.21 | 4.64 |
+| 50 | 4 | ~11,400 | 4.35 | 5.44 |
+| 200 | 4 | ~11,900 | 16.67 | 25.18 |
+
+Throughput levels off around 12,000 msg/s once the single event loop is saturated. Beyond that point, more concurrency only adds latency. With the mock host in a separate process (`iso8583sim serve`), one `iso8583sim load` run reached about 20,100 msg/s (3,000 requests, 32 concurrent, 2 connections), because client and host no longer share a CPU core.

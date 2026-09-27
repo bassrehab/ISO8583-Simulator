@@ -23,6 +23,12 @@ A modern, high-performance ISO 8583 message simulator with CLI, Python SDK, and 
   - EMV/chip card data handling (Field 55)
   - PIN blocks (ISO 9564 formats 0, 1, 3, 4) and MACs for fields 64 and 128
   - Conversion between the 1987, 1993 and 2003 versions
+  - Binary wire formats: binary bitmaps, packed BCD, EBCDIC
+
+- **Network Simulation**:
+  - `iso8583sim serve`: mock issuer host that approves, declines, delays or drops requests by rules
+  - `iso8583sim send` and `iso8583sim load`: send messages over TCP and measure throughput and latency
+  - Length headers and TPDUs for real host links
 
 - **Multiple Interfaces**:
   - Command Line Interface (CLI)
@@ -173,7 +179,7 @@ For Claude Desktop or Cursor, add this to the client's MCP config:
 }
 ```
 
-Then ask things like *"Why was this transaction declined?"* or *"Generate a Mastercard auth and the matching approval."* The server provides 17 tools, including parse, build, validate, explain, EMV decoding, test message generation, responses, reversals, message diffs, version conversion, network rule checks, PIN blocks and MACs. It runs locally and needs no LLM API key. See the [MCP docs](https://iso8583sim.com/docs/mcp/) for all tools, resources and prompts.
+Then ask things like *"Why was this transaction declined?"* or *"Generate a Mastercard auth and the matching approval."* The server provides 18 tools, including parse, build, validate, explain, EMV decoding, test message generation, responses, reversals, message diffs, version conversion, network rule checks, PIN blocks, MACs and sending to a (local, allowlisted) host. It runs locally and needs no LLM API key. See the [MCP docs](https://iso8583sim.com/docs/mcp/) for all tools, resources and prompts.
 
 ## Interactive Notebooks
 

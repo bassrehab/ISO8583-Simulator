@@ -21,6 +21,7 @@ from .types import (
 )
 
 if TYPE_CHECKING:
+    from ..wire import WireFormat
     from .pool import MessagePool
 
 # Try to import Cython-optimized functions
@@ -143,6 +144,17 @@ class ISO8583Parser:
         except Exception as e:
             self.logger.error("Failed to parse message: %s", str(e))
             raise ParseError(f"Failed to parse message: {str(e)}") from e
+
+    def parse_bytes(
+        self, data: bytes, wire_format: WireFormat | None = None, network: CardNetwork | None = None
+    ) -> ISO8583Message:
+        """Parse a message received as bytes in a wire format (binary bitmap, BCD, EBCDIC...).
+
+        Defaults to ASCII with a binary bitmap. See iso8583sim.wire.WireFormat for the presets.
+        """
+        from ..wire import decode_message
+
+        return decode_message(data, wire_format, version=self.version, network=network)
 
     def parse_file(self, filename: str) -> list[ISO8583Message]:
         """Parse multiple messages from file"""
