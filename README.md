@@ -33,7 +33,7 @@ A high-performance ISO 8583 toolkit for Python: parse, build and validate card p
 - **Multiple Interfaces**:
   - Command Line Interface (CLI)
   - Python SDK for programmatic usage
-  - REST API (`pip install iso8583sim[web]`, then `iso8583sim web`)
+  - REST API (`pip install iso8583sim[web]`, then `iso8583sim web`). Try it without installing: a public demo runs at https://api.iso8583sim.com, and the [REST API docs](https://iso8583sim.com/docs/rest) call it from every endpoint page.
   - Interactive Jupyter notebooks
 
 - **AI-Powered Features**:
