@@ -21,6 +21,7 @@ from ..core.convert import convert_message
 from ..core.describe import decode_emv_tags, describe_message, field_entries, field_name
 from ..core.emv import EMV_TAGS
 from ..core.parser import ISO8583Parser
+from ..core.samples import sample_message
 from ..core.types import (
     ISO8583_FIELDS,
     CardNetwork,
@@ -44,19 +45,6 @@ numbers in `fields` arguments are strings ("2", "4", "41"). Versions are "1987",
 Start with parse_message or explain_message to understand a message, and
 validate_message before sending one anywhere.
 """
-
-# subhadipmitra@: Well-known public test card numbers. They pass Luhn checks and are
-# never real accounts, so generated messages are safe to share and paste into chats.
-SAMPLE_PANS = {
-    CardNetwork.VISA: "4111111111111111",
-    CardNetwork.MASTERCARD: "5555555555554444",
-    CardNetwork.AMEX: "378282246310005",
-    CardNetwork.DISCOVER: "6011111111111117",
-    CardNetwork.JCB: "3530111333300000",
-    CardNetwork.UNIONPAY: "6200000000000005",
-}
-
-MESSAGE_TYPES = {"auth": "0100", "financial": "0200", "echo": "0800"}
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -212,38 +200,15 @@ def create_server() -> MCPServer:
         message_type is one of: auth (0100), financial (0200), echo (0800).
         Amount is in minor units (1000 = 10.00). Uses a well-known test PAN for the network when none is given.
         """
-        if message_type not in MESSAGE_TYPES:
-            raise ValueError(f"Unknown message_type {message_type!r}. Use one of: {', '.join(MESSAGE_TYPES)}.")
-        mti = MESSAGE_TYPES[message_type]
-        net = _network(network)
-
-        if message_type == "echo":
-            fields = {7: "1215143022", 11: stan, 70: "301"}
-        else:
-            card = pan or SAMPLE_PANS.get(net or CardNetwork.VISA, SAMPLE_PANS[CardNetwork.VISA])
-            net = net or detect_network_from_pan(card)
-            # subhadipmitra@: This field set covers the union of every network's required
-            # fields (NETWORK_REQUIRED_FIELDS), including 24 (NII) and 25 (POS condition code),
-            # so the message validates whichever network is chosen.
-            fields = {
-                2: card,
-                3: "000000",
-                4: f"{amount_minor_units:012d}",
-                11: stan,
-                14: "2612",
-                22: "051",
-                24: "001",
-                25: "00",
-                41: "TERM0001",
-                42: "MERCHANT123456 ",
-                49: currency,
-            }
-            if message_type == "financial":
-                fields.update({12: "143022", 13: "1215"})
-
-        message = ISO8583Message(mti=mti, fields=fields, network=net)
+        message = sample_message(message_type, _network(network), pan, amount_minor_units, currency, stan)
         raw = builder_for[ISO8583Version.V1987].build(message)
-        return {"message": raw, "mti": mti, "network": net.value if net else None, "fields": field_entries(message)}
+        net = message.network
+        return {
+            "message": raw,
+            "mti": message.mti,
+            "network": net.value if net else None,
+            "fields": field_entries(message),
+        }
 
     @server.tool()
     @tool_errors
