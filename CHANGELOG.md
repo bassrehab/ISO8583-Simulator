@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Seven private `ISO8583Parser` methods that were never called (`_calculate_field_length`, `_handle_network_specific`, `_handle_version_specific`, `_parse_length_indicator`, `_process_bitmap_fields`, `_process_emv_field`, `_validate_field_content`).
 - Unused validator methods that held unverified rules (`_validate_visa_compliance`, `_validate_mastercard_compliance`, `_validate_network_field` and the per-network `_validate_*_specific` methods).
 
 ## [1.4.0] - 2026-09-27
