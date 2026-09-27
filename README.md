@@ -31,6 +31,7 @@ A modern, high-performance ISO 8583 message simulator with CLI, Python SDK, and 
   - Explain ISO 8583 messages in plain English using LLMs
   - Generate messages from natural language descriptions
   - Supports OpenAI, Anthropic, Google, and Ollama (local/offline)
+  - MCP server so Claude, Cursor and other AI assistants can parse, build and validate messages
 
 - **Performance Optimized**:
   - Optional Cython extensions for 2x speedup
@@ -141,6 +142,29 @@ message = generator.generate("$50 refund to Mastercard at ACME Store")
 Ollama runs completely offline with no API keys needed.
 
 See the [OpenAI notebook](notebooks/07_llm_features.ipynb) or [Ollama notebook](notebooks/08_llm_features_ollama.ipynb) for complete examples.
+
+### MCP Server for AI Assistants
+
+Give Claude, Cursor or any MCP client direct access to the parser, builder and validator:
+
+```bash
+pip install iso8583sim[mcp]
+
+# Claude Code
+claude mcp add iso8583sim -- iso8583sim mcp
+```
+
+For Claude Desktop or Cursor, add this to the client's MCP config:
+
+```json
+{
+  "mcpServers": {
+    "iso8583sim": { "command": "iso8583sim", "args": ["mcp"] }
+  }
+}
+```
+
+Then ask things like *"Why was this transaction declined?"* or *"Generate a Mastercard auth and the matching approval."* The server provides 11 tools, including parse, build, validate, explain, EMV decoding, test message generation, responses, reversals and message diffs. It runs locally and needs no LLM API key. See the [MCP docs](https://iso8583sim.com/docs/mcp/) for all tools, resources and prompts.
 
 ## Interactive Notebooks
 

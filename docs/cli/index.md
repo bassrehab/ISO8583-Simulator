@@ -195,6 +195,16 @@ iso8583sim generate --type auth --count 10
 iso8583sim generate --type auth --output messages.txt
 ```
 
+### mcp
+
+Run the MCP server over stdio so AI assistants can use iso8583sim. Requires `pip install iso8583sim[mcp]`.
+
+```bash
+iso8583sim mcp
+```
+
+Your MCP client normally starts this command for you. See [MCP Server](../mcp/index.md) for setup.
+
 ## Output Formats
 
 ### Table (default)
