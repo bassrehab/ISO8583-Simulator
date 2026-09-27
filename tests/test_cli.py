@@ -503,3 +503,16 @@ class TestConvertAndNetworkChecks:
         result = runner.invoke(app, ["validate", raw, "--network", "VISA"])
         assert result.exit_code == 1
         assert "Error validating message" not in result.stdout
+
+
+class TestWebCommand:
+    """Tests for the web command."""
+
+    def test_web_without_extra_shows_install_hint(self, monkeypatch):
+        """A missing web extra gives an install hint instead of a traceback."""
+        import sys
+
+        monkeypatch.setitem(sys.modules, "uvicorn", None)
+        result = runner.invoke(app, ["web"])
+        assert result.exit_code == 1
+        assert "iso8583sim[web]" in result.stdout

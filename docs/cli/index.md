@@ -267,6 +267,16 @@ iso8583sim generate --llm "$50 refund to a Mastercard at ACME Store"
 
 With `--llm`, the generated message is validated before it's shown, and common problems are fixed automatically.
 
+### web
+
+Run the REST API server. Requires `pip install iso8583sim[web]`.
+
+```bash
+iso8583sim web [--host 127.0.0.1] [--port 8000] [--reload]
+```
+
+Interactive API docs are served at `/docs`. See [REST API](../web/index.md).
+
 ### mcp
 
 Run the MCP server over stdio so AI assistants can use iso8583sim. Requires `pip install iso8583sim[mcp]`.

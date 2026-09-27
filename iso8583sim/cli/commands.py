@@ -473,6 +473,29 @@ def _generate_with_llm(description: str, provider: str | None, model: str | None
         console.print(f"\n[green]Message saved to {output}")
 
 
+@app.command("web")
+def web_server(
+    host: str = typer.Option("127.0.0.1", "--host", help="Address to bind"),
+    port: int = typer.Option(8000, "--port", "-p", help="Port to listen on"),
+    reload: bool = typer.Option(False, "--reload", help="Restart on code changes (development)"),
+):
+    """Run the REST API server (interactive docs at /docs)"""
+    # subhadipmitra@: FastAPI and uvicorn are in the optional web extra, so import them only
+    # when this command runs and give an install hint if they're missing.
+    try:
+        import uvicorn
+
+        import iso8583sim.web.app  # noqa: F401
+    except ImportError:
+        console.print("[red]The REST API needs the web extra: pip install 'iso8583sim\\[web]'")
+        raise typer.Exit(1) from None
+
+    # subhadipmitra@: Default to localhost. The API has no authentication, so listening on
+    # all interfaces should be a deliberate choice (--host 0.0.0.0).
+    console.print(f"[cyan]Serving the ISO8583 Simulator API on http://{host}:{port} (docs at /docs)")
+    uvicorn.run("iso8583sim.web.app:app", host=host, port=port, reload=reload)
+
+
 def get_mti_for_type(type: str) -> str:
     """Get MTI for message type"""
     mti_map = {"auth": "0100", "financial": "0200", "reversal": "0400", "network": "0800"}
