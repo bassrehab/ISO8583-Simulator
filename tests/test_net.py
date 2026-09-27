@@ -232,3 +232,59 @@ class TestClientAndHost:
                 await client.send(sample_message())
 
         run(test())
+
+
+class TestLoad:
+    def test_counts_and_codes(self):
+        from iso8583sim.net import run_load
+
+        async def test():
+            host = MockHost(rules=[Rule(pan_prefix=["5"], respond="51"), Rule()])
+            await host.start("127.0.0.1", 0)
+            try:
+                return await run_load(
+                    lambda: ISO8583Client("127.0.0.1", host.port, timeout=2),
+                    count=100,
+                    concurrency=10,
+                    connections=3,
+                    make_message=lambda i: sample_message(
+                        pan="5555555555554444" if i % 4 == 0 else None, stan=f"{i + 1:06d}"
+                    ),
+                )
+            finally:
+                await host.stop()
+
+        report = run(test())
+        assert (report.sent, report.responses, report.timeouts, report.errors) == (100, 100, 0, 0)
+        assert report.response_codes == {"00": 75, "51": 25}
+        assert report.throughput > 0
+        assert report.percentile(50) <= report.percentile(99)
+
+    def test_timeouts_are_counted(self):
+        from iso8583sim.net import run_load
+
+        async def test():
+            host = MockHost(rules=[Rule(action="drop")])
+            await host.start("127.0.0.1", 0)
+            try:
+                return await run_load(
+                    lambda: ISO8583Client("127.0.0.1", host.port, timeout=0.2), count=5, concurrency=5
+                )
+            finally:
+                await host.stop()
+
+        report = run(test())
+        assert (report.responses, report.timeouts) == (0, 5)
+
+    def test_percentile(self):
+        from iso8583sim.net import LoadReport
+
+        report = LoadReport(latencies_ms=[float(i) for i in range(1, 101)])
+        assert (report.percentile(50), report.percentile(95), report.percentile(100)) == (50.0, 95.0, 100.0)
+        assert LoadReport().percentile(99) == 0.0
+
+    def test_invalid_arguments(self):
+        from iso8583sim.net import run_load
+
+        with pytest.raises(ValueError):
+            run(run_load(lambda: ISO8583Client("127.0.0.1", 1), count=0))

@@ -95,6 +95,7 @@ nav:
     - Message Generator: llm/generator.md
   - MCP Server: mcp/index.md
   - REST API: web/index.md
+  - Networking: net/index.md
   - CLI Reference: cli/index.md
   - API Reference:
     - Core Module: api/core.md
