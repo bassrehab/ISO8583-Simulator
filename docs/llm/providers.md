@@ -6,9 +6,9 @@ iso8583sim supports multiple LLM providers with a unified interface.
 
 | Provider | Package | Model Default | Env Variable |
 |----------|---------|---------------|--------------|
-| Anthropic | `anthropic` | claude-sonnet-4-20250514 | `ANTHROPIC_API_KEY` |
-| OpenAI | `openai` | gpt-4o | `OPENAI_API_KEY` |
-| Google | `google-generativeai` | gemini-1.5-pro | `GOOGLE_API_KEY` |
+| Anthropic | `anthropic` | claude-opus-5 | `ANTHROPIC_API_KEY` |
+| OpenAI | `openai` | gpt-6-astra | `OPENAI_API_KEY` |
+| Google | `google-genai` | gemini-3.8-flash | `GOOGLE_API_KEY` |
 | Ollama | `ollama` | llama3.2 | (none) |
 
 ## Installation
@@ -79,7 +79,7 @@ from iso8583sim.llm import get_provider
 
 # Use a specific model
 provider = get_provider("anthropic", model="claude-3-haiku-20240307")
-provider = get_provider("openai", model="gpt-4-turbo")
+provider = get_provider("openai", model="gpt-6-luna")
 ```
 
 ## Direct Provider Usage
@@ -91,13 +91,15 @@ from iso8583sim.llm.providers.anthropic import AnthropicProvider
 
 provider = AnthropicProvider(
     api_key="sk-ant-...",  # Or use env var
-    model="claude-sonnet-4-20250514",
-    max_tokens=4096,
+    model="claude-opus-5",
+    max_tokens=16000,
 )
 
 response = provider.complete("Explain ISO 8583 Field 55")
 print(response)
 ```
+
+With `claude-opus-5` (and Claude Fable 5 / 5.1), requests opt into Anthropic's server-side refusal fallbacks: if a safety classifier declines a request, the API retries it on Anthropic's recommended fallback model. If the whole chain declines, `complete()` raises `LLMError`.
 
 ### OpenAI
 
@@ -106,8 +108,8 @@ from iso8583sim.llm.providers.openai import OpenAIProvider
 
 provider = OpenAIProvider(
     api_key="sk-...",  # Or use env var
-    model="gpt-4o",
-    max_tokens=4096,
+    model="gpt-6-astra",
+    max_tokens=16000,  # Sent as max_completion_tokens, which includes reasoning tokens
 )
 
 response = provider.complete("Explain ISO 8583 Field 55")
@@ -121,7 +123,7 @@ from iso8583sim.llm.providers.google import GoogleProvider
 
 provider = GoogleProvider(
     api_key="...",  # Or use env var
-    model="gemini-1.5-pro",
+    model="gemini-3.8-flash",
 )
 
 response = provider.complete("Explain ISO 8583 Field 55")

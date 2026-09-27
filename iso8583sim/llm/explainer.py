@@ -68,6 +68,7 @@ class MessageExplainer:
             Human-readable explanation of the message
         """
         # Parse if string
+        raw_message: str | None
         if isinstance(message, str):
             parsed = self._parser.parse(message)
             raw_message = message

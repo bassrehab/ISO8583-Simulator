@@ -54,6 +54,7 @@ iso8583sim/
 │       └── ollama.py
 ├── cli/                # Command-line interface
 │   └── commands.py     # Click-based CLI commands
+├── mcp/                # MCP server for AI assistants
 ├── web/                # REST API (future)
 └── demo.py             # Interactive demo helpers
 ```

@@ -260,13 +260,27 @@ class ISO8583Builder:
             else:
                 reversal_fields[field_num] = value
 
+        # Original data elements: MTI (4), STAN (6), transmission date/time (10),
+        # acquiring institution ID (11), forwarding institution ID (11)
+        # subhadipmitra@: Fields are keyed by int. The old code used the string key '11', so the
+        # STAN was always blank. The issuer matches a reversal to the original transaction
+        # through these values, so each part is zero-filled to its fixed width (42 in total).
+        # It reads the original field 7 here, before the reversal's own field 7 is set below.
+        original_data = (
+            orig_mti
+            + original.fields.get(11, "").zfill(6)
+            + original.fields.get(7, "").zfill(10)
+            + original.fields.get(32, "").zfill(11)
+            + original.fields.get(33, "").zfill(11)
+        )
+
         # Add reversal-specific fields
         now = datetime.now()
         reversal_fields.update(
             {
                 7: now.strftime("%m%d%H%M%S"),  # Transmission date and time
                 39: "00",  # Response code
-                90: f"{orig_mti}{original.fields.get('11', '').zfill(6)}".ljust(42, "0"),  # Original elements
+                90: original_data,
             }
         )
 
