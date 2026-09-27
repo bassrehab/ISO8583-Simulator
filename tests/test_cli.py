@@ -6,6 +6,7 @@ import json
 import pytest
 from typer.testing import CliRunner
 
+from iso8583sim import __version__
 from iso8583sim.cli.commands import app
 from iso8583sim.core.builder import ISO8583Builder
 from iso8583sim.core.types import ISO8583Message
@@ -21,7 +22,7 @@ class TestVersionCommand:
         result = runner.invoke(app, ["version"])
         assert result.exit_code == 0
         assert "ISO8583 Simulator" in result.stdout
-        assert "v0.1.0" in result.stdout
+        assert f"v{__version__}" in result.stdout
 
 
 class TestParseCommand:

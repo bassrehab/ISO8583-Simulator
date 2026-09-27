@@ -260,13 +260,23 @@ class ISO8583Builder:
             else:
                 reversal_fields[field_num] = value
 
+        # Original data elements: MTI (4), STAN (6), transmission date/time (10),
+        # acquiring institution ID (11), forwarding institution ID (11)
+        original_data = (
+            orig_mti
+            + original.fields.get(11, "").zfill(6)
+            + original.fields.get(7, "").zfill(10)
+            + original.fields.get(32, "").zfill(11)
+            + original.fields.get(33, "").zfill(11)
+        )
+
         # Add reversal-specific fields
         now = datetime.now()
         reversal_fields.update(
             {
                 7: now.strftime("%m%d%H%M%S"),  # Transmission date and time
                 39: "00",  # Response code
-                90: f"{orig_mti}{original.fields.get('11', '').zfill(6)}".ljust(42, "0"),  # Original elements
+                90: original_data,
             }
         )
 
