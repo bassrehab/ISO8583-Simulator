@@ -57,6 +57,10 @@ dev = [
     "pre-commit>=3.5.0",
     "cython>=3.0.0",
 ]
+# MCP server for AI assistants
+mcp = [
+    "mcp>=2.0.0",
+]
 # REST API server
 web = [
     "fastapi>=0.110.0",

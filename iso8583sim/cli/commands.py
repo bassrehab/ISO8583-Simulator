@@ -296,6 +296,17 @@ def interactive_shell():
         raise typer.Exit(1) from None
 
 
+@app.command("mcp")
+def mcp_server():
+    """Run the MCP server over stdio for AI assistants (Claude, Cursor, etc.)"""
+    try:
+        from ..mcp import main as run_mcp
+    except ImportError:
+        console.print("[red]The MCP server needs the mcp extra: pip install 'iso8583sim\\[mcp]'")
+        raise typer.Exit(1) from None
+    run_mcp()
+
+
 def get_mti_for_type(type: str) -> str:
     """Get MTI for message type"""
     mti_map = {"auth": "0100", "financial": "0200", "reversal": "0400", "network": "0800"}

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Python 3.13 and 3.14 support.
+- MCP server for AI assistants such as Claude and Cursor. Install with `pip install iso8583sim[mcp]` and run `iso8583sim mcp`. It provides 11 tools (parse, build, validate, explain, decode EMV, generate test messages, create responses and reversals, look up fields, detect networks, diff messages), resources for field definitions, response codes and EMV tags, and two prompts.
 - `iso8583sim.core.codes` with response, processing, network management and currency code tables, and `detect_network_from_pan`.
 
 ### Fixed
