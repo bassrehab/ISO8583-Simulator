@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Subhadip Mitra <contact@subhadipmitra.com>
+# SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-iso8583sim-Commercial
+
 """Demo module with helper functions for notebooks and interactive use.
 
 This module provides convenient functions for:

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Subhadip Mitra <contact@subhadipmitra.com>
+# SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-iso8583sim-Commercial
+
 """Mock issuer host: an asyncio TCP server that answers ISO 8583 requests by rules."""
 
 from __future__ import annotations

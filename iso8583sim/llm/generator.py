@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Subhadip Mitra <contact@subhadipmitra.com>
+# SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-iso8583sim-Commercial
+
 """Message Generator using LLM to create ISO 8583 messages from natural language."""
 
 from __future__ import annotations

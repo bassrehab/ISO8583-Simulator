@@ -1,0 +1,25 @@
+iso8583sim
+Copyright (C) 2024-2026 Subhadip Mitra <contact@subhadipmitra.com>
+https://iso8583sim.com
+
+iso8583sim is dual-licensed. You may use it under either:
+
+1. The GNU Affero General Public License, version 3 only (AGPL-3.0-only), in the
+   LICENSE file, together with the additional term below; or
+2. A commercial license from the copyright holder. See COMMERCIAL-LICENSE.md.
+
+Under the AGPL, if you distribute iso8583sim or a modified version of it, or let users
+interact with a modified version over a network (for example as part of a hosted service
+or API), you must make the complete corresponding source code of your version available to
+those users under the AGPL. To use iso8583sim in a product without these obligations, obtain
+a commercial license.
+
+Additional term under section 7(b) of the AGPL
+----------------------------------------------
+
+You must preserve this NOTICE file and the copyright and license headers in the source
+files. Any work that contains or is based on iso8583sim, and displays Appropriate Legal
+Notices (as defined in the AGPL) or an "about", credits or licensing screen, page or
+document, must include this attribution in it:
+
+    Based on iso8583sim by Subhadip Mitra (https://iso8583sim.com), licensed under AGPL-3.0.

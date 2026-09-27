@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Subhadip Mitra <contact@subhadipmitra.com>
+# SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-iso8583sim-Commercial
+
 """LLM-powered features for ISO 8583 message handling.
 
 This module provides AI-powered tools for explaining and generating

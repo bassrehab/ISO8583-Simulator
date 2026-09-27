@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024-2026 Subhadip Mitra <contact@subhadipmitra.com>
+# SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-iso8583sim-Commercial
+
 """ISO 9564-1 PIN blocks (formats 0, 1, 3 and 4).
 
 For testing and simulation only. Real PIN handling happens inside an HSM, and clear PINs

@@ -285,11 +285,7 @@ cd docs && npx mint dev
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/my-feature`)
-3. Commit your changes (`git commit -am 'Add new feature'`)
-4. Push to the branch (`git push origin feature/my-feature`)
-5. Create a Pull Request
+Contributions are welcome. See [CONTRIBUTING.md](https://github.com/bassrehab/ISO8583-Simulator/blob/main/CONTRIBUTING.md): every commit needs a `Signed-off-by` line (`git commit -s`), which grants the licensing terms that keep the dual license possible.
 
 ## Author
 
@@ -300,4 +296,9 @@ cd docs && npx mint dev
 
 ## License
 
-MIT License - see [LICENSE](https://github.com/bassrehab/ISO8583-Simulator/blob/main/LICENSE) for details.
+iso8583sim is dual-licensed:
+
+- **[GNU AGPL-3.0](https://github.com/bassrehab/ISO8583-Simulator/blob/main/LICENSE)** (free). If you distribute iso8583sim, or offer a modified version to users over a network (for example in a hosted service or API), you must publish the complete source code of your version under the AGPL. Keep the attribution required by the [NOTICE](https://github.com/bassrehab/ISO8583-Simulator/blob/main/NOTICE) file.
+- **[Commercial license](https://github.com/bassrehab/ISO8583-Simulator/blob/main/COMMERCIAL-LICENSE.md)** for closed-source products and services that don't meet the AGPL's terms. Email contact@subhadipmitra.com.
+
+Copyright (C) 2024-2026 Subhadip Mitra.
