@@ -9,6 +9,8 @@
 
 A high-performance ISO 8583 toolkit for Python: parse, build and validate card payment messages, simulate issuer hosts over TCP, and work with messages from the CLI, a REST API or AI assistants.
 
+> **License:** iso8583sim is free under the [GNU AGPL-3.0](https://github.com/bassrehab/ISO8583-Simulator/blob/main/LICENSE). Using it in a closed-source product or hosted service requires a [commercial license](https://github.com/bassrehab/ISO8583-Simulator/blob/main/COMMERCIAL-LICENSE.md). See [License](#license).
+
 ## Features
 
 - **Message Handling**:
