@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The `iso8583sim` command is now installed with the package. Previously it was missing from the package entry points.
 - Reversals built with `create_reversal` now fill field 90 (original data elements) with the original STAN, transmission date/time and institution IDs. Previously the STAN was always blank.
 - `iso8583sim version` reported `v0.1.0` instead of the installed version.
 
