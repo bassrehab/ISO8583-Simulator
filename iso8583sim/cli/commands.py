@@ -7,6 +7,7 @@ import typer
 from rich.console import Console
 from rich.markup import escape
 from rich.panel import Panel
+from rich.table import Table
 
 from .. import __version__
 from ..core.builder import ISO8583Builder
@@ -200,6 +201,9 @@ def validate_message(
     message: str = typer.Argument(..., help="ISO 8583 message to validate"),
     version: str = typer.Option("1987", "--version", "-v", help="ISO 8583 version (1987, 1993, 2003)"),
     network: str | None = typer.Option(None, "--network", "-n", help="Card network (VISA, MASTERCARD, AMEX, etc.)"),
+    against: str | None = typer.Option(
+        None, "--against", "-a", help="Check against other networks: comma separated names, or 'all'"
+    ),
 ):
     """Validate an ISO 8583 message"""
     try:
@@ -208,21 +212,81 @@ def validate_message(
         parser = ISO8583Parser(version=iso_version)
         card_network = CardNetwork(network.upper()) if network else None
         parsed = parser.parse(message, network=card_network)
-
-        # Validate
         validator = ISO8583Validator()
-        errors = validator.validate_message(parsed)
 
-        # Display results
-        panel = formatter.format_validation_results(errors)
-        console.print(panel)
-
-        if errors:
-            raise typer.Exit(1)
-
+        if against:
+            targets = (
+                list(CardNetwork)
+                if against.strip().lower() == "all"
+                else [CardNetwork(name.strip().upper()) for name in against.split(",") if name.strip()]
+            )
+            results = validator.validate_for_networks(parsed, targets)
+        else:
+            errors = validator.validate_message(parsed)
     except Exception as e:
-        console.print(f"[red]Error validating message: {str(e)}")
+        console.print(f"[red]Error validating message: {escape(str(e))}")
         raise typer.Exit(1) from None
+
+    # subhadipmitra@: Report and exit outside the try block. typer.Exit is an Exception
+    # subclass, so raising it inside the try would be caught and misreported as an error.
+    if against:
+        table = Table(title="Network Compliance")
+        table.add_column("Network", style="cyan")
+        table.add_column("Result")
+        table.add_column("Issues")
+        for net, net_errors in results.items():
+            status = "[green]PASS[/]" if not net_errors else "[red]FAIL[/]"
+            table.add_row(net.value, status, escape("; ".join(net_errors)) or "-")
+        console.print(table)
+        if any(results.values()):
+            raise typer.Exit(1)
+        return
+
+    console.print(formatter.format_validation_results(errors))
+    if errors:
+        raise typer.Exit(1)
+
+
+@app.command("convert")
+def convert_message_version(
+    message: str = typer.Argument(..., help="ISO 8583 message to convert"),
+    source: str = typer.Option("1987", "--from", "-f", help="Version of the input message (1987, 1993, 2003)"),
+    target: str = typer.Option(..., "--to", "-t", help="Version to convert to (1987, 1993, 2003)"),
+    network: str | None = typer.Option(None, "--network", "-n", help="Card network (VISA, MASTERCARD, AMEX, etc.)"),
+    output: Path | None = typer.Option(None, "--output", "-o", help="Output file for the converted message"),
+):
+    """Convert a message to another ISO 8583 version"""
+    from ..core.convert import convert_message
+
+    try:
+        parsed = ISO8583Parser(version=ISO8583Version(source)).parse(
+            message, network=CardNetwork(network.upper()) if network else None
+        )
+        target_version = ISO8583Version(target)
+        result = convert_message(parsed, target_version)
+        # subhadipmitra@: The parser guesses a network from the PAN when none is given. Only
+        # enforce network rules on the output if the user asked for a network, so that
+        # converting never rejects a message the input version accepted.
+        if not network:
+            result.message.network = None
+        raw = ISO8583Builder(version=target_version).build(result.message)
+    except Exception as e:
+        console.print(f"[red]Error converting message: {escape(str(e))}")
+        raise typer.Exit(1) from None
+
+    console.print(
+        Panel(raw, title=f"Converted {parsed.mti} ({source}) to {result.message.mti} ({target})", border_style="cyan")
+    )
+    for note in result.notes:
+        console.print(f"[yellow]Note:[/] {escape(note)}")
+    # subhadipmitra@: Dropped fields are warnings, not errors. The converted message is still
+    # valid, but the user needs to know it is missing data they may have to regenerate.
+    for number, reason in sorted(result.dropped.items()):
+        console.print(f"[red]Dropped field {number}:[/] {escape(reason)}")
+
+    if output:
+        output.write_text(raw)
+        console.print(f"\n[green]Message saved to {output}")
 
 
 @app.command("explain")

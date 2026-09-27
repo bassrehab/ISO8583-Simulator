@@ -451,3 +451,55 @@ class TestGenerateWithLLM:
         result = runner.invoke(app, ["generate"])
         assert result.exit_code == 1
         assert "--type" in result.stdout
+
+
+class TestConvertAndNetworkChecks:
+    """Tests for the convert command and validate --against."""
+
+    @pytest.fixture
+    def reversal(self):
+        fields = {
+            2: "4111111111111111",
+            3: "000000",
+            4: "000000001000",
+            11: "123456",
+            14: "2612",
+            22: "051",
+            24: "001",
+            25: "00",
+            90: "010012345612251030000000001234500000000000",
+        }
+        return ISO8583Builder().build(ISO8583Message(mti="0400", fields=fields))
+
+    def test_convert_to_2003(self, reversal, tmp_path):
+        output = tmp_path / "out.txt"
+        result = runner.invoke(app, ["convert", reversal, "--to", "2003", "-o", str(output)])
+        assert result.exit_code == 0, result.stdout
+        assert output.read_text().startswith("2400")
+        assert "field 90 to field 56" in result.stdout
+
+    def test_convert_reports_dropped_fields(self):
+        fields = {2: "4111111111111111", 3: "000000", 4: "000000001000", 11: "123456", 52: "2A3D408A1977DDE9"}
+        raw = ISO8583Builder().build(ISO8583Message(mti="0200", fields=fields))
+        result = runner.invoke(app, ["convert", raw, "--to", "1993"])
+        assert result.exit_code == 0
+        assert "Dropped field 52" in result.stdout
+
+    def test_validate_against_all_networks(self, reversal):
+        result = runner.invoke(app, ["validate", reversal, "--against", "all"])
+        assert "UNIONPAY" in result.stdout and "FAIL" in result.stdout
+        assert result.exit_code == 1
+
+    def test_validate_against_passing_networks(self, reversal):
+        result = runner.invoke(app, ["validate", reversal, "--against", "visa, amex"])
+        assert result.exit_code == 0
+        assert "FAIL" not in result.stdout
+
+    def test_invalid_message_is_not_misreported_as_error(self):
+        """A validation failure exits 1 without an 'Error validating message' line"""
+        raw = ISO8583Builder().build(
+            ISO8583Message(mti="0100", fields={2: "4111111111111111", 3: "000000", 4: "000000001000", 11: "123456"})
+        )
+        result = runner.invoke(app, ["validate", raw, "--network", "VISA"])
+        assert result.exit_code == 1
+        assert "Error validating message" not in result.stdout
