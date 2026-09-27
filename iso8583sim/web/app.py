@@ -13,6 +13,7 @@ import os
 from typing import Annotated, Any, Literal
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -205,13 +206,17 @@ def create_app(public: bool | None = None) -> FastAPI:
         # they are client errors (422) with the library's explanation, not 500s.
         return JSONResponse(status_code=422, content={"detail": str(exc)})
 
+    # subhadipmitra@: The endpoints are async so they run on the event loop. FastAPI runs plain
+    # def endpoints in a thread pool, and Pyodide (Cloudflare Python Workers, where the public
+    # demo runs) has no threads. Parsing and building take microseconds, so they don't block
+    # anything. Only the LLM calls, which wait on the network, are sent to a thread.
     @app.get("/health", response_model=HealthResponse, tags=["Meta"])
-    def health() -> dict[str, Any]:
+    async def health() -> dict[str, Any]:
         """Liveness check."""
         return {"status": "ok", "version": __version__}
 
     @app.post("/parse", response_model=ParseResponse, tags=["Messages"])
-    def parse(request: MessageRequest) -> dict[str, Any]:
+    async def parse(request: MessageRequest) -> dict[str, Any]:
         """Parse a raw message into its MTI, bitmap and named fields."""
         parsed = _parse(request)
         result: dict[str, Any] = {
@@ -226,7 +231,7 @@ def create_app(public: bool | None = None) -> FastAPI:
         return result
 
     @app.post("/build", response_model=BuildResponse, tags=["Messages"])
-    def build(request: BuildRequest) -> dict[str, Any]:
+    async def build(request: BuildRequest) -> dict[str, Any]:
         """Build a raw message from an MTI and field values."""
         message = ISO8583Message(
             mti=request.mti, fields=dict(request.fields), version=request.version, network=request.network
@@ -235,7 +240,7 @@ def create_app(public: bool | None = None) -> FastAPI:
         return {"message": raw, "length": len(raw)}
 
     @app.post("/validate", response_model=ValidateResponse, tags=["Messages"])
-    def validate(request: ValidateRequest) -> dict[str, Any]:
+    async def validate(request: ValidateRequest) -> dict[str, Any]:
         """Validate a message, optionally against other networks' rules too.
 
         A message that fails to parse is reported as invalid (200), not as an error.
@@ -253,7 +258,7 @@ def create_app(public: bool | None = None) -> FastAPI:
         return result
 
     @app.post("/explain", response_model=ExplainResponse, tags=["Messages"])
-    def explain(request: ExplainRequest) -> dict[str, Any]:
+    async def explain(request: ExplainRequest) -> dict[str, Any]:
         """Explain a message in plain English, with rules (default) or an LLM."""
         parsed = _parse(request)
         if not request.llm:
@@ -268,7 +273,7 @@ def create_app(public: bool | None = None) -> FastAPI:
 
         llm = _llm(request.provider, request.model, public)
         try:
-            summary = MessageExplainer(provider=llm).explain(parsed)
+            summary = await run_in_threadpool(MessageExplainer(provider=llm).explain, parsed)
         except LLMError as e:
             raise HTTPException(status_code=502, detail=str(e)) from None
         return {
@@ -279,14 +284,14 @@ def create_app(public: bool | None = None) -> FastAPI:
         }
 
     @app.post("/generate", response_model=GenerateResponse, tags=["Messages"])
-    def generate(request: GenerateRequest) -> dict[str, Any]:
+    async def generate(request: GenerateRequest) -> dict[str, Any]:
         """Generate a valid test message from options, or from a description with an LLM."""
         if request.description:
             from ..llm import LLMError, MessageGenerator
 
             llm = _llm(request.provider, request.model, public)
             try:
-                message = MessageGenerator(provider=llm).generate(request.description)
+                message = await run_in_threadpool(MessageGenerator(provider=llm).generate, request.description)
             except LLMError as e:
                 # subhadipmitra@: The upstream model failed or produced an invalid message,
                 # which is a bad gateway from the client's point of view.
@@ -313,7 +318,7 @@ def create_app(public: bool | None = None) -> FastAPI:
         }
 
     @app.post("/convert", response_model=ConvertResponse, tags=["Messages"])
-    def convert(request: ConvertRequest) -> dict[str, Any]:
+    async def convert(request: ConvertRequest) -> dict[str, Any]:
         """Convert a message to another ISO 8583 version, listing dropped fields and notes."""
         parsed = _parse(request)
         result = convert_message(parsed, request.target_version)
