@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - The CLI failed to start on Windows, because it imported `readline`, which Windows doesn't have. The interactive shell now runs without history and tab completion when `readline` is missing. Found by the new Windows wheel tests.
+- On Python 3.10, a connection timeout in `ISO8583Client` raised `asyncio.TimeoutError` instead of the documented built-in `TimeoutError` (the two only merged in 3.11), so callers catching `TimeoutError` or `OSError` missed it.
 - VISA field 44 was rejected unless it was hexadecimal, although it holds response data such as a CVV2 result (`M`). The check is removed.
 - Mastercard field 48 was rejected unless it started with `MC`. Real field 48 values start with a transaction category code.
 - The network pages of the docs had the field 22 PIN capability digit reversed for VISA and several wrong Mastercard codes.
