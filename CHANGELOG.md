@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `iso8583sim.wire`: encode messages to bytes and decode them back in configurable wire formats. Binary or hex bitmaps, packed BCD, EBCDIC, binary length prefixes and raw binary fields, with presets `ascii_hex`, `ascii_binary`, `bcd` and `ebcdic`. Decoded messages match what the string parser returns, so all existing features work on them. `ISO8583Builder.build_bytes` and `ISO8583Parser.parse_bytes` are shortcuts. The string API is unchanged.
+- `iso8583sim.net`: `Framing` (2 or 4 byte binary or ASCII length headers, optional TPDU), an asyncio `ISO8583Client` that matches responses to requests by STAN so many can be in flight on one connection, and a `MockHost` issuer that answers by rules (match on MTI, PAN prefix, amount, network or field values; respond with a code, delay, drop to simulate a timeout, or close the connection). Rules can be loaded from JSON or YAML.
 
 ## [1.3.1] - 2026-09-27
 
