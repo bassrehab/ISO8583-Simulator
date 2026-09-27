@@ -32,7 +32,7 @@ description: "Common issues and solutions when using iso8583sim."
 
 **Problem:** `python -c "import iso8583sim.core.parser as p; print(p._USE_CYTHON)"` prints `False`.
 
-The PyPI wheels for Linux, macOS and Windows include the compiled extensions. If pip had no matching wheel, it built from source, and the extensions are skipped when no C compiler is available (iso8583sim still works, only slower).
+The PyPI wheels for Linux, macOS and Windows include the compiled extensions. On other platforms pip installs the pure-Python wheel (iso8583sim still works, only slower).
 
 **Solutions:**
 
