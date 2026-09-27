@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `iso8583sim generate --amount` multiplied the amount by 100, and did it twice, so the default `000000001000` (10.00) was sent as 100,000.00. Plain digits are now minor units, as documented. A decimal amount such as `10.00` is also accepted and converted exactly with the currency's decimal places. Negative amounts, amounts over 12 digits and too many decimal places are rejected.
+
 ## [1.3.0] - 2026-09-27
 
 ### Added

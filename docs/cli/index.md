@@ -244,7 +244,7 @@ iso8583sim generate [OPTIONS]
 |--------|-------------|
 | `--type`, `-t` | Message type (auth, financial, reversal, network). Required unless `--llm` is given |
 | `--pan`, `-p` | Primary Account Number |
-| `--amount`, `-a` | Transaction amount (in minor units, e.g. cents) |
+| `--amount`, `-a` | Amount in minor units (`1000` is 10.00), or a decimal such as `10.00`. Uses the currency's decimal places, so JPY `1500` is 1500 yen |
 | `--currency`, `-c` | Currency code (ISO 4217, default 840) |
 | `--network`, `-n` | Card network |
 | `--llm`, `-l` | Describe the message in plain English and let an LLM build it |
