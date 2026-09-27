@@ -81,6 +81,7 @@ nav:
     - EMV Data: core/emv.md
     - PIN Blocks and MACs: core/security.md
     - Version Conversion: core/convert.md
+    - Wire Formats: core/wire.md
     - Object Pool: core/pool.md
   - Card Networks:
     - Overview: networks/index.md

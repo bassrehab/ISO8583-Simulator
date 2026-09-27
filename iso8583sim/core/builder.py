@@ -1,6 +1,9 @@
 # iso8583sim/core/builder.py
 
+from __future__ import annotations
+
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from .types import (
     BuildError,
@@ -13,6 +16,9 @@ from .types import (
     get_field_definition,
 )
 from .validator import ISO8583Validator
+
+if TYPE_CHECKING:
+    from ..wire import WireFormat
 
 
 class ISO8583Builder:
@@ -66,6 +72,16 @@ class ISO8583Builder:
             raise
         except Exception as e:
             raise BuildError(f"Failed to build message: {str(e)}") from e
+
+    def build_bytes(self, message: ISO8583Message, wire_format: WireFormat | None = None) -> bytes:
+        """Build a message as bytes in a wire format (binary bitmap, BCD, EBCDIC...).
+
+        Defaults to ASCII with a binary bitmap. See iso8583sim.wire.WireFormat for the presets.
+        """
+        # subhadipmitra@: Imported here because iso8583sim.wire builds on this module.
+        from ..wire import encode_message
+
+        return encode_message(message, wire_format, builder=self)
 
     def build_with_mac(self, message: ISO8583Message, key: str | bytes, algorithm: int = 3, padding: int = 1) -> str:
         """Build a message and fill in its MAC (field 64, or 128 with a secondary bitmap).
