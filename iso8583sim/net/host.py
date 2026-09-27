@@ -206,6 +206,11 @@ class MockHost:
             while True:
                 try:
                     tpdu, data = await self.framing.read(reader)
+                except ParseError as e:
+                    # subhadipmitra@: A bad or oversized length header leaves the stream out of
+                    # step, so the connection is closed rather than read further.
+                    logger.warning("Closing the connection from %s: %s", peer, e)
+                    break
                 except (EOFError, asyncio.IncompleteReadError, ConnectionError):
                     break
                 self.stats.received += 1

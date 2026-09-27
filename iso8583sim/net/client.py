@@ -165,7 +165,9 @@ class ISO8583Client:
                     # subhadipmitra@: Late responses (after a timeout) and unsolicited messages
                     # are logged, not raised, so one stray message can't break the connection.
                     logger.warning("Unmatched message %s (STAN %s)", response.mti, response.fields.get(11))
-        except (EOFError, asyncio.IncompleteReadError, ConnectionError, OSError) as e:
+        except (EOFError, asyncio.IncompleteReadError, ConnectionError, OSError, ParseError) as e:
+            # subhadipmitra@: A frame that can't be read (a bad or oversized length header) ends the
+            # connection like a close does, so waiting requests fail now instead of timing out.
             self._fail_pending(ConnectionError(f"Connection to {self.host}:{self.port} closed: {e}"))
             if self._writer:
                 self._writer.close()

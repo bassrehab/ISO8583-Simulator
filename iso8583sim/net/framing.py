@@ -23,17 +23,23 @@ class Framing:
         tpdu: Optional TPDU sent after the length header, e.g. bytes.fromhex("6000010000").
             On responses the destination and source addresses are swapped.
         header_includes_self: Some hosts count the header bytes in the length. Off by default.
+        max_message: The longest frame body accepted when reading, in bytes. A longer one
+            raises ParseError before anything is read, so a peer can't make the reader buffer
+            what a 4-byte header can declare (up to 4 GiB). 1 MiB by default.
     """
 
     header: str = "2b"
     tpdu: bytes | None = None
     header_includes_self: bool = False
+    max_message: int = 1_048_576
 
     def __post_init__(self) -> None:
         if self.header not in HEADERS:
             raise ValueError(f"Length header must be one of: {', '.join(HEADERS)}")
         if self.tpdu is not None and len(self.tpdu) != 5:
             raise ValueError("A TPDU is 5 bytes: ID (1), destination (2), source (2)")
+        if self.max_message < 1:
+            raise ValueError("max_message must be at least 1 byte")
 
     @property
     def header_size(self) -> int:
@@ -68,6 +74,8 @@ class Framing:
             length -= self.header_size
         if length < 0:
             raise ParseError("Length header is smaller than the header itself")
+        if length > self.max_message:
+            raise ParseError(f"Frame of {length} bytes is over the {self.max_message}-byte limit")
         return length
 
     def _split_tpdu(self, body: bytes) -> tuple[bytes | None, bytes]:

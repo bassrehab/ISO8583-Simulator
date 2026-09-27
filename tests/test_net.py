@@ -70,6 +70,17 @@ class TestFraming:
         with pytest.raises(ValueError):
             Framing(tpdu=b"\x60")
 
+    def test_frames_over_the_limit_are_refused_before_reading(self):
+        # A 4-byte header can declare up to 4 GiB; the reader refuses it from the header alone.
+        with pytest.raises(ParseError, match="over the 1048576-byte limit"):
+            Framing(header="4b").split((2**32 - 1).to_bytes(4, "big"))
+        small = Framing(header="4b", max_message=4)
+        assert small.split(b"\x00\x00\x00\x04ABCD") == ([(None, b"ABCD")], b"")
+        with pytest.raises(ParseError, match="Frame of 5 bytes is over the 4-byte limit"):
+            small.split(b"\x00\x00\x00\x05ABCDE")
+        with pytest.raises(ValueError, match="at least 1 byte"):
+            Framing(max_message=0)
+
     def test_swap_tpdu(self):
         assert swap_tpdu(bytes.fromhex("6000010002")) == bytes.fromhex("6000020001")
 
@@ -220,6 +231,42 @@ class TestClientAndHost:
                 await client.send(sample_message(stan="000001"))
 
         run(with_host(test, rules=[Rule(action="close")]))
+
+    def test_an_oversized_frame_closes_the_connection_both_ways(self):
+        framing = Framing(header="4b", max_message=64)
+
+        async def host_side():
+            host = MockHost(framing=framing)
+            await host.start("127.0.0.1", 0)
+            try:
+                reader, writer = await asyncio.open_connection("127.0.0.1", host.port)
+                writer.write((2**31).to_bytes(4, "big"))  # declares 2 GiB, sends nothing more
+                await writer.drain()
+                assert await asyncio.wait_for(reader.read(), 2) == b""  # the host hung up
+                writer.close()
+            finally:
+                await host.stop()
+
+        async def client_side():
+            async def answer(reader, writer):
+                await Framing(header="4b").read(reader)  # the request is longer than 64 bytes
+                writer.write((2**31).to_bytes(4, "big"))  # an answer declaring 2 GiB
+                await writer.drain()
+
+            server = await asyncio.start_server(answer, "127.0.0.1", 0)
+            port = server.sockets[0].getsockname()[1]
+            try:
+                async with ISO8583Client("127.0.0.1", port, framing=framing, timeout=5) as client:
+                    # The waiting request fails at once, not after its 5 second timeout.
+                    started = asyncio.get_running_loop().time()
+                    with pytest.raises(ConnectionError, match="over the 64-byte limit"):
+                        await client.send(sample_message(stan="000001"))
+                    assert asyncio.get_running_loop().time() - started < 2
+            finally:
+                server.close()
+
+        run(host_side())
+        run(client_side())
 
     def test_client_reconnects_after_close(self):
         rules = [Rule(pan_prefix=["4999"], action="close"), Rule()]
