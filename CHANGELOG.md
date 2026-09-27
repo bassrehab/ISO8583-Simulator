@@ -7,11 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-09-27
+
+### Added
+
+- Notebooks `09_security_pin_mac` (PIN blocks and MACs), `10_wire_formats` (binary, BCD and EBCDIC wire formats, and version conversion) and `11_network_simulation` (mock host, TCP client and load testing), with executed outputs.
+
+### Fixed
+
+- Notebook `04_network_specifics` failed since 1.5.0, because it built a Mastercard field 48 in the old made-up `MC...` format. It now uses a real layout (transaction category code, then subelements).
+- Decrypting a format 4 PIN block with the wrong PAN returned a wrong PIN about 1 time in 1,000 instead of raising `SecurityError`, and format 3 blocks with a wrong key could do the same. Decoding now also checks the fill (A for format 4, A to F for format 3). The docs now state that a wrong PAN is only partly detectable in formats 0 and 3, by design of those formats.
+- README images, notebook links and the license link were relative, so they were broken on the PyPI page. They are now absolute. The development instructions changed into the wrong directory after cloning.
+
 ### Changed
 
 - The documentation moved from MkDocs to Mintlify, served at iso8583sim.com/docs. It adds search, a Python API reference generated from the docstrings (`scripts/generate_api_docs.py`), and an interactive REST API reference generated from the OpenAPI spec (`scripts/export_openapi.py`). A docs workflow checks that both are up to date and that the Mintlify build and links are valid.
 - The `docs` extra now installs `griffe` (for the API reference generator) instead of MkDocs.
 - REST API endpoint tags are capitalized (`Messages`, `Meta`).
+- README: covers the CLI commands added since 1.2 (`convert`, `validate --against`, `serve`, `send`, `load`, `web`, `mcp`), PIN blocks, MACs and wire formats, and links point at the new docs pages (the MCP guide is now `/docs/mcp-server`, because Mintlify reserves `/docs/mcp` for its MCP endpoint).
 
 ## [1.5.0] - 2026-09-27
 
@@ -161,7 +174,8 @@ First stable release.
 - MkDocs documentation site.
 - GitHub Actions for CI, PyPI publishing and docs deployment.
 
-[Unreleased]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.5.1...HEAD
+[1.5.1]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.3.0...v1.3.1
