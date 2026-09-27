@@ -13,6 +13,9 @@ With the server connected you can ask things like:
 
 ```bash
 pip install iso8583sim[mcp]
+
+# To also use the PIN block and MAC tools
+pip install "iso8583sim[mcp,security]"
 ```
 
 The server runs over stdio:
@@ -109,6 +112,15 @@ With [uv](https://docs.astral.sh/uv/), a client can run the server without a sep
 | `lookup_field` | Field definition (name, type, length, padding), including network and version overrides. |
 | `detect_network` | Detect the card network from a PAN prefix. |
 | `diff_messages` | Compare two messages and list added, removed and changed fields. |
+| `convert_version` | Convert a message to another ISO 8583 version, listing dropped fields and notes. |
+| `check_network_rules` | Check a message against every network's rules (or a chosen few) and report pass/fail for each. |
+| `encrypt_pin_block` | Build an encrypted ISO 9564 PIN block (formats 0, 1, 3, 4) for field 52. Needs the `security` extra. |
+| `decrypt_pin_block` | Recover the PIN from an encrypted PIN block. Needs the `security` extra. |
+| `sign_message` | Add or replace a message's MAC in field 64 or 128 (ISO 9797-1 algorithm 1 or 3). Needs the `security` extra. |
+| `verify_message_mac` | Check a message's MAC. Needs the `security` extra. |
+
+!!! warning "Test keys only"
+    The PIN and MAC tools take keys and clear PINs as plain text, and anything you give the assistant is sent to your AI provider. Use them only with test keys and test PINs.
 
 Conventions shared by all tools:
 

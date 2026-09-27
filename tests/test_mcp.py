@@ -23,6 +23,12 @@ EXPECTED_TOOLS = {
     "lookup_field",
     "detect_network",
     "diff_messages",
+    "convert_version",
+    "check_network_rules",
+    "encrypt_pin_block",
+    "decrypt_pin_block",
+    "sign_message",
+    "verify_message_mac",
 }
 
 
@@ -172,6 +178,85 @@ class TestTools:
 
     def test_diff_identical(self, auth_message):
         assert data("diff_messages", message_a=auth_message, message_b=auth_message)["identical"]
+
+
+TEST_KEY = "0123456789ABCDEFFEDCBA9876543210"
+
+
+class TestConversionAndNetworkTools:
+    def test_convert_version(self, auth_message):
+        result = data("convert_version", message=auth_message, target_version="1993")
+        assert result["mti"] == "1100"
+        assert result["message"].startswith("1100")
+        assert result["lossless"] is True
+
+    def test_convert_version_reports_dropped_fields(self):
+        built = data(
+            "build_message",
+            mti="0200",
+            fields={
+                "2": "4111111111111111",
+                "3": "000000",
+                "4": "000000001000",
+                "11": "123456",
+                "52": "2A3D408A1977DDE9",
+            },
+        )
+        result = data("convert_version", message=built["message"], target_version="2003")
+        assert "52" in result["dropped"]
+        assert result["lossless"] is False
+
+    def test_check_all_networks(self, auth_message):
+        result = data("check_network_rules", message=auth_message)
+        assert set(result) == {"VISA", "MASTERCARD", "AMEX", "DISCOVER", "JCB", "UNIONPAY"}
+        assert result["VISA"]["passed"] is True
+
+    def test_check_selected_networks(self, auth_message):
+        result = data("check_network_rules", message=auth_message, networks=["amex"])
+        assert list(result) == ["AMEX"]
+
+
+class TestSecurityTools:
+    @pytest.fixture(autouse=True)
+    def _requires_cryptography(self):
+        pytest.importorskip("cryptography")
+
+    def test_pin_block_round_trip(self):
+        block = data("encrypt_pin_block", pin="1234", pan="4111111111111111", key=TEST_KEY)
+        assert block == {"pin_block": "2A3D408A1977DDE9", "format": 0, "bytes": 8}
+        assert data("decrypt_pin_block", pin_block=block["pin_block"], pan="4111111111111111", key=TEST_KEY) == {
+            "pin": "1234"
+        }
+
+    def test_format_4(self):
+        key = "00112233445566778899AABBCCDDEEFF"
+        block = data("encrypt_pin_block", pin="4321", pan="4111111111111111", key=key, block_format=4)
+        assert block["bytes"] == 16
+        result = data(
+            "decrypt_pin_block", pin_block=block["pin_block"], pan="4111111111111111", key=key, block_format=4
+        )
+        assert result["pin"] == "4321"
+
+    def test_wrong_key_is_a_tool_error(self):
+        result = call("decrypt_pin_block", pin_block="2A3D408A1977DDE9", pan="4111111111111111", key="11" * 16)
+        assert result.is_error
+        assert "PIN block" in result.content[0].text
+
+    def test_sign_and_verify(self, auth_message):
+        signed = data("sign_message", message=auth_message, key=TEST_KEY)
+        assert signed["mac_field"] == 64
+        assert signed["message"].endswith(signed["mac"])
+        assert data("verify_message_mac", message=signed["message"], key=TEST_KEY) == {"valid": True}
+        assert data("verify_message_mac", message=signed["message"], key="11" * 16) == {"valid": False}
+
+    def test_missing_extra_gives_install_hint(self, monkeypatch):
+        from iso8583sim.security import _cipher
+
+        # subhadipmitra@: Simulate an install without the security extra.
+        monkeypatch.setattr(_cipher, "_CRYPTO_AVAILABLE", False)
+        result = call("encrypt_pin_block", pin="1234", pan="4111111111111111", key=TEST_KEY)
+        assert result.is_error
+        assert "iso8583sim[security]" in result.content[0].text
 
 
 class TestResources:

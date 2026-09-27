@@ -21,10 +21,13 @@ A modern, high-performance ISO 8583 message simulator with CLI, Python SDK, and 
   - VISA, Mastercard, AMEX, Discover, JCB, UnionPay
   - Network-specific field validation
   - EMV/chip card data handling (Field 55)
+  - PIN blocks (ISO 9564 formats 0, 1, 3, 4) and MACs for fields 64 and 128
+  - Conversion between the 1987, 1993 and 2003 versions
 
 - **Multiple Interfaces**:
   - Command Line Interface (CLI)
   - Python SDK for programmatic usage
+  - REST API (`pip install iso8583sim[web]`, then `iso8583sim web`)
   - Interactive Jupyter notebooks
 
 - **AI-Powered Features**:
@@ -170,7 +173,7 @@ For Claude Desktop or Cursor, add this to the client's MCP config:
 }
 ```
 
-Then ask things like *"Why was this transaction declined?"* or *"Generate a Mastercard auth and the matching approval."* The server provides 11 tools, including parse, build, validate, explain, EMV decoding, test message generation, responses, reversals and message diffs. It runs locally and needs no LLM API key. See the [MCP docs](https://iso8583sim.com/docs/mcp/) for all tools, resources and prompts.
+Then ask things like *"Why was this transaction declined?"* or *"Generate a Mastercard auth and the matching approval."* The server provides 17 tools, including parse, build, validate, explain, EMV decoding, test message generation, responses, reversals, message diffs, version conversion, network rule checks, PIN blocks and MACs. It runs locally and needs no LLM API key. See the [MCP docs](https://iso8583sim.com/docs/mcp/) for all tools, resources and prompts.
 
 ## Interactive Notebooks
 

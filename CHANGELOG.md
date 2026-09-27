@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `iso8583sim.security` (install with `pip install iso8583sim[security]`): ISO 9564-1 PIN blocks in formats 0, 1, 3 and 4 (`encrypt_pin_block`, `decrypt_pin_block`, and clear `encode_pin_block` / `decode_pin_block`), and ISO 9797-1 MACs with algorithm 1 (CBC-MAC) and algorithm 3 (retail MAC) and padding methods 1 and 2.
+- `ISO8583Builder.build_with_mac` fills in the MAC in field 64, or field 128 when the message has a secondary bitmap. `ISO8583Validator.verify_mac` checks it.
+- `iso8583sim.core.convert.convert_message` converts messages between the 1987, 1993 and 2003 versions. It rewrites the MTI version digit, moves original data elements between fields 90 and 56, and reports fields it had to drop (such as PIN data and MACs, which must be regenerated) instead of truncating them. The new `iso8583sim convert` command wraps it.
+- REST API (`pip install iso8583sim[web]`, then `iso8583sim web`) with `/health`, `/parse`, `/build`, `/validate`, `/explain`, `/generate` and `/convert`. Interactive docs at `/docs`. Explain and generate use rules or templates by default, and an LLM on request.
+- `iso8583sim.core.samples.sample_message` creates valid test messages for any network.
+- MCP tools `convert_version`, `check_network_rules`, `encrypt_pin_block`, `decrypt_pin_block`, `sign_message` and `verify_message_mac`. The PIN and MAC tools need the `security` extra and report an install hint without it.
+- `ISO8583Validator.validate_for_network` and `validate_for_networks` check a message against other networks' rules without changing it. `iso8583sim validate --against all` (or a comma separated list) prints a pass/fail table per network.
+
+### Fixed
+
+- `iso8583sim validate` reported a failed validation as "Error validating message", because the exit was raised inside the error handler.
+- 2003 messages could not be built or validated, because MTI version digit 2 was rejected. `MTI_VERSION_DIGITS` in `iso8583sim.core.types` now maps each version to its digit.
+
 ## [1.2.0] - 2026-09-27
 
 ### Added

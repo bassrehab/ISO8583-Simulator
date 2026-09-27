@@ -1365,6 +1365,14 @@ def get_field_definition(
     return ISO8583_FIELDS.get(field_number)
 
 
+# MTI version digit (position 1) for each ISO 8583 version
+MTI_VERSION_DIGITS = {
+    ISO8583Version.V1987: "0",
+    ISO8583Version.V1993: "1",
+    ISO8583Version.V2003: "2",
+}
+
+
 def is_valid_mti(mti: str) -> bool:
     """
     Check if MTI is valid.
@@ -1384,8 +1392,10 @@ def is_valid_mti(mti: str) -> bool:
         return False
 
     # Validate version (position 1)
+    # subhadipmitra@: The first MTI digit is the ISO 8583 version: 0 = 1987, 1 = 1993,
+    # 2 = 2003. Only 0 and 1 used to be accepted, so 2003 messages could not be built.
     version = mti[0]
-    if version not in ["0", "1"]:
+    if version not in MTI_VERSION_DIGITS.values():
         return False
 
     # Validate message class (position 2)
