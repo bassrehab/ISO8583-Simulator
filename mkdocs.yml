@@ -68,6 +68,7 @@ nav:
     - Installation: getting-started/installation.md
     - Quick Start: getting-started/quickstart.md
     - ISO 8583 Concepts: getting-started/concepts.md
+    - Upgrading: getting-started/upgrading.md
   - Architecture:
     - Overview: architecture/overview.md
     - Message Flow: architecture/message-flow.md
