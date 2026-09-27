@@ -101,6 +101,12 @@ iso8583sim validate "0100..."
 
 # Generate sample messages
 iso8583sim generate --type auth --pan 4111111111111111 --amount 1000
+
+# Explain a message (LLM, or --no-llm for an offline summary)
+iso8583sim explain "0100..."
+
+# Generate a message from a description
+iso8583sim generate --llm "$50 refund to a Mastercard at ACME Store"
 ```
 
 ## AI-Powered Features

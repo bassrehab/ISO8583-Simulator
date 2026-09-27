@@ -164,9 +164,53 @@ Validation Results:
     - Missing required field: 11
 ```
 
+### explain
+
+Explain a message in plain English.
+
+```bash
+iso8583sim explain MESSAGE [OPTIONS]
+```
+
+By default the explanation comes from an LLM (see [LLM Features](../llm/index.md) for provider setup). With `--no-llm` you get a rule-based summary instead, which works offline and needs no API key.
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `--no-llm` | Rule-based summary, no LLM or API key needed |
+| `--provider`, `-p` | LLM provider: `anthropic`, `openai`, `google` or `ollama`. Auto-detected if omitted |
+| `--model`, `-m` | Model name for the provider |
+| `--verbose` | Ask the LLM for more technical detail |
+| `--version`, `-v` | ISO 8583 version (1987, 1993, 2003) |
+| `--network`, `-n` | Card network (detected from the PAN if omitted) |
+
+**Examples:**
+
+```bash
+# Explain with the first configured LLM provider
+iso8583sim explain "0100..."
+
+# Use a specific provider and model
+iso8583sim explain "0100..." --provider ollama --model qwen3
+
+# Offline, rule-based summary
+iso8583sim explain "0110..." --no-llm
+```
+
+**Output (`--no-llm`):**
+
+```
+MTI 0110: authorization response from acquirer. Card network: MASTERCARD. Card:
+555555******4444. Transaction type: Purchase. Amount: 25.00 EUR. Response code 51:
+Insufficient funds. Terminal: TERM0001. Merchant: MERCHANT123456.
+```
+
+followed by a table of every field.
+
 ### generate
 
-Generate sample ISO 8583 messages.
+Generate sample ISO 8583 messages from a template, or from a plain English description with `--llm`.
 
 ```bash
 iso8583sim generate [OPTIONS]
@@ -176,11 +220,15 @@ iso8583sim generate [OPTIONS]
 
 | Option | Description |
 |--------|-------------|
-| `--type` | Message type (auth, financial, reversal) |
-| `--pan` | Primary Account Number |
-| `--amount` | Transaction amount (in cents) |
-| `--count` | Number of messages to generate |
-| `--output` | Output file |
+| `--type`, `-t` | Message type (auth, financial, reversal, network). Required unless `--llm` is given |
+| `--pan`, `-p` | Primary Account Number |
+| `--amount`, `-a` | Transaction amount (in minor units, e.g. cents) |
+| `--currency`, `-c` | Currency code (ISO 4217, default 840) |
+| `--network`, `-n` | Card network |
+| `--llm`, `-l` | Describe the message in plain English and let an LLM build it |
+| `--provider` | LLM provider for `--llm` |
+| `--model` | Model name for `--llm` |
+| `--output`, `-o` | Output file |
 
 **Examples:**
 
@@ -188,12 +236,14 @@ iso8583sim generate [OPTIONS]
 # Generate authorization request
 iso8583sim generate --type auth --pan 4111111111111111 --amount 10000
 
-# Generate multiple messages
-iso8583sim generate --type auth --count 10
-
 # Save to file
-iso8583sim generate --type auth --output messages.txt
+iso8583sim generate --type auth --output message.txt
+
+# Generate from a description
+iso8583sim generate --llm "$50 refund to a Mastercard at ACME Store"
 ```
+
+With `--llm`, the generated message is validated before it's shown, and common problems are fixed automatically.
 
 ### mcp
 

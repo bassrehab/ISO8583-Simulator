@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Python 3.13 and 3.14 support.
 - MCP server for AI assistants such as Claude and Cursor. Install with `pip install iso8583sim[mcp]` and run `iso8583sim mcp`. It provides 11 tools (parse, build, validate, explain, decode EMV, generate test messages, create responses and reversals, look up fields, detect networks, diff messages), resources for field definitions, response codes and EMV tags, and two prompts.
+- `iso8583sim explain` command. Explains a message with an LLM (`--provider`, `--model`, `--verbose`), or with `--no-llm` gives a rule-based summary that needs no API key.
+- `iso8583sim generate --llm "description"` generates a message from a plain English description. `--type` is no longer required when `--llm` is used.
+- `iso8583sim.core.describe` with `describe_message` for rule-based, human-readable message summaries.
 - `iso8583sim.core.codes` with response, processing, network management and currency code tables, and `detect_network_from_pan`.
 
 ### Fixed
