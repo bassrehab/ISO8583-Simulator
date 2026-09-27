@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-10-01
+
 ### Fixed
 
 - `ISO8583Builder.create_response` answered advices with a request's response MTI (0120 with 0110, 0420 with 0410). It now adds one to the function digit, as `response_mti` does: 0120 is answered with 0130, 0420 with 0430.
@@ -207,7 +209,8 @@ First stable release.
 - MkDocs documentation site.
 - GitHub Actions for CI, PyPI publishing and docs deployment.
 
-[Unreleased]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.5.2...v1.6.0
 [1.5.2]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.5.0...v1.5.1
