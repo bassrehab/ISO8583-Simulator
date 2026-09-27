@@ -294,6 +294,12 @@ class ISO8583Validator:
             return _is_valid_hex_fast(value)
         return all(c in "0123456789ABCDEFabcdef" for c in value)
 
+    def verify_mac(self, raw_message: str, key: str | bytes, algorithm: int = 3, padding: int = 1) -> bool:
+        """Check the MAC in field 64 or 128 of a raw message. Requires the security extra."""
+        from ..security import verify_message
+
+        return verify_message(raw_message, key, algorithm=algorithm, padding=padding)
+
     def validate_network_compliance(self, message: ISO8583Message) -> list[str]:
         """Validate network-specific requirements"""
         errors: list[str] = []

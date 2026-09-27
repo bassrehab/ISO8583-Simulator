@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `iso8583sim.security` (install with `pip install iso8583sim[security]`): ISO 9564-1 PIN blocks in formats 0, 1, 3 and 4 (`encrypt_pin_block`, `decrypt_pin_block`, and clear `encode_pin_block` / `decode_pin_block`), and ISO 9797-1 MACs with algorithm 1 (CBC-MAC) and algorithm 3 (retail MAC) and padding methods 1 and 2.
+- `ISO8583Builder.build_with_mac` fills in the MAC in field 64, or field 128 when the message has a secondary bitmap. `ISO8583Validator.verify_mac` checks it.
+
 ## [1.2.0] - 2026-09-27
 
 ### Added
