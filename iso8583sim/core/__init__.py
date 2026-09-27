@@ -12,6 +12,7 @@ ISO 8583 financial transaction messages:
 """
 
 from .builder import ISO8583Builder
+from .codes import PROCESSING_CODES, RESPONSE_CODES, detect_network_from_pan
 from .emv import build_emv_data, parse_emv_data
 from .parser import ISO8583Parser
 from .pool import MessagePool
@@ -47,6 +48,10 @@ __all__ = [
     "ParseError",
     "BuildError",
     "get_field_definition",
+    # Codes
+    "RESPONSE_CODES",
+    "PROCESSING_CODES",
+    "detect_network_from_pan",
     # EMV
     "parse_emv_data",
     "build_emv_data",

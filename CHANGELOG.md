@@ -10,9 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Python 3.13 and 3.14 support.
+- `iso8583sim.core.codes` with response, processing, network management and currency code tables, and `detect_network_from_pan`.
 
 ### Fixed
 
+- The parser now detects Discover cards and Mastercard 2-series BINs (2221 to 2720).
 - The `iso8583sim` command is now installed with the package. Previously it was missing from the package entry points.
 - Reversals built with `create_reversal` now fill field 90 (original data elements) with the original STAN, transmission date/time and institution IDs. Previously the STAN was always blank.
 - `iso8583sim version` reported `v0.1.0` instead of the installed version.

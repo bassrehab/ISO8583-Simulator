@@ -6,6 +6,7 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from .codes import detect_network_from_pan
 from .types import (
     ISO8583_FIELDS,
     NETWORK_SPECIFIC_FIELDS,
@@ -404,16 +405,9 @@ class ISO8583Parser:
                 pan_length = int(message[bitmap_length:pan_start])
                 pan = message[pan_start : pan_start + pan_length]
 
-                if pan.startswith("4"):
-                    return CardNetwork.VISA
-                elif any(pan.startswith(prefix) for prefix in ["51", "52", "53", "54", "55"]):
-                    return CardNetwork.MASTERCARD
-                elif any(pan.startswith(prefix) for prefix in ["34", "37"]):
-                    return CardNetwork.AMEX
-                elif pan.startswith("62"):
-                    return CardNetwork.UNIONPAY
-                elif pan.startswith("35"):
-                    return CardNetwork.JCB
+                network = detect_network_from_pan(pan)
+                if network is not None:
+                    return network
 
             # Look for network-specific patterns
             if "VISA" in message:
