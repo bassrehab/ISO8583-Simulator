@@ -108,6 +108,10 @@ def decode_pin_block(block: bytes, pan: str | None = None, fmt: int = 0) -> str:
         raise SecurityError("PIN block does not decode to a valid PIN (wrong key, PAN or format?)")
     if fmt == 0 and set(digits[2 + length :]) != {"F"}:
         raise SecurityError("Format 0 PIN block has invalid fill (wrong key, PAN or format?)")
+    # subhadipmitra@: Format 3 fill is random but always A to F. Checking it rejects almost all
+    # blocks decrypted with the wrong key or PAN, which would otherwise sometimes pass.
+    if fmt == 3 and not set(digits[2 + length :]) <= set("ABCDEF"):
+        raise SecurityError("Format 3 PIN block has invalid fill (wrong key, PAN or format?)")
     return pin
 
 
@@ -138,7 +142,16 @@ def encrypt_pin_block(pin: str, pan: str | None, key: str | bytes, fmt: int = 0)
 
 
 def decrypt_pin_block(block: str | bytes, pan: str | None, key: str | bytes, fmt: int = 0) -> str:
-    """Recover the PIN from an encrypted PIN block (formats 0, 1, 3 and 4)."""
+    """Recover the PIN from an encrypted PIN block (formats 0, 1, 3 and 4).
+
+    A wrong key is detected in every format, because it scrambles the whole block. A wrong
+    PAN is always detected in format 4, but only sometimes in formats 0 and 3: there the PAN
+    is applied with a single XOR, so a different PAN can still decode to a well-formed block
+    with a different PIN. This is a property of those formats, not of this implementation.
+
+    Raises:
+        SecurityError: The block doesn't decode to a valid PIN block
+    """
     data = bytes.fromhex(block) if isinstance(block, str) else block
     if fmt == 4:
         if pan is None:
@@ -149,7 +162,11 @@ def decrypt_pin_block(block: str | bytes, pan: str | None, key: str | bytes, fmt
         pin_field = aes(k, xor(aes(k, data, decrypt=True), _pan_field_16(pan)), decrypt=True).hex().upper()
         length = int(pin_field[1], 16)
         pin = pin_field[2 : 2 + length]
-        if pin_field[0] != "4" or not 4 <= length <= 12 or not pin.isdigit():
+        # subhadipmitra@: Check the A fill too. With a wrong key or PAN the result is random,
+        # and the control nibble, length and digits alone let about 1 in 1,000 through,
+        # returning a wrong PIN instead of an error. The fill check makes that negligible.
+        fill = pin_field[2 + length : 16]
+        if pin_field[0] != "4" or not 4 <= length <= 12 or not pin.isdigit() or set(fill) != {"A"}:
             raise SecurityError("PIN block does not decode to a valid PIN (wrong key, PAN or format?)")
         return pin
     k = parse_key(key, (16, 24))
