@@ -53,7 +53,7 @@ from iso8583sim.security import encode_pin_block
 encode_pin_block("1234", "4111111111111111", fmt=0).hex().upper()  # 041225EEEEEEEEEE
 ```
 
-Decrypting with the wrong key, PAN or format raises `SecurityError`, because the result fails the block's structure checks.
+Decrypting with the wrong key raises `SecurityError` in every format, because the result fails the block's structure checks. A wrong PAN is always caught in format 4, but only sometimes in formats 0 and 3: there the PAN is applied with a single XOR, so a different PAN can decode to a well-formed block with a different PIN. That is a property of those formats.
 
 ## MACs (ISO 9797-1)
 

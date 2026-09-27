@@ -94,6 +94,34 @@ class TestPinBlockErrors:
         with pytest.raises(SecurityError):
             decrypt_pin_block(block, "5555555555554444", AES_KEY, 4)
 
+    @pytest.mark.parametrize(
+        "fmt,key,wrong",
+        [
+            (4, AES_KEY, "pan"),
+            (0, TDES_KEY, "key"),
+            (3, TDES_KEY, "key"),
+        ],
+    )
+    def test_wrong_input_is_always_detected(self, fmt, key, wrong):
+        # subhadipmitra@: Formats 3 and 4 use random fill, so one wrong attempt could pass the
+        # structure checks by chance. Before the fill checks, a wrong PAN on format 4 got
+        # through about 1 time in 1,000 (CI caught one). A wrong PAN on formats 0 and 3 is
+        # only partly detectable by design (the PAN is a single XOR), so those formats are
+        # checked with a wrong key, which scrambles the whole block.
+        other_key = "FEDCBA98765432100123456789ABCDEF" if len(key) == 32 and fmt != 4 else key
+        failures = 0
+        for _ in range(3000):
+            block = encrypt_pin_block("1234", PAN, key, fmt)
+            try:
+                if wrong == "pan":
+                    decrypt_pin_block(block, "5555555555554444", key, fmt)
+                else:
+                    decrypt_pin_block(block, PAN, other_key, fmt)
+                failures += 1
+            except SecurityError:
+                pass
+        assert failures == 0
+
     @pytest.mark.parametrize("key", ["0011", "zz" * 16, TDES_KEY[:30]])
     def test_invalid_key(self, key):
         with pytest.raises(SecurityError, match="Key must be"):
