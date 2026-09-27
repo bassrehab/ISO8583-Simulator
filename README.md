@@ -218,10 +218,10 @@ See [benchmarks/BASELINE.md](benchmarks/BASELINE.md) for detailed results.
 
 Full documentation is available at **[iso8583sim.com](https://iso8583sim.com)**
 
-- [Getting Started](https://iso8583sim.com/docs/getting-started/quickstart/) - Quick start guide
-- [Architecture](https://iso8583sim.com/docs/architecture/overview/) - System design and decisions
-- [API Reference](https://iso8583sim.com/docs/api/core/) - Complete API documentation
-- [Performance Guide](https://iso8583sim.com/docs/performance/) - Optimization techniques
+- [Getting Started](https://iso8583sim.com/docs/getting-started/quickstart) - Quick start guide
+- [Architecture](https://iso8583sim.com/docs/architecture/overview) - System design and decisions
+- [API Reference](https://iso8583sim.com/docs/api/core/types) - Complete API documentation
+- [Performance Guide](https://iso8583sim.com/docs/performance) - Optimization techniques
 
 ## Development
 

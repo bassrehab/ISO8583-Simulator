@@ -7,11 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-09-27
+
 ### Changed
 
 - The documentation moved from MkDocs to Mintlify, served at iso8583sim.com/docs. It adds search, a Python API reference generated from the docstrings (`scripts/generate_api_docs.py`), and an interactive REST API reference generated from the OpenAPI spec (`scripts/export_openapi.py`). A docs workflow checks that both are up to date and that the Mintlify build and links are valid.
 - The `docs` extra now installs `griffe` (for the API reference generator) instead of MkDocs.
 - REST API endpoint tags are capitalized (`Messages`, `Meta`).
+- README links point at the new docs pages (the MCP guide is now `/docs/mcp-server`, because Mintlify reserves `/docs/mcp` for its MCP endpoint).
 
 ## [1.5.0] - 2026-09-27
 
@@ -161,7 +164,8 @@ First stable release.
 - MkDocs documentation site.
 - GitHub Actions for CI, PyPI publishing and docs deployment.
 
-[Unreleased]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.5.1...HEAD
+[1.5.1]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.3.0...v1.3.1
