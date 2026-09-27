@@ -105,12 +105,17 @@ class TestPinBlockErrors:
             (3, TDES_KEY, "key"),
         ],
     )
-    def test_wrong_input_is_always_detected(self, fmt, key, wrong):
+    def test_wrong_input_is_almost_always_detected(self, fmt, key, wrong):
         # subhadipmitra@: Formats 3 and 4 use random fill, so one wrong attempt could pass the
         # structure checks by chance. Before the fill checks, a wrong PAN on format 4 got
         # through about 1 time in 1,000 (CI caught one). A wrong PAN on formats 0 and 3 is
         # only partly detectable by design (the PAN is a single XOR), so those formats are
         # checked with a wrong key, which scrambles the whole block.
+        # subhadipmitra@: Even with every check, a block decrypted under the wrong key is random
+        # and looks valid by chance: for format 3, a 3 first, a length of 4 to 12, decimal PIN
+        # digits and A to F fill, about 5 times in a million. 3,000 attempts then expect 0.015
+        # passes, and asserting none failed about one CI run in twelve (CI caught one). Allowing
+        # two keeps the check meaningful and makes a false failure about one run in a million.
         other_key = "FEDCBA98765432100123456789ABCDEF" if len(key) == 32 and fmt != 4 else key
         failures = 0
         for _ in range(3000):
@@ -123,7 +128,7 @@ class TestPinBlockErrors:
                 failures += 1
             except SecurityError:
                 pass
-        assert failures == 0
+        assert failures <= 2
 
     @pytest.mark.parametrize("key", ["0011", "zz" * 16, TDES_KEY[:30]])
     def test_invalid_key(self, key):
