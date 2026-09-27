@@ -30,6 +30,8 @@ from ..core.types import (
 )
 from ..core.validator import ISO8583Validator
 
+# subhadipmitra@: Sent to the client when it connects. It tells the model the shared input
+# conventions once, so each tool description can stay short.
 INSTRUCTIONS = """\
 Tools for working with ISO 8583 payment messages (card authorizations, financial
 transactions, reversals and network management).
@@ -42,6 +44,8 @@ Start with parse_message or explain_message to understand a message, and
 validate_message before sending one anywhere.
 """
 
+# subhadipmitra@: Well-known public test card numbers. They pass Luhn checks and are
+# never real accounts, so generated messages are safe to share and paste into chats.
 SAMPLE_PANS = {
     CardNetwork.VISA: "4111111111111111",
     CardNetwork.MASTERCARD: "5555555555554444",
@@ -58,6 +62,12 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 def _reported_as(error_type: type[Exception]) -> Callable[[F], F]:
     """Turn expected input errors into MCP errors whose message reaches the client."""
+
+    # subhadipmitra@: The MCP SDK treats any other exception as a crash and hides its message
+    # from the client. Bad input (unknown network, unparseable message) is not a crash, and
+    # the model needs the reason to fix its next call, so those errors are re-raised as
+    # ToolError or ResourceError. functools.wraps keeps the signature the SDK reads to build
+    # each tool's input schema.
 
     def decorator(fn: F) -> F:
         @functools.wraps(fn)
@@ -94,10 +104,14 @@ def _network(network: str | None) -> CardNetwork | None:
 
 
 def _parse(message: str, network: str | None = None, version: str = "1987") -> ISO8583Message:
+    # subhadipmitra@: Only strip line endings. Fixed-width fields such as 42 (merchant ID) end
+    # in significant trailing spaces, and a full strip() breaks parsing of the last field.
     return ISO8583Parser(version=_version(version)).parse(message.rstrip("\r\n"), network=_network(network))
 
 
 def _fields_in(fields: dict[str, str]) -> dict[int, str]:
+    # subhadipmitra@: JSON object keys are always strings, but ISO8583Message keys fields by
+    # int. A string key would silently miss every lookup, so convert them here.
     try:
         return {int(k): str(v) for k, v in fields.items()}
     except ValueError:
@@ -106,7 +120,11 @@ def _fields_in(fields: dict[str, str]) -> dict[int, str]:
 
 def create_server() -> MCPServer:
     """Create the iso8583sim MCP server with its tools, resources and prompts."""
+    # subhadipmitra@: WARNING keeps the parser's per-message INFO logs off stderr, where MCP
+    # clients show server output.
     server = MCPServer(name="iso8583sim", version=__version__, instructions=INSTRUCTIONS, log_level="WARNING")
+    # subhadipmitra@: A builder is tied to one ISO version, so build one per version up front
+    # and reuse them across calls.
     builder_for = {v: ISO8583Builder(version=v) for v in ISO8583Version}
     validator = ISO8583Validator()
 
@@ -203,6 +221,9 @@ def create_server() -> MCPServer:
         else:
             card = pan or SAMPLE_PANS.get(net or CardNetwork.VISA, SAMPLE_PANS[CardNetwork.VISA])
             net = net or detect_network_from_pan(card)
+            # subhadipmitra@: This field set covers the union of every network's required
+            # fields (NETWORK_REQUIRED_FIELDS), including 24 (NII) and 25 (POS condition code),
+            # so the message validates whichever network is chosen.
             fields = {
                 2: card,
                 3: "000000",
@@ -237,6 +258,9 @@ def create_server() -> MCPServer:
         response_fields = {39: response_code}
         if approval_code:
             response_fields[38] = approval_code.ljust(6)[:6]
+        # subhadipmitra@: The response is built without a network on purpose. The network
+        # required-field lists describe requests, and a response echoes only a few request
+        # fields, so applying them would reject every valid response.
         response = builder_for[v].create_response(request, response_fields)
         raw = builder_for[v].build(response)
         return {"message": raw, "mti": response.mti, "fields": field_entries(response)}
