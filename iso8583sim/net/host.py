@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from ..core.builder import ISO8583Builder
+from ..core.mti import response_mti
 from ..core.types import ISO8583Message, ISO8583Version, ParseError
 from ..wire import WireFormat, decode_message, encode_message
 from .framing import Framing, swap_tpdu
@@ -124,14 +125,6 @@ def load_rules(path: str | Path) -> list[Rule]:
 DEFAULT_RULES = [Rule()]
 
 
-def response_mti(mti: str) -> str:
-    """0100 -> 0110, 0200 -> 0210, 0400 -> 0410, 0800 -> 0810, 0120 -> 0130."""
-    function = int(mti[2])
-    if function % 2:
-        raise ValueError(f"MTI {mti} is already a response")
-    return mti[:2] + str(function + 1) + mti[3]
-
-
 @dataclass
 class HostStats:
     """Counters for what the mock host has seen and done."""
@@ -157,7 +150,11 @@ class MockHost:
         wire_format: WireFormat | None = None,
         framing: Framing | None = None,
         version: ISO8583Version = ISO8583Version.V1987,
+        keep_repeat: bool = False,
     ):
+        # subhadipmitra@: keep_repeat answers a repeat with its flag kept (0121 with 0131), for
+        # systems that expect that; by default it's dropped (0130), the common convention.
+        self.keep_repeat = keep_repeat
         self.rules = rules or DEFAULT_RULES
         self.wire_format = wire_format or WireFormat.ascii_binary()
         self.framing = framing or Framing()
@@ -182,7 +179,7 @@ class MockHost:
             fields[38] = "A" + request.fields.get(11, "0").zfill(6)[-5:]
         # subhadipmitra@: No network on the response: the network required-field lists
         # describe requests, and a response echoes only some request fields.
-        return ISO8583Message(mti=response_mti(request.mti), fields=fields, version=self.version)
+        return ISO8583Message(mti=response_mti(request.mti, self.keep_repeat), fields=fields, version=self.version)
 
     async def start(self, host: str = "127.0.0.1", port: int = 8583) -> asyncio.Server:
         """Start listening. Returns the asyncio server (port 0 picks a free port)."""

@@ -8,6 +8,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING
 
+from . import mti as mti_tools
 from .types import (
     BuildError,
     CardNetwork,
@@ -15,7 +16,6 @@ from .types import (
     FieldType,
     ISO8583Message,
     ISO8583Version,
-    MessageFunction,
     get_field_definition,
 )
 from .validator import ISO8583Validator
@@ -248,13 +248,17 @@ class ISO8583Builder:
 
         return message
 
-    def create_response(self, request: ISO8583Message, response_fields: dict[int, str]) -> ISO8583Message:
-        """Create a response message based on a request message"""
-        # Create response MTI
-        req_mti = request.mti
-        resp_mti = list(req_mti)
-        resp_mti[2] = MessageFunction.RESPONSE.value
-        response_mti = "".join(resp_mti)
+    def create_response(
+        self, request: ISO8583Message, response_fields: dict[int, str], keep_repeat: bool = False
+    ) -> ISO8583Message:
+        """Create a response message based on a request message.
+
+        The response MTI answers the request's: 0100 with 0110, 0120 with 0130, 0420 with 0430.
+        A repeat is answered without its repeat flag (0121 with 0130) unless keep_repeat is set.
+        """
+        # subhadipmitra@: The function digit goes up by one, so advices (x2x) get advice
+        # responses (x3x); setting it to "response" (1) answered 0120 with 0110.
+        response_mti = mti_tools.response_mti(request.mti, keep_repeat)
 
         # Copy necessary fields and ensure proper formatting
         response_fields = response_fields.copy()

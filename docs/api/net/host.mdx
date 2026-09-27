@@ -100,6 +100,7 @@ MockHost(
     wire_format: WireFormat | None = None,
     framing: Framing | None = None,
     version: ISO8583Version = ISO8583Version.V1987,
+    keep_repeat: bool = False,
 )
 ```
 
@@ -153,11 +154,3 @@ def load_rules(path: str | Path) -> list[Rule]
 ```
 
 Load rules from a JSON or YAML file with a top-level "rules" list.
-
-### `response_mti()`
-
-```python
-def response_mti(mti: str) -> str
-```
-
-0100 -> 0110, 0200 -> 0210, 0400 -> 0410, 0800 -> 0810, 0120 -> 0130.

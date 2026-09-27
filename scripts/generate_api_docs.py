@@ -41,6 +41,7 @@ GROUPS: dict[str, list[tuple[str, str]]] = {
         ("iso8583sim.core.convert", "Convert"),
         ("iso8583sim.core.samples", "Samples"),
         ("iso8583sim.core.pool", "Pool"),
+        ("iso8583sim.core.mti", "MTI"),
     ],
     "Security": [
         ("iso8583sim.security.pinblock", "PIN blocks"),

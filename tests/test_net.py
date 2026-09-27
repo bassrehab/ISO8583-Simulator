@@ -85,6 +85,20 @@ class TestRules:
         ]
         with pytest.raises(ValueError):
             response_mti("0110")
+        with pytest.raises(ValueError):
+            response_mti("01A0")
+
+    def test_repeats_are_answered_without_their_flag_unless_kept(self):
+        repeats = ("0101", "0121", "0221", "0401", "0421", "0123", "1121")
+        assert [response_mti(m) for m in repeats] == ["0110", "0130", "0230", "0410", "0430", "0132", "1130"]
+        kept = [response_mti(m, keep_repeat=True) for m in repeats]
+        assert kept == ["0111", "0131", "0231", "0411", "0431", "0133", "1131"]
+
+    def test_the_mock_host_answers_repeats_by_the_same_rule(self):
+        repeat = sample_message(stan="000001")
+        repeat.mti = "0121"
+        assert MockHost().build_response(repeat, "00").mti == "0130"
+        assert MockHost(keep_repeat=True).build_response(repeat, "00").mti == "0131"
 
     def test_matching(self):
         request = sample_message(amount_minor_units=5000)

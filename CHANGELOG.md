@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `ISO8583Builder.create_response` answered advices with a request's response MTI (0120 with 0110, 0420 with 0410). It now adds one to the function digit, as `response_mti` does: 0120 is answered with 0130, 0420 with 0430.
+
+### Changed
+
+- A repeat (0101, 0121, 0401, 0421) is answered as the message it repeats, without its repeat flag: 0121 with 0130, 0421 with 0430. That's the common convention, which jPOS follows too. `response_mti`, `create_response` and `MockHost` take `keep_repeat=True` to keep the flag (0131, 0431) for systems that expect it.
+
+### Added
+
+- `iso8583sim.core.mti.response_mti`, also exported from `iso8583sim.net` as before.
+
 ## [1.6.0] - 2026-09-27
 
 ### Changed

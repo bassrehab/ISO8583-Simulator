@@ -62,10 +62,14 @@ Create an ISO8583Message object with validation
 def create_response(
     request: ISO8583Message,
     response_fields: dict[int, str],
+    keep_repeat: bool = False,
 ) -> ISO8583Message
 ```
 
-Create a response message based on a request message
+Create a response message based on a request message.
+
+The response MTI answers the request's: 0100 with 0110, 0120 with 0130, 0420 with 0430.
+A repeat is answered without its repeat flag (0121 with 0130) unless keep_repeat is set.
 
 ### `create_reversal()`
 

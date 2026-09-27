@@ -125,7 +125,8 @@
               "api/core/describe",
               "api/core/convert",
               "api/core/samples",
-              "api/core/pool"
+              "api/core/pool",
+              "api/core/mti"
             ]
           },
           {

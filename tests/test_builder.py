@@ -347,3 +347,18 @@ def test_reversal_original_data_elements(builder, test_messages, create_message)
     reversal = builder.create_reversal(original)
 
     assert reversal.fields[90] == original.mti + "123456" + "1225103000" + "00000012345" + "00000000000"
+
+
+@pytest.mark.parametrize(
+    "request_mti, answer",
+    [("0100", "0110"), ("0120", "0130"), ("0121", "0130"), ("0220", "0230"), ("0400", "0410"), ("0420", "0430")],
+)
+def test_create_response_answers_advices_and_repeats_by_the_common_convention(builder, request_mti, answer):
+    from iso8583sim.core.samples import sample_message
+
+    request = sample_message(stan="000001")
+    request.mti = request_mti
+    response = builder.create_response(request, {39: "00"})
+    assert response.mti == answer
+    kept = builder.create_response(request, {39: "00"}, keep_repeat=True).mti
+    assert kept == (answer[:3] + "1" if request_mti[3] == "1" else answer)
