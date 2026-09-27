@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-09-27
+
 ### Added
 
 - API reference pages for `iso8583sim.security`, `iso8583sim.wire`, `iso8583sim.net`, the REST and MCP servers, and the newer core modules (`codes`, `describe`, `convert`, `samples`, `network_rules`).
@@ -151,7 +153,8 @@ First stable release.
 - MkDocs documentation site.
 - GitHub Actions for CI, PyPI publishing and docs deployment.
 
-[Unreleased]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.2.0...v1.3.0
