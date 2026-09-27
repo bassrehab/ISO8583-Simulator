@@ -1,9 +1,11 @@
-# PIN Blocks and MACs
+---
+title: "PIN Blocks and MACs"
+description: "The iso8583sim.security module builds and checks the two security fields most test harnesses need: PIN blocks for field 52 and message authentication codes (MACs) for fields 64 and 128."
+---
 
-The `iso8583sim.security` module builds and checks the two security fields most test harnesses need: PIN blocks for field 52 and message authentication codes (MACs) for fields 64 and 128.
-
-!!! warning "Test and simulation use only"
-    Real payment systems keep clear PINs and keys inside a hardware security module (HSM). Use this module to generate test data and to check what your system under test produces, never to handle real cardholder PINs or production keys.
+<Warning>
+**Test and simulation use only.** Real payment systems keep clear PINs and keys inside a hardware security module (HSM). Use this module to generate test data and to check what your system under test produces, never to handle real cardholder PINs or production keys.
+</Warning>
 
 ## Installation
 

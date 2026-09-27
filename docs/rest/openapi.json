@@ -1,0 +1,959 @@
+{
+  "components": {
+    "schemas": {
+      "BuildRequest": {
+        "properties": {
+          "fields": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "examples": [
+              {
+                "2": "4111111111111111",
+                "3": "000000",
+                "4": "000000001000"
+              }
+            ],
+            "title": "Fields",
+            "type": "object"
+          },
+          "mti": {
+            "examples": [
+              "0100"
+            ],
+            "pattern": "^\\d{4}$",
+            "title": "Mti",
+            "type": "string"
+          },
+          "network": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CardNetwork"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "version": {
+            "$ref": "#/components/schemas/ISO8583Version",
+            "default": "1987"
+          }
+        },
+        "required": [
+          "mti",
+          "fields"
+        ],
+        "title": "BuildRequest",
+        "type": "object"
+      },
+      "BuildResponse": {
+        "properties": {
+          "length": {
+            "title": "Length",
+            "type": "integer"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "length"
+        ],
+        "title": "BuildResponse",
+        "type": "object"
+      },
+      "CardNetwork": {
+        "description": "Card network identifiers",
+        "enum": [
+          "VISA",
+          "MASTERCARD",
+          "AMEX",
+          "DISCOVER",
+          "JCB",
+          "UNIONPAY"
+        ],
+        "title": "CardNetwork",
+        "type": "string"
+      },
+      "ConvertRequest": {
+        "properties": {
+          "message": {
+            "description": "Raw ISO 8583 message: MTI, hex bitmap, then field data",
+            "title": "Message",
+            "type": "string"
+          },
+          "network": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CardNetwork"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Card network. Detected from the PAN when omitted."
+          },
+          "target_version": {
+            "$ref": "#/components/schemas/ISO8583Version"
+          },
+          "version": {
+            "$ref": "#/components/schemas/ISO8583Version",
+            "default": "1987"
+          }
+        },
+        "required": [
+          "message",
+          "target_version"
+        ],
+        "title": "ConvertRequest",
+        "type": "object"
+      },
+      "ConvertResponse": {
+        "properties": {
+          "dropped": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Dropped",
+            "type": "object"
+          },
+          "lossless": {
+            "title": "Lossless",
+            "type": "boolean"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "mti": {
+            "title": "Mti",
+            "type": "string"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "message",
+          "mti",
+          "dropped",
+          "notes",
+          "lossless"
+        ],
+        "title": "ConvertResponse",
+        "type": "object"
+      },
+      "ExplainRequest": {
+        "properties": {
+          "llm": {
+            "default": false,
+            "description": "Use an LLM instead of the rule-based summary",
+            "title": "Llm",
+            "type": "boolean"
+          },
+          "message": {
+            "description": "Raw ISO 8583 message: MTI, hex bitmap, then field data",
+            "title": "Message",
+            "type": "string"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "network": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CardNetwork"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Card network. Detected from the PAN when omitted."
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "LLM provider: anthropic, openai, google or ollama",
+            "title": "Provider"
+          },
+          "version": {
+            "$ref": "#/components/schemas/ISO8583Version",
+            "default": "1987"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "ExplainRequest",
+        "type": "object"
+      },
+      "ExplainResponse": {
+        "properties": {
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/FieldValue"
+            },
+            "title": "Fields",
+            "type": "array"
+          },
+          "mti": {
+            "title": "Mti",
+            "type": "string"
+          },
+          "source": {
+            "description": "\"rules\", or \"llm:<provider>/<model>\"",
+            "title": "Source",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "summary",
+          "source",
+          "mti",
+          "fields"
+        ],
+        "title": "ExplainResponse",
+        "type": "object"
+      },
+      "FieldValue": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "integer"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "number",
+          "name",
+          "value"
+        ],
+        "title": "FieldValue",
+        "type": "object"
+      },
+      "GenerateRequest": {
+        "properties": {
+          "amount_minor_units": {
+            "default": 1000,
+            "maximum": 999999999999.0,
+            "minimum": 0.0,
+            "title": "Amount Minor Units",
+            "type": "integer"
+          },
+          "currency": {
+            "default": "840",
+            "pattern": "^\\d{3}$",
+            "title": "Currency",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Describe the message in plain English and let an LLM build it. Overrides the other fields.",
+            "title": "Description"
+          },
+          "message_type": {
+            "default": "auth",
+            "enum": [
+              "auth",
+              "financial",
+              "echo"
+            ],
+            "title": "Message Type",
+            "type": "string"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "network": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CardNetwork"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pan": {
+            "anyOf": [
+              {
+                "pattern": "^\\d{12,19}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pan"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "stan": {
+            "default": "123456",
+            "pattern": "^\\d{6}$",
+            "title": "Stan",
+            "type": "string"
+          }
+        },
+        "title": "GenerateRequest",
+        "type": "object"
+      },
+      "GenerateResponse": {
+        "properties": {
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/FieldValue"
+            },
+            "title": "Fields",
+            "type": "array"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "mti": {
+            "title": "Mti",
+            "type": "string"
+          },
+          "network": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CardNetwork"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "mti",
+          "network",
+          "fields",
+          "source"
+        ],
+        "title": "GenerateResponse",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "const": "ok",
+            "title": "Status",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "version"
+        ],
+        "title": "HealthResponse",
+        "type": "object"
+      },
+      "ISO8583Version": {
+        "description": "ISO 8583 protocol versions",
+        "enum": [
+          "1987",
+          "1993",
+          "2003"
+        ],
+        "title": "ISO8583Version",
+        "type": "string"
+      },
+      "MessageRequest": {
+        "properties": {
+          "message": {
+            "description": "Raw ISO 8583 message: MTI, hex bitmap, then field data",
+            "title": "Message",
+            "type": "string"
+          },
+          "network": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CardNetwork"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Card network. Detected from the PAN when omitted."
+          },
+          "version": {
+            "$ref": "#/components/schemas/ISO8583Version",
+            "default": "1987"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "MessageRequest",
+        "type": "object"
+      },
+      "NetworkResult": {
+        "properties": {
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Errors",
+            "type": "array"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "passed",
+          "errors"
+        ],
+        "title": "NetworkResult",
+        "type": "object"
+      },
+      "ParseResponse": {
+        "properties": {
+          "bitmap": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bitmap"
+          },
+          "emv": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Emv"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/FieldValue"
+            },
+            "title": "Fields",
+            "type": "array"
+          },
+          "mti": {
+            "title": "Mti",
+            "type": "string"
+          },
+          "network": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CardNetwork"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "version": {
+            "$ref": "#/components/schemas/ISO8583Version"
+          }
+        },
+        "required": [
+          "mti",
+          "version",
+          "network",
+          "bitmap",
+          "fields"
+        ],
+        "title": "ParseResponse",
+        "type": "object"
+      },
+      "ValidateRequest": {
+        "properties": {
+          "against": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/CardNetwork"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Also check these networks' rules. An empty list checks every network.",
+            "title": "Against"
+          },
+          "message": {
+            "description": "Raw ISO 8583 message: MTI, hex bitmap, then field data",
+            "title": "Message",
+            "type": "string"
+          },
+          "network": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CardNetwork"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Card network. Detected from the PAN when omitted."
+          },
+          "version": {
+            "$ref": "#/components/schemas/ISO8583Version",
+            "default": "1987"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "ValidateRequest",
+        "type": "object"
+      },
+      "ValidateResponse": {
+        "properties": {
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Errors",
+            "type": "array"
+          },
+          "networks": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/NetworkResult"
+                },
+                "propertyNames": {
+                  "$ref": "#/components/schemas/CardNetwork"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Networks"
+          },
+          "valid": {
+            "title": "Valid",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "valid",
+          "errors"
+        ],
+        "title": "ValidateResponse",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "Parse, build, validate, explain, generate and convert ISO 8583 messages. Intended for testing: there is no authentication, so don't expose it publicly.",
+    "title": "ISO8583 Simulator API",
+    "version": "1"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/build": {
+      "post": {
+        "description": "Build a raw message from an MTI and field values.",
+        "operationId": "build_build_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuildRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuildResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Build",
+        "tags": [
+          "Messages"
+        ]
+      }
+    },
+    "/convert": {
+      "post": {
+        "description": "Convert a message to another ISO 8583 version, listing dropped fields and notes.",
+        "operationId": "convert_convert_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConvertRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConvertResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Convert",
+        "tags": [
+          "Messages"
+        ]
+      }
+    },
+    "/explain": {
+      "post": {
+        "description": "Explain a message in plain English, with rules (default) or an LLM.",
+        "operationId": "explain_explain_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExplainRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExplainResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Explain",
+        "tags": [
+          "Messages"
+        ]
+      }
+    },
+    "/generate": {
+      "post": {
+        "description": "Generate a valid test message from options, or from a description with an LLM.",
+        "operationId": "generate_generate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Generate",
+        "tags": [
+          "Messages"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "description": "Liveness check.",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health",
+        "tags": [
+          "Meta"
+        ]
+      }
+    },
+    "/parse": {
+      "post": {
+        "description": "Parse a raw message into its MTI, bitmap and named fields.",
+        "operationId": "parse_parse_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Parse",
+        "tags": [
+          "Messages"
+        ]
+      }
+    },
+    "/validate": {
+      "post": {
+        "description": "Validate a message, optionally against other networks' rules too.\n\nA message that fails to parse is reported as invalid (200), not as an error.",
+        "operationId": "validate_validate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidateResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Validate",
+        "tags": [
+          "Messages"
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "description": "Local server (iso8583sim web)",
+      "url": "http://127.0.0.1:8000"
+    }
+  ]
+}

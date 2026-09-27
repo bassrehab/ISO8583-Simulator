@@ -1,6 +1,7 @@
-# VISA
-
-VISA-specific field definitions and requirements for iso8583sim.
+---
+title: "VISA"
+description: "VISA-specific field definitions and requirements for iso8583sim."
+---
 
 ## Network Detection
 
@@ -63,7 +64,7 @@ Common VISA values:
 | 901 | Magnetic stripe (full track), terminal accepts PINs |
 | 951 | Chip with unreliable CVV (VISA only), terminal accepts PINs |
 
-The third digit is PIN entry capability: `1` means the terminal can accept PINs, `2` means it can't. See [Field 22](index.md#field-22-pos-entry-mode) for every code the validator accepts.
+The third digit is PIN entry capability: `1` means the terminal can accept PINs, `2` means it can't. See [Field 22](.#field-22-pos-entry-mode) for every code the validator accepts.
 
 ## Response Codes (Field 39)
 

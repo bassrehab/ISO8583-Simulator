@@ -1,4 +1,7 @@
-# Installation
+---
+title: "Installation"
+description: "Install iso8583sim from PyPI:"
+---
 
 ## Requirements
 
@@ -54,7 +57,7 @@ To use iso8583sim from Claude, Cursor or another MCP client:
 pip install iso8583sim[mcp]
 ```
 
-See [MCP Server](../mcp/index.md) for client setup.
+See [MCP Server](../mcp) for client setup.
 
 ### REST API
 
@@ -62,7 +65,7 @@ See [MCP Server](../mcp/index.md) for client setup.
 pip install iso8583sim[web]
 ```
 
-See [REST API](../web/index.md).
+See [REST API](../web).
 
 ### PIN Blocks and MACs
 
@@ -70,7 +73,7 @@ See [REST API](../web/index.md).
 pip install iso8583sim[security]
 ```
 
-See [PIN Blocks and MACs](../core/security.md).
+See [PIN Blocks and MACs](../core/security).
 
 ### Performance Extensions
 
@@ -98,11 +101,19 @@ This includes pytest, ruff, mypy, and pre-commit hooks.
 
 ### Documentation
 
-To build documentation locally:
+The docs are built with [Mintlify](https://mintlify.com) from the `docs/` folder. To preview them locally (needs Node.js 20.17 or newer):
 
 ```bash
-pip install iso8583sim[docs]
-mkdocs serve
+cd docs
+npx mint dev
+```
+
+The Python API reference and the REST API spec are generated from the code. After changing docstrings or endpoints, regenerate them:
+
+```bash
+pip install -e ".[docs,web]"
+python scripts/generate_api_docs.py
+python scripts/export_openapi.py
 ```
 
 ## Development Installation
@@ -128,5 +139,5 @@ print("iso8583sim installed successfully!")
 
 ## Next Steps
 
-- [Quick Start Tutorial](quickstart.md) - Build your first message
-- [ISO 8583 Concepts](concepts.md) - Learn the basics
+- [Quick Start Tutorial](./quickstart) - Build your first message
+- [ISO 8583 Concepts](./concepts) - Learn the basics
