@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Python 3.13 and 3.14 support.
+
 ### Changed
 
+- `fastapi` and `uvicorn` are no longer installed by default. They moved to the new `web` extra (`pip install iso8583sim[web]`).
 - Documentation links now point to [iso8583sim.com](https://iso8583sim.com).
 - Fixed the author LinkedIn link in the README.
 

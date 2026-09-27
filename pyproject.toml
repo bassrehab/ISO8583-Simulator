@@ -19,14 +19,14 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Software Development :: Testing",
     "Topic :: Office/Business :: Financial",
 ]
 keywords = ["iso8583", "payment", "banking", "financial", "simulator"]
 dependencies = [
     "click>=8.0.0",
-    "fastapi>=0.68.0",
-    "uvicorn>=0.15.0",
     "pydantic>=2.0.0",
     "rich>=10.0.0",
     "typer>=0.4.0",
@@ -53,6 +53,11 @@ dev = [
     "ruff>=0.0.290",
     "pre-commit>=3.5.0",
     "cython>=3.0.0",
+]
+# REST API server
+web = [
+    "fastapi>=0.110.0",
+    "uvicorn>=0.29.0",
 ]
 perf = [
     "cython>=3.0.0",
