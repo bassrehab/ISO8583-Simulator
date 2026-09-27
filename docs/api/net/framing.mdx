@@ -14,6 +14,7 @@ Framing(
     header: str = '2b',
     tpdu: bytes | None = None,
     header_includes_self: bool = False,
+    max_message: int = 1048576,
 )
 ```
 
@@ -33,6 +34,12 @@ On responses the destination and source addresses are swapped.
 
 <ResponseField name="header_includes_self" type="bool">
   Some hosts count the header bytes in the length. Off by default.
+</ResponseField>
+
+<ResponseField name="max_message" type="int">
+  The longest frame body accepted when reading, in bytes. A longer one
+raises ParseError before anything is read, so a peer can't make the reader buffer
+what a 4-byte header can declare (up to 4 GiB). 1 MiB by default.
 </ResponseField>
 
 ### `frame()`
