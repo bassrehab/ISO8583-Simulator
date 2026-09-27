@@ -10,6 +10,9 @@ description: "REST API for iso8583sim, built with FastAPI."
 Run with `iso8583sim web` or `uvicorn iso8583sim.web.app:app`. Interactive docs are served
 at /docs and the OpenAPI schema at /openapi.json.
 
+Set ISO8583SIM_PUBLIC=1 to run it as a public demo: LLM features are turned off, so nobody
+can spend the server's API keys, and browsers on any site may call it (CORS).
+
 ## `FieldValue`
 
 Bases: `BaseModel`
@@ -75,7 +78,14 @@ Bases: `BaseModel`
 ### `create_app()`
 
 ```python
-def create_app() -> FastAPI
+def create_app(public: bool | None = None) -> FastAPI
 ```
 
 Create the REST API application.
+
+**Parameters**
+
+<ResponseField name="public" type="bool | None" default="None">
+  Run as a public demo, with LLM features off and CORS open to any origin.
+Defaults to the ISO8583SIM_PUBLIC environment variable.
+</ResponseField>
