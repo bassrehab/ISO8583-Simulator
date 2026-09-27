@@ -10,6 +10,7 @@ from iso8583sim import __version__
 from iso8583sim.cli.commands import app
 from iso8583sim.core.builder import ISO8583Builder
 from iso8583sim.core.types import ISO8583Message
+from iso8583sim.llm import LLMProvider
 
 runner = CliRunner()
 
@@ -310,3 +311,143 @@ class TestMcpCommand:
         result = runner.invoke(app, ["mcp"])
         assert result.exit_code == 1
         assert "iso8583sim[mcp]" in result.stdout
+
+
+class FakeProvider(LLMProvider):
+    """Stand-in LLM provider that records prompts and returns a canned reply."""
+
+    def __init__(self, response):
+        self.response = response
+        self.prompts = []
+
+    def complete(self, prompt, system=None):
+        self.prompts.append(prompt)
+        return self.response
+
+    @property
+    def name(self):
+        return "Fake"
+
+    @property
+    def model(self):
+        return "fake-model"
+
+
+@pytest.fixture
+def auth_message():
+    """A built VISA authorization request."""
+    builder = ISO8583Builder()
+    return builder.build(
+        ISO8583Message(
+            mti="0100",
+            fields={
+                0: "0100",
+                2: "4111111111111111",
+                3: "000000",
+                4: "000000001000",
+                11: "123456",
+                41: "TERM0001",
+                42: "MERCHANT123456 ",
+                49: "840",
+            },
+        )
+    )
+
+
+def use_provider(monkeypatch, provider):
+    """Make the CLI's get_provider return the given provider and record its arguments."""
+    import iso8583sim.llm
+
+    calls = []
+
+    def fake_get_provider(name=None, **kwargs):
+        calls.append((name, kwargs))
+        return provider
+
+    # subhadipmitra@: The commands import get_provider from iso8583sim.llm at call time,
+    # so patching the module attribute is enough to swap in the fake provider.
+    monkeypatch.setattr(iso8583sim.llm, "get_provider", fake_get_provider)
+    return calls
+
+
+class TestExplainCommand:
+    """Tests for the explain command."""
+
+    def test_explain_no_llm(self, auth_message):
+        """Test the rule-based explanation, which needs no provider."""
+        result = runner.invoke(app, ["explain", auth_message, "--no-llm"])
+        assert result.exit_code == 0
+        assert "authorization request" in result.stdout
+        assert "411111******1111" in result.stdout
+        assert "10.00 USD" in result.stdout
+
+    def test_explain_with_llm(self, monkeypatch, auth_message):
+        """Test that the explanation comes from the provider."""
+        provider = FakeProvider("A $10.00 VISA purchase authorization.")
+        calls = use_provider(monkeypatch, provider)
+
+        result = runner.invoke(app, ["explain", auth_message, "--provider", "anthropic", "--model", "m1"])
+
+        assert result.exit_code == 0, result.stdout
+        assert "A $10.00 VISA purchase authorization." in result.stdout
+        assert calls == [("anthropic", {"model": "m1"})]
+        assert "0100" in provider.prompts[0]
+
+    def test_explain_without_provider_suggests_no_llm(self, monkeypatch, auth_message):
+        """Test that a missing provider shows the error and the --no-llm tip."""
+        import iso8583sim.llm
+        from iso8583sim.llm import ProviderConfigError
+
+        def no_provider(name=None, **kwargs):
+            raise ProviderConfigError("No LLM provider available. Install iso8583sim[anthropic]")
+
+        monkeypatch.setattr(iso8583sim.llm, "get_provider", no_provider)
+        result = runner.invoke(app, ["explain", auth_message])
+
+        assert result.exit_code == 1
+        assert "Install iso8583sim[anthropic]" in result.stdout
+        assert "--no-llm" in result.stdout
+
+    def test_explain_invalid_message(self):
+        """Test that a message that fails to parse exits with an error."""
+        result = runner.invoke(app, ["explain", "garbage", "--no-llm"])
+        assert result.exit_code == 1
+        assert "Error parsing message" in result.stdout
+
+
+class TestGenerateWithLLM:
+    """Tests for generate --llm."""
+
+    def test_generate_with_llm(self, monkeypatch, tmp_path):
+        """Test generating a message from a description."""
+
+        reply = json.dumps(
+            {
+                "mti": "0200",
+                "fields": {
+                    "2": "5555555555554444",
+                    "3": "200000",
+                    "4": "000000005000",
+                    "11": "654321",
+                    "41": "TERM0001",
+                    "42": "ACME STORE     ",
+                    "49": "840",
+                },
+            }
+        )
+        provider = FakeProvider(reply)
+        use_provider(monkeypatch, provider)
+        output = tmp_path / "msg.txt"
+
+        result = runner.invoke(app, ["generate", "--llm", "$50 Mastercard refund at ACME", "-o", str(output)])
+
+        assert result.exit_code == 0, result.stdout
+        assert "Generated Message 0200" in result.stdout
+        assert output.read_text().startswith("0200")
+        assert "$50 Mastercard refund at ACME" in provider.prompts[0]
+
+    def test_generate_requires_type_or_llm(self):
+        """Test that generate needs either --type or --llm."""
+        result = runner.invoke(app, ["generate"])
+        assert result.exit_code == 1
+        assert "--type" in result.stdout
