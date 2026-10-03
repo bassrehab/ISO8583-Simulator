@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-10-03
+
 ### Added
 
 - Custom specs: `Spec` (`iso8583sim.core.spec`) holds a network's or a host's own field definitions over a standard version, read from a JSON file, or YAML with PyYAML installed (the new `yaml` extra). `ISO8583Parser`, `ISO8583Builder` and `ISO8583Validator` take `spec=` and use its fields wherever it defines them, and the `parse`, `build` and `validate` commands take `--spec`. A spec that can't be used raises `SpecError`, naming the field and what's wrong.
@@ -228,7 +230,8 @@ First stable release.
 - MkDocs documentation site.
 - GitHub Actions for CI, PyPI publishing and docs deployment.
 
-[Unreleased]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.7.1...HEAD
+[Unreleased]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.8.0...HEAD
+[1.8.0]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.7.1...v1.8.0
 [1.7.1]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/bassrehab/ISO8583-Simulator/compare/v1.5.2...v1.6.0
