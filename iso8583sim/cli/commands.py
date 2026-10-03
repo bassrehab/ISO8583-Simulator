@@ -24,6 +24,7 @@ from ..core.builder import ISO8583Builder
 from ..core.codes import CURRENCY_CODES
 from ..core.describe import describe_message
 from ..core.parser import ISO8583Parser
+from ..core.spec import Spec
 from ..core.types import (
     CardNetwork,
     ISO8583Message,
@@ -138,12 +139,16 @@ def parse_message(
     network: str | None = typer.Option(None, "--network", "-n", help="Card network (VISA, MASTERCARD, AMEX, etc.)"),
     output: Path | None = typer.Option(None, "--output", "-o", help="Output file for parsed message (JSON format)"),
     format: str = typer.Option("table", "--format", "-f", help="Output format (table, json, tree)"),
+    spec_file: Path | None = typer.Option(
+        None, "--spec", "-s", help="Custom field definitions: a JSON spec, or YAML with PyYAML installed"
+    ),
 ):
     """Parse an ISO 8583 message and display its contents"""
     try:
-        # Initialize parser
+        # Initialize parser, with the spec's fields where one is given
         iso_version = ISO8583Version(version)
-        parser = ISO8583Parser(version=iso_version)
+        spec = Spec.from_file(spec_file) if spec_file else None
+        parser = ISO8583Parser(version=iso_version, spec=spec)
 
         # Parse message with optional network
         card_network = CardNetwork(network.upper()) if network else None
@@ -179,15 +184,19 @@ def build_message(
     version: str = typer.Option("1987", "--version", "-v", help="ISO 8583 version (1987, 1993, 2003)"),
     network: str | None = typer.Option(None, "--network", "-n", help="Card network (VISA, MASTERCARD, AMEX, etc.)"),
     output: Path | None = typer.Option(None, "--output", "-o", help="Output file for built message"),
+    spec_file: Path | None = typer.Option(
+        None, "--spec", "-s", help="Custom field definitions: a JSON spec, or YAML with PyYAML installed"
+    ),
 ):
     """Build an ISO 8583 message from field values"""
     try:
         # Load fields from JSON and convert string keys to integers
         fields_data = {int(k): v for k, v in load_json_file(fields_file).items()}
 
-        # Initialize builder
-        iso_version = ISO8583Version(version)
-        builder = ISO8583Builder(version=iso_version)
+        # Initialize builder, with the spec's fields (and version) where one is given
+        spec = Spec.from_file(spec_file) if spec_file else None
+        iso_version = spec.version if spec else ISO8583Version(version)
+        builder = ISO8583Builder(version=iso_version, spec=spec)
 
         # Create message with optional network
         card_network = CardNetwork(network.upper()) if network else None
@@ -218,15 +227,19 @@ def validate_message(
     against: str | None = typer.Option(
         None, "--against", "-a", help="Check against other networks: comma separated names, or 'all'"
     ),
+    spec_file: Path | None = typer.Option(
+        None, "--spec", "-s", help="Custom field definitions: a JSON spec, or YAML with PyYAML installed"
+    ),
 ):
     """Validate an ISO 8583 message"""
     try:
-        # Parse message first
+        # Parse message first, with the spec's fields where one is given
         iso_version = ISO8583Version(version)
-        parser = ISO8583Parser(version=iso_version)
+        spec = Spec.from_file(spec_file) if spec_file else None
+        parser = ISO8583Parser(version=iso_version, spec=spec)
         card_network = CardNetwork(network.upper()) if network else None
         parsed = parser.parse(message, network=card_network)
-        validator = ISO8583Validator()
+        validator = ISO8583Validator(spec=spec)
 
         if against:
             targets = (

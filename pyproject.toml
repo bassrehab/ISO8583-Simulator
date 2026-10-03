@@ -38,6 +38,10 @@ requires-python = ">=3.10"
 iso8583sim = "iso8583sim.cli.commands:main"
 
 [project.optional-dependencies]
+# Reading custom specs (iso8583sim.core.Spec) written in YAML; JSON needs nothing extra.
+yaml = [
+    "pyyaml>=6.0.0",
+]
 test = [
     "pytest>=7.0.0",
     "pytest-cov>=4.1.0",

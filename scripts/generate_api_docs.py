@@ -34,6 +34,7 @@ GROUPS: dict[str, list[tuple[str, str]]] = {
         ("iso8583sim.core.parser", "Parser"),
         ("iso8583sim.core.builder", "Builder"),
         ("iso8583sim.core.validator", "Validator"),
+        ("iso8583sim.core.spec", "Spec"),
         ("iso8583sim.core.network_rules", "Network rules"),
         ("iso8583sim.core.emv", "EMV"),
         ("iso8583sim.core.codes", "Codes"),

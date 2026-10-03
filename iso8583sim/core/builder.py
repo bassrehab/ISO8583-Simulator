@@ -22,14 +22,27 @@ from .validator import ISO8583Validator
 
 if TYPE_CHECKING:
     from ..wire import WireFormat
+    from .spec import Spec
 
 
 class ISO8583Builder:
     """Builder for creating ISO 8583 messages with network support"""
 
-    def __init__(self, version: ISO8583Version = ISO8583Version.V1987):
-        self.version = version
-        self.validator = ISO8583Validator()
+    def __init__(self, version: ISO8583Version = ISO8583Version.V1987, spec: Spec | None = None):
+        """
+        Args:
+            version: ISO8583 version to use
+            spec: Optional custom field definitions (see Spec). Its version is used, and its
+                fields wherever it defines them.
+        """
+        self._spec = spec
+        self.version = spec.version if spec is not None else version
+        self.validator = ISO8583Validator(spec=spec)
+
+    def _definition(self, field_number: int, message: ISO8583Message) -> FieldDefinition | None:
+        if self._spec is not None:
+            return self._spec.definition(field_number, message.network, message.version)
+        return get_field_definition(field_number, message.network, message.version)
 
     def build(self, message: ISO8583Message) -> str:
         """Build raw ISO 8583 message string from message object"""
@@ -40,7 +53,7 @@ class ISO8583Builder:
                 if field_number == 0:  # Skip MTI
                     continue
 
-                field_def = get_field_definition(field_number, message.network, message.version)
+                field_def = self._definition(field_number, message)
                 if not field_def:
                     raise BuildError(f"Unknown field definition: {field_number}")
 
@@ -64,7 +77,7 @@ class ISO8583Builder:
             # Build data fields in order
             present_fields = sorted(f for f in message.fields.keys() if f != 0)
             for field_number in present_fields:
-                field_def = get_field_definition(field_number, message.network, message.version)
+                field_def = self._definition(field_number, message)
                 if field_def:
                     field_data = self._build_field(field_number, message.fields[field_number], field_def)
                     result += field_data

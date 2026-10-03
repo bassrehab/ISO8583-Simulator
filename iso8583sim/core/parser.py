@@ -26,6 +26,7 @@ from .types import (
 if TYPE_CHECKING:
     from ..wire import WireFormat
     from .pool import MessagePool
+    from .spec import Spec
 
 # Try to import Cython-optimized functions
 try:
@@ -50,14 +51,26 @@ class EMVTag:
 class ISO8583Parser:
     """Parser for ISO 8583 messages with network support"""
 
-    def __init__(self, version: ISO8583Version = ISO8583Version.V1987, pool: MessagePool | None = None):
+    def __init__(
+        self,
+        version: ISO8583Version = ISO8583Version.V1987,
+        pool: MessagePool | None = None,
+        spec: Spec | None = None,
+    ):
         """
         Initialize the parser.
 
         Args:
             version: ISO8583 version to use
             pool: Optional MessagePool for object reuse in high-throughput scenarios
+            spec: Optional custom field definitions (see Spec). Its version is used, and its
+                fields wherever it defines them.
         """
+        # subhadipmitra@: A spec's fields come first, before network and version variations: it
+        # describes the link being parsed, which those tables only approximate.
+        self._spec = spec
+        if spec is not None:
+            version = spec.version
         self.version = version
         self._pool = pool
         self._current_position = 0
@@ -106,7 +119,11 @@ class ISO8583Parser:
             fields = {0: mti}  # MTI is field 0
             for field_number in present_fields:
                 try:
-                    field_def = get_field_definition(field_number, self._detected_network, self.version)
+                    field_def = (
+                        self._spec.definition(field_number, self._detected_network, self.version)
+                        if self._spec is not None
+                        else get_field_definition(field_number, self._detected_network, self.version)
+                    )
 
                     if field_def is None:
                         self.logger.warning("No definition found for field %d", field_number)
@@ -252,7 +269,9 @@ class ISO8583Parser:
             raise ParseError("Invalid bitmap format") from None
 
     def _get_field_definition(self, field_number: int) -> FieldDefinition | None:
-        """Get field definition considering network and version"""
+        """Get field definition considering the spec, network and version"""
+        if self._spec is not None and field_number in self._spec.fields:
+            return self._spec.fields[field_number]
         # Check cached network-specific definitions first (avoids repeated dict.get())
         field_def = self._network_fields.get(field_number)
         if field_def is not None:
@@ -269,9 +288,9 @@ class ISO8583Parser:
     def _parse_field(self, field_number: int, field_def: FieldDefinition) -> str:
         """Parse field based on its definition"""
         try:
-            # Use cached network-specific field definition if available
+            # Use cached network-specific field definition if available, unless the spec has its own
             network_field_def = self._network_fields.get(field_number)
-            if network_field_def is not None:
+            if network_field_def is not None and (self._spec is None or field_number not in self._spec.fields):
                 field_def = network_field_def
 
             value = self._handle_field_type(field_number, field_def)

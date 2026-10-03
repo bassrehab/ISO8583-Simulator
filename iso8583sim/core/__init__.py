@@ -19,6 +19,7 @@ from .codes import PROCESSING_CODES, RESPONSE_CODES, detect_network_from_pan
 from .emv import build_emv_data, parse_emv_data
 from .parser import ISO8583Parser
 from .pool import MessagePool
+from .spec import Spec, SpecError
 from .types import (
     BuildError,
     CardNetwork,
@@ -40,6 +41,9 @@ __all__ = [
     "ISO8583Builder",
     # Validator
     "ISO8583Validator",
+    # Custom field definitions
+    "Spec",
+    "SpecError",
     # Types
     "ISO8583Message",
     "ISO8583Version",

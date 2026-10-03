@@ -1,0 +1,79 @@
+---
+title: "Custom specs"
+description: "Define a network's or a host's own fields in a file, over a standard ISO 8583 version, and parse, build and validate with them."
+---
+
+Real links rarely use the standard field layouts exactly. A network carries its own data in private fields, a host sends field 62 as twelve fixed characters instead of a length and its data, and so on. A spec says how such fields look, over a standard version, and the parser, builder and validator use it wherever it defines a field. Every field it doesn't define keeps the version's definition.
+
+## A spec file
+
+JSON, or YAML with PyYAML installed (`pip install "iso8583sim[yaml]"`):
+
+```yaml acme.yaml
+name: Acme network
+version: "1987"
+fields:
+  48: {type: lllvar, max_length: 120, description: Acme additional data}
+  62: {type: an, max_length: 12, padding_char: " ", padding_direction: right}
+```
+
+```json acme.json
+{
+  "name": "Acme network",
+  "version": "1987",
+  "fields": {
+    "48": {"type": "lllvar", "max_length": 120, "description": "Acme additional data"},
+    "62": {"type": "an", "max_length": 12, "padding_char": " ", "padding_direction": "right"}
+  }
+}
+```
+
+| Key | Meaning |
+|-----|---------|
+| `name` | What the spec is called |
+| `version` | The standard it builds on: `1987` (the default), `1993` or `2003` |
+| `fields` | Field numbers (2 to 128) and how each looks |
+
+Each field takes what a [FieldDefinition](/core/types) does:
+
+| Key | Required | Meaning |
+|-----|----------|---------|
+| `type` | yes | `n`, `a`, `an`, `b`, `s`, `z`, `ll` or `lll`, or their names (`NUMERIC`, `LLVAR`, and so on) |
+| `max_length` | yes | Its length when fixed; its most when variable (`ll`, `lll`). For `b`, in bytes |
+| `min_length` | no | Its least, when shorter values are allowed |
+| `description` | no | What it holds |
+| `padding_char` | no | What a fixed field is padded with to its length |
+| `padding_direction` | no | `left` (the default) or `right` |
+| `encoding` | no | `ascii` (the default) |
+
+A spec that can't be used raises `SpecError`, naming the field and what's wrong.
+
+## In Python
+
+```python
+from iso8583sim.core import ISO8583Builder, ISO8583Message, ISO8583Parser, ISO8583Validator, Spec
+
+spec = Spec.from_file("acme.yaml")
+
+raw = ISO8583Builder(spec=spec).build(
+    ISO8583Message(mti="0100", fields={2: "4111111111111111", 3: "000000", 4: "000000001000", 11: "000123", 62: "ACME1"})
+)
+message = ISO8583Parser(spec=spec).parse(raw)
+errors = ISO8583Validator(spec=spec).validate_message(message)
+```
+
+Field 62 goes on the wire as `ACME1` and seven spaces, with no length in front. A parser, builder or validator given a spec uses its version. `Spec.from_dict` reads the same structure from a dictionary, `to_dict` writes it back, and `spec.definition(number)` says how a field looks under the spec.
+
+## On the command line
+
+`parse`, `build` and `validate` take `--spec`:
+
+```bash
+iso8583sim build --mti 0100 --fields fields.json --spec acme.yaml
+iso8583sim parse "0100..." --spec acme.yaml
+iso8583sim validate "0100..." --spec acme.yaml
+```
+
+## What a spec doesn't cover
+
+A spec describes fields as the library's own definitions do: types, lengths and padding of ASCII text messages. Sub-elements (TLV data, bitmapped sub-fields such as Mastercard's DE 48), EBCDIC and BCD encodings, binary length headers, and versions of a spec to bind tests to are what the [iso8583sim Platform](https://iso8583sim.com)'s dialects add, and it exports a dialect's fields as a spec for this library.

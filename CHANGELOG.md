@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Custom specs: `Spec` (`iso8583sim.core.spec`) holds a network's or a host's own field definitions over a standard version, read from a JSON file, or YAML with PyYAML installed (the new `yaml` extra). `ISO8583Parser`, `ISO8583Builder` and `ISO8583Validator` take `spec=` and use its fields wherever it defines them, and the `parse`, `build` and `validate` commands take `--spec`. A spec that can't be used raises `SpecError`, naming the field and what's wrong.
+
+### Fixed
+
+- `ISO8583Validator.validate_message` reported every parsed message with a padded fixed field, such as the card acceptor's name in field 43, as the wrong length ("Field 43 length must be 40"): the parser takes the padding off, and the check wanted it back. A message is now checked as it would be sent, padded. `validate_field` still checks the value as it would be sent.
+
 ## [1.7.1] - 2026-10-02
 
 ### Security

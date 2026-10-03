@@ -7,6 +7,7 @@ import re
 from dataclasses import replace
 
 from .network_rules import check_network_fields
+from .spec import Spec
 from .types import (
     MTI_VERSION_DIGITS,
     CardNetwork,
@@ -34,10 +35,31 @@ except ImportError:
     _USE_CYTHON = False
 
 
+def _as_sent(value: str, field_def: FieldDefinition) -> str:
+    """A fixed field's value as it's sent: padded to its length when the field has a padding character.
+
+    subhadipmitra@: The parser takes padding off fixed fields (a card acceptor's name in field 43,
+    say), and the builder puts it back before validating. Checking a message's values as they
+    stand failed every parsed message with such a field ("Field 43 length must be 40"), so a
+    message is checked as it would be sent. validate_field itself still wants the sent form.
+    """
+    if (
+        field_def.padding_char is None
+        or field_def.field_type in (FieldType.LLVAR, FieldType.LLLVAR, FieldType.BINARY)
+        or len(value) >= field_def.max_length
+    ):
+        return value
+    if field_def.padding_direction == "left":
+        return value.rjust(field_def.max_length, field_def.padding_char)
+    return value.ljust(field_def.max_length, field_def.padding_char)
+
+
 class ISO8583Validator:
     """Enhanced validator for ISO 8583 messages with network support"""
 
-    def __init__(self):
+    def __init__(self, spec: Spec | None = None):
+        # Custom field definitions (see Spec), used wherever the spec defines a field.
+        self._spec = spec
         self.network_required_fields = {
             CardNetwork.VISA: [2, 3, 4, 11, 14, 22, 24, 25],
             CardNetwork.MASTERCARD: [2, 3, 4, 11, 22, 24, 25],
@@ -114,14 +136,18 @@ class ISO8583Validator:
             if field_number == 0:  # MTI already validated
                 continue
 
-            # Get field definition considering network and version
-            field_def = get_field_definition(field_number, message.network, message.version)
+            # Get field definition considering the spec, network and version
+            field_def = (
+                self._spec.definition(field_number, message.network, message.version)
+                if self._spec is not None
+                else get_field_definition(field_number, message.network, message.version)
+            )
 
             if not field_def:
                 errors.append(f"Unknown field number: {field_number}")
                 continue
 
-            valid, error = self.validate_field(field_number, value, field_def)
+            valid, error = self.validate_field(field_number, _as_sent(value, field_def), field_def)
             if not valid and error:
                 errors.append(error)
 

@@ -262,3 +262,13 @@ def test_validate_for_networks_checks_every_network(validator):
     assert set(results) == set(CardNetwork)
     assert results[CardNetwork.DISCOVER] == []
     assert results[CardNetwork.UNIONPAY]
+
+
+def test_a_parsed_message_with_padded_fixed_fields_validates():
+    """The parser takes padding off fixed fields such as 43; the message is checked as it's sent."""
+    from iso8583sim.core import ISO8583Builder, ISO8583Parser, ISO8583Validator
+
+    fields = {2: "4111111111111111", 3: "000000", 4: "000000001000", 11: "000123", 41: "TERM0001", 43: "SHOP"}
+    parsed = ISO8583Parser().parse(ISO8583Builder().build(ISO8583Message(mti="0100", fields=fields)))
+    assert parsed.fields[43] == "SHOP"
+    assert not [e for e in ISO8583Validator().validate_message(parsed) if "Field 43" in e]

@@ -21,6 +21,7 @@ EMV Tag data structure
 ISO8583Parser(
     version: ISO8583Version = ISO8583Version.V1987,
     pool: MessagePool | None = None,
+    spec: Spec | None = None,
 )
 ```
 
@@ -36,6 +37,11 @@ Initialize the parser.
 
 <ResponseField name="pool" type="MessagePool | None" default="None">
   Optional MessagePool for object reuse in high-throughput scenarios
+</ResponseField>
+
+<ResponseField name="spec" type="Spec | None" default="None">
+  Optional custom field definitions (see Spec). Its version is used, and its
+fields wherever it defines them.
 </ResponseField>
 
 ### `parse()`
